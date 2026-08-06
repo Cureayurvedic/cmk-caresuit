@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Healthcare Light Theme */
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    /* Primary: Healthcare Blue */
+    --primary: 213 94% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Teal */
+    --secondary: 174 72% 37%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 94%;
+    --accent-foreground: 213 94% 38%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 213 94% 52%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-bg: 222 47% 14%;
+    --sidebar-hover: 222 47% 20%;
+    --sidebar-active: 213 94% 52%;
+    --sidebar-text: 215 20% 75%;
+    --sidebar-text-active: 0 0% 100%;
+    --sidebar-border: 222 47% 20%;
+    --sidebar-width: 240px;
+
+    /* Form fields */
+    --field-required: 0 84% 60%;
+  }
+
+  .sidebar-collapsed {
+    --sidebar-width: 72px;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+@layer components {
+  /* Required field asterisk */
+  .field-required::after {
+    content: " *";
+    color: hsl(var(--field-required));
+    font-weight: 600;
+  }
+
+  /* Form section header */
+  .form-section-header {
+    @apply flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary bg-primary/5 border-l-4 border-primary px-3 py-2 rounded-r-md mb-3;
+  }
+
+  /* Compact form label */
+  .form-label {
+    @apply text-xs font-medium text-slate-600 mb-1 block;
+  }
+
+  /* Status badge */
+  .status-active {
+    @apply bg-emerald-50 text-emerald-700 border border-emerald-200;
+  }
+  .status-inactive {
+    @apply bg-gray-50 text-gray-600 border border-gray-200;
+  }
+
+  /* Sidebar nav item */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer select-none;
+    color: hsl(var(--sidebar-text));
+  }
+  .nav-item:hover {
+    background: hsl(var(--sidebar-hover));
+    color: hsl(var(--sidebar-text-active));
+  }
+  .nav-item.active {
+    background: hsl(var(--sidebar-active));
+    color: hsl(var(--sidebar-text-active));
+    @apply shadow-md;
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
+  }
+
+  /* Patient photo placeholder */
+  .patient-photo {
+    @apply w-24 h-28 bg-slate-100 rounded-lg border-2 border-dashed border-slate-300 flex flex-col items-center justify-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fade-in 0.25s ease-out;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
