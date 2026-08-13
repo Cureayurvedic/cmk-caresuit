@@ -3,18 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/registration": { title: "Registration", subtitle: "Demographics — New Registration" },
+  "/registration/demographics": { title: "Registration", subtitle: "Demographics — New Registration" },
+  "/registration/search": { title: "Registration", subtitle: "Patient Search" },
   "/reports": { title: "Reports", subtitle: "Analytics & Reports" },
   "/billing": { title: "Billing", subtitle: "Invoices & Payments" },
   "/atd": { title: "ATD", subtitle: "Attendance & Duty" },
   "/wards": { title: "Ward Management", subtitle: "Beds & Wards" },
+  "/settings": { title: "Settings", subtitle: "Configuration & Management" },
 };
 
 export default function Header() {
   const location = useLocation();
+  const navigate = useNavigate();
   const page = PAGE_TITLES[location.pathname] ?? {
     title: "CMK CareSuite",
     subtitle: "Professional Healthcare Management",
@@ -75,7 +79,12 @@ export default function Header() {
         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700">
           <HelpCircle className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-slate-500 hover:text-slate-700"
+          onClick={() => navigate("/settings")}
+        >
           <Settings className="h-4 w-4" />
         </Button>
 

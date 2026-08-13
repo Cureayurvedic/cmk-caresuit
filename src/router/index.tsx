@@ -6,6 +6,7 @@ import ReportsPage from "@/modules/reports/pages/ReportsPage";
 import BillingPage from "@/modules/billing/pages/BillingPage";
 import AtdPage from "@/modules/atd/pages/AtdPage";
 import WardsPage from "@/modules/wards/pages/WardsPage";
+import SettingsPage from "@/modules/settings/pages/SettingsPage";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
       {
         path: "wards",
         element: <WardsPage />,
+      },
+      {
+        path: "settings",
+        element: <SettingsPage />,
       },
     ],
   },

@@ -8,6 +8,7 @@ import {
   Heart,
   ChevronRight,
   Menu,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -49,6 +50,12 @@ const NAV_ITEMS = [
     icon: Building2,
     path: "/wards",
     color: "text-purple-400",
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    path: "/settings",
+    color: "text-slate-400",
   },
 ];
 
