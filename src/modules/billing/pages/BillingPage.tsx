@@ -1,5 +1,32 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { ReceiptText, DollarSign, TrendingUp, Clock, Search, Filter, ArrowRight, ShieldCheck, X, Plus, Trash2, Printer } from "lucide-react";
+import {
+  ReceiptText,
+  DollarSign,
+  TrendingUp,
+  Clock,
+  Search,
+  Filter,
+  ArrowRight,
+  ShieldCheck,
+  X,
+  Plus,
+  Trash2,
+  Printer,
+  FileText,
+  CreditCard,
+  RotateCcw,
+  Wallet,
+  ClipboardList,
+  CheckCircle2,
+  AlertCircle,
+  Building2,
+  Calendar,
+  User,
+  Phone,
+  RefreshCw,
+  Eye,
+  FileCheck
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +40,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getInvoices, settleInvoice, cancelInvoice, InvoiceData } from "@/api/billingApi";
+import {
+  getInvoices,
+  getInvoiceById,
+  createInvoice,
+  settleInvoice,
+  cancelInvoice,
+  getBillingStats,
+  getReceipts,
+  getBillingPatients,
+  getOpVisits,
+  createOpVisit,
+  getBillingOrders,
+  createBillingOrder,
+  billOrder,
+  getAdvances,
+  createAdvance,
+  getCreditNotes,
+  createCreditNote,
+  getRefunds,
+  createRefund,
+  getIntimations,
+  createIntimation,
+  updateIntimation,
+  seedBillingData,
+  InvoiceData,
+  ReceiptData,
+  InvoiceItem,
+  BillingStats,
+  OpVisitData,
+  BillingOrderData,
+  AdvanceData,
+  CreditNoteData,
+  RefundData,
+  InsuranceIntimationData
+} from "@/api/billingApi";
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 interface BillingPatient {
@@ -31,12 +92,27 @@ interface BillingPatient {
   type: "Registration" | "Admission" | "Discharge But Not Bill" | "Discharge";
   isMlc?: boolean;
   isVip?: boolean;
+  address?: string;
+  fatherName?: string;
 }
 
-export type InvoiceActivity = InvoiceData;
-
-// ─── Initial Mock Data ────────────────────────────────────────────────────────
 const INITIAL_PATIENTS: BillingPatient[] = [
+  {
+    uhid: "2710",
+    ipNo: "OP-1",
+    patientName: "Mr. Raj Pal Yadav",
+    genderAge: "Male/70 Yr",
+    admissionDate: "2026-08-10T16:29:00",
+    bedNo: "OPD-01",
+    billingCategory: "CONSULTATION / OPD",
+    doctor: "Dr. Sameer Sen 3105",
+    encounterStatus: "Open",
+    company: "CASH / CASH",
+    mobileNo: "8384858875",
+    type: "Registration",
+    address: "JAI ESAR, UTTAR PRADESH",
+    fatherName: "R P Yadav",
+  },
   {
     uhid: "222",
     ipNo: "21/3",
@@ -45,29 +121,13 @@ const INITIAL_PATIENTS: BillingPatient[] = [
     admissionDate: "2026-08-11T16:30:00",
     bedNo: "GEN-01",
     billingCategory: "GENERAL WARD / DELUXE ROOM",
-    doctor: "Abhishek Bansal 2273",
+    doctor: "Dr. Abhishek Bansal 2273",
     encounterStatus: "Open",
-    company: "CASH / CASH",
+    company: "Star Health Insurance",
     mobileNo: "9695960777",
     type: "Admission",
-    isMlc: false,
-    isVip: false,
-  },
-  {
-    uhid: "44",
-    ipNo: "21/2",
-    patientName: "Mr. Demo Patient",
-    genderAge: "Male/35 Yr",
-    admissionDate: "2026-08-01T20:49:00",
-    bedNo: "DLX-02",
-    billingCategory: "DELUXE ROOM / DELUXE ROOM",
-    doctor: "D K DAS 2268",
-    encounterStatus: "Marked For Discharged",
-    company: "CASH / CASH",
-    mobileNo: "2587413550",
-    type: "Admission",
-    isMlc: false,
-    isVip: true,
+    address: "DELHI SECTOR 4",
+    fatherName: "Dinesh Kumar",
   },
   {
     uhid: "105",
@@ -77,13 +137,30 @@ const INITIAL_PATIENTS: BillingPatient[] = [
     admissionDate: "2026-08-12T10:15:00",
     bedNo: "ICU-04",
     billingCategory: "ICU / SPECIAL CATEGORY",
-    doctor: "Rajesh Malhotra 1104",
-    encounterStatus: "Pharmacy Clearance",
-    company: "TATA AIG Insurance",
+    doctor: "Dr. Rajesh Malhotra 1104",
+    encounterStatus: "Bill Prepared",
+    company: "HDFC ERGO Health",
     mobileNo: "9812457890",
     type: "Admission",
-    isMlc: true,
-    isVip: false,
+    address: "NOIDA SECTOR 62",
+    fatherName: "S K Sharma",
+  },
+  {
+    uhid: "44",
+    ipNo: "21/2",
+    patientName: "Mr. Demo Patient",
+    genderAge: "Male/35 Yr",
+    admissionDate: "2026-08-01T20:49:00",
+    bedNo: "DLX-02",
+    billingCategory: "DELUXE ROOM / DELUXE ROOM",
+    doctor: "Dr. D K DAS 2268",
+    encounterStatus: "Marked For Discharged",
+    company: "CASH / CASH",
+    mobileNo: "2587413550",
+    type: "Admission",
+    address: "GURGAON SECTOR 14",
+    fatherName: "Demo Father",
+    isVip: true,
   },
   {
     uhid: "303",
@@ -93,21 +170,36 @@ const INITIAL_PATIENTS: BillingPatient[] = [
     admissionDate: "2026-08-13T08:30:00",
     bedNo: "PED-02",
     billingCategory: "PEDIATRIC / GENERAL",
-    doctor: "Sania Mirza 2231",
+    doctor: "Dr. Sania Mirza 2231",
     encounterStatus: "Bill Prepared",
     company: "CASH / CASH",
     mobileNo: "9876543210",
     type: "Discharge",
-    isMlc: false,
-    isVip: false,
+    address: "DELHI LAXMI NAGAR",
+    fatherName: "Suresh Verma",
   }
 ];
 
-const STATS = [
-  { label: "Today's Revenue", value: "₹1,24,500", icon: DollarSign, trend: "+12%", color: "text-emerald-500", bg: "bg-emerald-50" },
-  { label: "Pending Bills", value: "23", icon: Clock, trend: "4 overdue", color: "text-amber-500", bg: "bg-amber-50" },
-  { label: "This Month", value: "₹18,50,000", icon: TrendingUp, trend: "+8%", color: "text-blue-500", bg: "bg-blue-50" },
-  { label: "Total Invoices", value: "342", icon: ReceiptText, trend: "Today: 18", color: "text-purple-500", bg: "bg-purple-50" },
+const SERVICE_CATALOG = [
+  { code: "CON-01", name: "OPD Consultation - Senior Specialist", dept: "General OPD", rate: 500 },
+  { code: "CON-02", name: "Emergency Consultation", dept: "Emergency", rate: 1000 },
+  { code: "CON-03", name: "Super Specialist Consultation", dept: "Cardiology", rate: 1200 },
+  { code: "LAB-01", name: "Complete Blood Count (CBC)", dept: "Pathology", rate: 350 },
+  { code: "LAB-02", name: "Lipid Profile (Full Panel)", dept: "Biochemistry", rate: 750 },
+  { code: "LAB-03", name: "HbA1c Glycated Hemoglobin", dept: "Biochemistry", rate: 550 },
+  { code: "LAB-04", name: "Liver Function Test (LFT)", dept: "Biochemistry", rate: 650 },
+  { code: "LAB-05", name: "Kidney Function Test (KFT)", dept: "Biochemistry", rate: 600 },
+  { code: "LAB-06", name: "Thyroid Profile (T3, T4, TSH)", dept: "Pathology", rate: 700 },
+  { code: "RAD-01", name: "Chest X-Ray PA View", dept: "Radiology", rate: 450 },
+  { code: "RAD-02", name: "Ultrasound Whole Abdomen", dept: "Radiology", rate: 1200 },
+  { code: "RAD-03", name: "MRI Brain with Contrast", dept: "Radiology", rate: 6500 },
+  { code: "RAD-04", name: "CT Scan Chest High Resolution", dept: "Radiology", rate: 4500 },
+  { code: "CARD-01", name: "12-Lead ECG", dept: "Cardiology", rate: 300 },
+  { code: "CARD-02", name: "2D Echocardiography + Color Doppler", dept: "Cardiology", rate: 2200 },
+  { code: "CARD-03", name: "TMT Treadmill Stress Test", dept: "Cardiology", rate: 1800 },
+  { code: "PROC-01", name: "IV Cannulation & Infusion", dept: "Nursing", rate: 250 },
+  { code: "PROC-02", name: "Wound Dressing & Suturing", dept: "Minor OT", rate: 600 },
+  { code: "PROC-03", name: "Nebulization Session", dept: "OPD", rate: 150 },
 ];
 
 export default function BillingPage() {
@@ -115,11 +207,25 @@ export default function BillingPage() {
   const [activeTab, setActiveTab] = useState<string>("Patient Lists");
   const [activeSubTab, setActiveSubTab] = useState<string>("Invoice Details");
 
-  // State Management
+  // Live Stats
+  const [stats, setStats] = useState<BillingStats>({
+    todayRevenue: 124500,
+    monthRevenue: 1850000,
+    pendingBillsCount: 23,
+    totalInvoicesCount: 342,
+    activeAdvanceBalance: 3000,
+  });
+
+  // Data Stores
   const [patients, setPatients] = useState<BillingPatient[]>(INITIAL_PATIENTS);
-  const [invoices, setInvoices] = useState<InvoiceActivity[]>([]);
-  const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
-  const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceActivity | null>(null);
+  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+  const [visits, setVisits] = useState<OpVisitData[]>([]);
+  const [orders, setOrders] = useState<BillingOrderData[]>([]);
+  const [advances, setAdvances] = useState<AdvanceData[]>([]);
+  const [creditNotes, setCreditNotes] = useState<CreditNoteData[]>([]);
+  const [refunds, setRefunds] = useState<RefundData[]>([]);
+  const [intimations, setIntimations] = useState<InsuranceIntimationData[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Filters State
   const [patientSearch, setPatientSearch] = useState("");
@@ -128,62 +234,42 @@ export default function BillingPage() {
   const [patientStatusFilter, setPatientStatusFilter] = useState("all");
 
   const [invoiceSearch, setInvoiceSearch] = useState("");
-  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("all"); // all, settled, unsettled
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("all");
+  const [invoiceTypeFilter, setInvoiceTypeFilter] = useState("Both");
 
-  // Settlement Modal State
+  // ─── Master Activity List Filter State ───────────────────────────────────────
+  const [malUhid, setMalUhid] = useState("");
+  const [malBillNo, setMalBillNo] = useState("");
+  const [malDateRangePreset, setMalDateRangePreset] = useState("Date Range");
+  const [malFromDate, setMalFromDate] = useState("");
+  const [malToDate, setMalToDate] = useState("");
+  const [malFacility, setMalFacility] = useState("CMK HEALTHCARE PVT. LTD.");
+  const [malPayerType, setMalPayerType] = useState("Select All");
+  const [malPayer, setMalPayer] = useState("Select All");
+  const [malSponsor, setMalSponsor] = useState("Select All");
+  const [malPatientType, setMalPatientType] = useState("Both");
+  const [malPrintAs, setMalPrintAs] = useState<"Summary" | "Detail">("Summary");
+  const [malPatientRefundableOnly, setMalPatientRefundableOnly] = useState(false);
+  const [malSearchFor, setMalSearchFor] = useState("All Invoices");
+
+  // In-table column filter inputs
+  const [colFilterCompany, setColFilterCompany] = useState("");
+  const [colFilterUhid, setColFilterUhid] = useState("");
+  const [colFilterPatient, setColFilterPatient] = useState("");
+  const [colFilterEnc, setColFilterEnc] = useState("");
+  const [colFilterInvoiceNo, setColFilterInvoiceNo] = useState("");
+
+  // Selected Invoices Multi-select
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
+
+  // Selected for modals
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
+  const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceData | null>(null);
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceActivity | null>(null);
-  
-  // Patient Search Modal State
   const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] = useState(false);
   const [modalSearchTerm, setModalSearchTerm] = useState("");
 
-  // Create OP Visit Form State
-  const [opUhid, setOpUhid] = useState("");
-  const [opStatus, setOpStatus] = useState("Open");
-  const [opPayerType, setOpPayerType] = useState("");
-  const [opPayer, setOpPayer] = useState("");
-  const [opSponsor, setOpSponsor] = useState("");
-  const [opNetwork, setOpNetwork] = useState("");
-  const [opDoctor, setOpDoctor] = useState("");
-
-  // OP Billing states
-  const [opBillingUhid, setOpBillingUhid] = useState("");
-  const [opBillingVisitNo, setOpBillingVisitNo] = useState("");
-  const [opBillingYear, setOpBillingYear] = useState("26-27");
-  const [opBillingType, setOpBillingType] = useState("Credit");
-  const [opBillingPayerType, setOpBillingPayerType] = useState("Insurance");
-  const [opBillingPayer, setOpBillingPayer] = useState("");
-  const [opBillingSponsor, setOpBillingSponsor] = useState("");
-  const [opBillingNetwork, setOpBillingNetwork] = useState("");
-  const [opBillingDoctor, setOpBillingDoctor] = useState("");
-  const [opBillingReferredType, setOpBillingReferredType] = useState("SELF");
-  const [opBillingReferredName, setOpBillingReferredName] = useState("");
-  const [opBillingSubTab, setOpBillingSubTab] = useState("Service");
-  const [opBillingPaymentRows, setOpBillingPaymentRows] = useState<Array<{
-    mode: string;
-    amount: number;
-    balance: number;
-    date: string;
-    bankName: string;
-    beneficiaryName: string;
-    refNo: string;
-    description: string;
-    cardSwipingValue: number;
-  }>>([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
-  const [opBillingNarration, setOpBillingNarration] = useState("");
-
-  // IP Billing states
-  const [ipBillingUhid, setIpBillingUhid] = useState("");
-  const [ipBillingSubTab, setIpBillingSubTab] = useState("Department Wise");
-  const [ipBillingType, setIpBillingType] = useState("Cash");
-  const [ipBillingPayer, setIpBillingPayer] = useState("");
-  const [ipBillingSponsor, setIpBillingSponsor] = useState("");
-  const [ipBillingNetwork, setIpBillingNetwork] = useState("");
-  const [ipBillingConsultant, setIpBillingConsultant] = useState("");
-  const [ipBillingCategory, setIpBillingCategory] = useState("");
-  
-  // Payment split grid state
+  // Settlement & Refund Modal States
   const [paymentRows, setPaymentRows] = useState<Array<{
     mode: string;
     amount: number;
@@ -197,339 +283,1082 @@ export default function BillingPage() {
   }>>([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
   const [settlementNotes, setSettlementNotes] = useState("");
 
-  // Add row to payment modes table
-  const addPaymentRow = () => {
-    setPaymentRows([...paymentRows, { mode: "-Select-", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
-  };
+  // ─── Create OP Visit Form State ──────────────────────────────────────────────
+  const [opUhid, setOpUhid] = useState("");
+  const [opPatientName, setOpPatientName] = useState("");
+  const [opStatus, setOpStatus] = useState("Open");
+  const [opPayerType, setOpPayerType] = useState("Direct Patient");
+  const [opPayer, setOpPayer] = useState("CASH");
+  const [opSponsor, setOpSponsor] = useState("CASH");
+  const [opNetwork, setOpNetwork] = useState("Select");
+  const [opDoctor, setOpDoctor] = useState("Dr. Abhishek Bansal 2273");
+  const [opDepartment, setOpDepartment] = useState("General OPD");
+  const [opVisitType, setOpVisitType] = useState<"New" | "Follow-up" | "Emergency">("New");
+  const [opFee, setOpFee] = useState<number>(500);
 
-  const removePaymentRow = (index: number) => {
-    const updated = paymentRows.filter((_, idx) => idx !== index);
-    setPaymentRows(updated);
-  };
+  // ─── OP Billing Form State ───────────────────────────────────────────────────
+  const [opBillingUhid, setOpBillingUhid] = useState("");
+  const [opBillingVisitNo, setOpBillingVisitNo] = useState("1");
+  const [opBillingYear, setOpBillingYear] = useState("26-27");
+  const [opBillingType, setOpBillingType] = useState("Cash");
+  const [opBillingPayerType, setOpBillingPayerType] = useState("Direct Patient");
+  const [opBillingPayer, setOpBillingPayer] = useState("CASH");
+  const [opBillingSponsor, setOpBillingSponsor] = useState("CASH");
+  const [opBillingNetwork, setOpBillingNetwork] = useState("Select");
+  const [opBillingDoctor, setOpBillingDoctor] = useState("Dr. Sameer Sen 3105");
+  const [opBillingReferredType, setOpBillingReferredType] = useState("SELF");
+  const [opBillingReferredName, setOpBillingReferredName] = useState("");
+  const [opBillingSubTab, setOpBillingSubTab] = useState("Service");
+  const [opBillingNarration, setOpBillingNarration] = useState("");
+  const [opBillingItems, setOpBillingItems] = useState<InvoiceItem[]>([
+    { code: "CON-01", name: "OPD Consultation - Senior Specialist", dept: "General OPD", doctor: "Dr. Sameer Sen", rate: 500, qty: 1, discountPercent: 0, discountAmt: 0, taxPercent: 0, netAmt: 500 },
+  ]);
+  const [opBillingPaymentRows, setOpBillingPaymentRows] = useState<Array<{
+    mode: string;
+    amount: number;
+    balance: number;
+    date: string;
+    bankName: string;
+    beneficiaryName: string;
+    refNo: string;
+    description: string;
+    cardSwipingValue: number;
+  }>>([{ mode: "Cash", amount: 500, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
 
-  const updatePaymentField = (index: number, field: string, value: any) => {
-    const updated = paymentRows.map((row, idx) => {
-      if (idx === index) {
-        return { ...row, [field]: value };
-      }
-      return row;
-    });
-    setPaymentRows(updated);
-  };
+  // ─── OP Order Form State ─────────────────────────────────────────────────────
+  const [orderUhid, setOrderUhid] = useState("");
+  const [orderDoctor, setOrderDoctor] = useState("Dr. Sameer Sen 3105");
+  const [orderType, setOrderType] = useState("Lab");
+  const [orderRemarks, setOrderRemarks] = useState("");
+  const [orderItems, setOrderItems] = useState<InvoiceItem[]>([
+    { code: "LAB-01", name: "Complete Blood Count (CBC)", dept: "Pathology", doctor: "Dr. Sameer Sen", rate: 350, qty: 1, discountPercent: 0, discountAmt: 0, netAmt: 350 }
+  ]);
 
-  const fetchInvoices = useCallback(async () => {
-    setIsLoadingInvoices(true);
+  // ─── IP Billing Form State ───────────────────────────────────────────────────
+  const [ipBillingUhid, setIpBillingUhid] = useState("");
+  const [ipBillingSubTab, setIpBillingSubTab] = useState("Department Wise");
+  const [ipBillingType, setIpBillingType] = useState("Cash");
+  const [ipBillingPayer, setIpBillingPayer] = useState("Star Health Insurance");
+  const [ipBillingSponsor, setIpBillingSponsor] = useState("Star Health");
+  const [ipBillingNetwork, setIpBillingNetwork] = useState("TPA Network");
+  const [ipBillingConsultant, setIpBillingConsultant] = useState("Dr. Abhishek Bansal 2273");
+  const [ipBillingCategory, setIpBillingCategory] = useState("DELUXE ROOM / DLX-02");
+  const [ipDays, setIpDays] = useState(3);
+  const [ipRoomRate, setIpRoomRate] = useState(3000);
+  const [ipNursingRate, setIpNursingRate] = useState(800);
+  const [ipDoctorRoundRate, setIpDoctorRoundRate] = useState(1200);
+  const [ipAdvanceAdjusted, setIpAdvanceAdjusted] = useState(2000);
+
+  // ─── Advance Collection Form State ───────────────────────────────────────────
+  const [advUhid, setAdvUhid] = useState("");
+  const [advAmount, setAdvAmount] = useState<number>(5000);
+  const [advMode, setAdvMode] = useState("Cash");
+  const [advBank, setAdvBank] = useState("");
+  const [advRefNo, setAdvRefNo] = useState("");
+  const [advPurpose, setAdvPurpose] = useState("Admission Deposit");
+
+  // ─── Credit Note Form State ──────────────────────────────────────────────────
+  const [cnInvoiceNo, setCnInvoiceNo] = useState("");
+  const [cnUhid, setCnUhid] = useState("");
+  const [cnAmount, setCnAmount] = useState<number>(500);
+  const [cnReason, setCnReason] = useState("Chairman Courtesy Waiver");
+
+  // ─── Refund Form State ───────────────────────────────────────────────────────
+  const [refUhid, setRefUhid] = useState("");
+  const [refInvoiceNo, setRefInvoiceNo] = useState("");
+  const [refAmount, setRefAmount] = useState<number>(500);
+  const [refMode, setRefMode] = useState("Cash");
+  const [refReason, setRefReason] = useState("Excess Payment Return");
+
+  // ─── Insurance Intimation Form State ─────────────────────────────────────────
+  const [intUhid, setIntUhid] = useState("");
+  const [intTpa, setIntTpa] = useState("Star Health & Allied Insurance");
+  const [intPolicyNo, setIntPolicyNo] = useState("STAR-IND-2026-9901");
+  const [intClaimNo, setIntClaimNo] = useState("CLM-ST-88741");
+  const [intReqAmt, setIntReqAmt] = useState<number>(25000);
+  const [intApprAmt, setIntApprAmt] = useState<number>(20000);
+  const [intCoPay, setIntCoPay] = useState<number>(2500);
+
+  // ─── Unbilled Orders Selection State ─────────────────────────────────────────
+  const [selectedUnbilledOrders, setSelectedUnbilledOrders] = useState<string[]>([]);
+
+  const [receiptsList, setReceiptsList] = useState<any[]>([]);
+
+  // ─── DATA FETCHING (FULL API-LEVEL FILTERING) ───────────────────────────────
+  const loadAllBillingData = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const data = await getInvoices({
-        search: invoiceSearch,
-        status: invoiceStatusFilter,
-      });
-      setInvoices(data.invoices || []);
-    } catch (err: any) {
-      console.error("Failed to fetch invoices:", err);
-      setInvoices([]);
+      const [
+        statsRes,
+        invRes,
+        recRes,
+        visRes,
+        ordRes,
+        advRes,
+        crRes,
+        refRes,
+        intRes,
+        patRes
+      ] = await Promise.allSettled([
+        getBillingStats(),
+        getInvoices({
+          uhid: malUhid,
+          billNo: malBillNo,
+          type: malPatientType,
+          facility: malFacility,
+          payerType: malPayerType,
+          payer: malPayer,
+          sponsor: malSponsor,
+          patientRefundable: malPatientRefundableOnly,
+          searchFor: malSearchFor,
+          fromDate: malFromDate,
+          toDate: malToDate,
+          colFilterCompany,
+          colFilterUhid,
+          colFilterPatient,
+          colFilterEnc,
+          colFilterInvoiceNo,
+          search: invoiceSearch,
+          limit: 150
+        }),
+        getReceipts({
+          uhid: malUhid || colFilterUhid,
+          patientName: colFilterPatient,
+          invoiceNo: malBillNo || colFilterInvoiceNo,
+          fromDate: malFromDate,
+          toDate: malToDate,
+          limit: 150
+        }),
+        getOpVisits({
+          uhid: opUhid,
+          payerType: opPayerType,
+          payer: opPayer,
+          sponsor: opSponsor,
+        }),
+        getBillingOrders({
+          status: "all",
+          orderType: "all",
+        }),
+        getAdvances({
+          uhid: advUhid,
+          status: "all",
+        }),
+        getCreditNotes({
+          uhid: cnUhid,
+          invoiceNo: cnInvoiceNo,
+        }),
+        getRefunds({
+          uhid: refUhid,
+          invoiceNo: refInvoiceNo,
+        }),
+        getIntimations({
+          uhid: intUhid,
+        }),
+        getBillingPatients({
+          search: patientSearch,
+          searchOn: patientSearchOn,
+          type: patientTypeFilter,
+          status: patientStatusFilter,
+          limit: 150
+        })
+      ]);
+
+      if (statsRes.status === "fulfilled") setStats(statsRes.value);
+      if (invRes.status === "fulfilled") setInvoices(invRes.value.invoices || []);
+      if (recRes.status === "fulfilled") setReceiptsList(recRes.value.receipts || []);
+      if (visRes.status === "fulfilled") setVisits(visRes.value || []);
+      if (ordRes.status === "fulfilled") setOrders(ordRes.value || []);
+      if (advRes.status === "fulfilled") setAdvances(advRes.value || []);
+      if (crRes.status === "fulfilled") setCreditNotes(crRes.value || []);
+      if (refRes.status === "fulfilled") setRefunds(refRes.value || []);
+      if (intRes.status === "fulfilled") setIntimations(intRes.value || []);
+
+      if (patRes.status === "fulfilled" && patRes.value && patRes.value.length > 0) {
+        setPatients(patRes.value);
+      } else if (patRes.status === "fulfilled" && patRes.value && patRes.value.length === 0 && (patientSearch || patientTypeFilter !== "Admission" || patientStatusFilter !== "all")) {
+        setPatients([]);
+      } else {
+        setPatients(INITIAL_PATIENTS);
+      }
+    } catch (err) {
+      console.error("Failed to load billing data from API:", err);
     } finally {
-      setIsLoadingInvoices(false);
+      setIsLoading(false);
     }
-  }, [invoiceSearch, invoiceStatusFilter]);
+  }, [
+    malUhid,
+    malBillNo,
+    malPatientType,
+    malFacility,
+    malPayerType,
+    malPayer,
+    malSponsor,
+    malPatientRefundableOnly,
+    malSearchFor,
+    malFromDate,
+    malToDate,
+    colFilterCompany,
+    colFilterUhid,
+    colFilterPatient,
+    colFilterEnc,
+    colFilterInvoiceNo,
+    invoiceSearch,
+    opUhid,
+    opPayerType,
+    opPayer,
+    opSponsor,
+    advUhid,
+    cnUhid,
+    cnInvoiceNo,
+    refUhid,
+    refInvoiceNo,
+    intUhid,
+    patientSearch,
+    patientSearchOn,
+    patientTypeFilter,
+    patientStatusFilter
+  ]);
 
   useEffect(() => {
-    if (activeTab === "Master Activity List") {
-      fetchInvoices();
-    }
-  }, [activeTab, fetchInvoices]);
+    loadAllBillingData();
+  }, [loadAllBillingData]);
 
-  const handleOpenSettlement = (invoice: InvoiceActivity) => {
-    setSelectedInvoice(invoice);
-    const amount = Math.abs(invoice.balance);
-    setSettlementNotes("");
-    setPaymentRows([{ mode: "Cash", amount, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
-    setIsSettleModalOpen(true);
+  // ─── PATIENT LOOKUPS ────────────────────────────────────────────────────────
+  const findPatientByUhid = (uhid: string) => {
+    return patients.find(p => p.uhid.trim().toLowerCase() === uhid.trim().toLowerCase());
   };
 
-  const handleCancelInvoice = async (id: string) => {
-    if (!window.confirm("Are you sure you want to cancel this invoice?")) return;
-    try {
-      await cancelInvoice(id);
-      toast.success("Invoice Cancelled", "Invoice status successfully updated to Cancelled.");
-      fetchInvoices();
-    } catch (err: any) {
-      toast.error("Failed to Cancel Invoice", err.message || "Something went wrong.");
+  const opBillingPatientInfo = useMemo(() => {
+    if (!opBillingUhid.trim()) return null;
+    const found = findPatientByUhid(opBillingUhid);
+    if (found) {
+      return {
+        name: found.patientName,
+        genderAge: found.genderAge,
+        address: found.address || "NEW DELHI, INDIA",
+        doctor: found.doctor,
+        payerType: found.company.includes("Insurance") || found.company.includes("Star") ? "Insurance" : "Direct Patient",
+        payer: found.company || "CASH",
+        sponsor: found.company || "CASH",
+        network: "Select",
+        mobile: found.mobileNo
+      };
     }
-  };
+    return {
+      name: `Patient (${opBillingUhid})`,
+      genderAge: "Male/45 Yr",
+      address: "DELHI, INDIA",
+      doctor: "Dr. Sameer Sen 3105",
+      payerType: "Direct Patient",
+      payer: "CASH",
+      sponsor: "CASH",
+      network: "Select",
+      mobile: "9876543210"
+    };
+  }, [opBillingUhid, patients]);
 
-  const handleSaveOpVisit = () => {
+  const ipBillingPatientInfo = useMemo(() => {
+    if (!ipBillingUhid.trim()) return null;
+    const found = findPatientByUhid(ipBillingUhid);
+    if (found) {
+      return {
+        name: found.patientName,
+        genderAge: found.genderAge,
+        address: found.address || "DELHI NCR",
+        doctor: found.doctor,
+        payer: found.company || "CASH",
+        sponsor: found.company || "CASH",
+        network: "TPA Network",
+        category: found.billingCategory,
+        pan: "ABCDE1234F"
+      };
+    }
+    return null;
+  }, [ipBillingUhid, patients]);
+
+  const opVisitPatientInfo = useMemo(() => {
+    if (!opUhid.trim()) return null;
+    const found = findPatientByUhid(opUhid);
+    if (found) {
+      return {
+        name: found.patientName,
+        genderAge: found.genderAge,
+        address: found.address || "DELHI, INDIA",
+        doctor: found.doctor || "Dr. Abhishek Bansal 2273",
+        payerType: found.company.includes("Insurance") || found.company.includes("Star") ? "Insurance" : "Direct Patient",
+        payer: found.company || "CASH",
+        sponsor: found.company || "CASH",
+        network: "Select",
+        mobile: found.mobileNo
+      };
+    }
+    return null;
+  }, [opUhid, patients]);
+
+  useEffect(() => {
+    if (opVisitPatientInfo) {
+      setOpPatientName(opVisitPatientInfo.name);
+      setOpPayerType(opVisitPatientInfo.payerType);
+      setOpPayer(opVisitPatientInfo.payer);
+      setOpSponsor(opVisitPatientInfo.sponsor);
+      setOpDoctor(opVisitPatientInfo.doctor);
+    }
+  }, [opVisitPatientInfo]);
+
+  // Calculate OP Billing Totals
+  const opGrossTotal = useMemo(() => {
+    return opBillingItems.reduce((sum, it) => sum + (Number(it.rate || 0) * Number(it.qty || 1)), 0);
+  }, [opBillingItems]);
+
+  const opDiscountTotal = useMemo(() => {
+    return opBillingItems.reduce((sum, it) => sum + Number(it.discountAmt || 0), 0);
+  }, [opBillingItems]);
+
+  const opNetPayable = useMemo(() => {
+    return Math.max(0, opGrossTotal - opDiscountTotal);
+  }, [opGrossTotal, opDiscountTotal]);
+
+  const opTotalPaid = useMemo(() => {
+    return opBillingPaymentRows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+  }, [opBillingPaymentRows]);
+
+  const opBalance = useMemo(() => {
+    return Math.max(0, opNetPayable - opTotalPaid);
+  }, [opNetPayable, opTotalPaid]);
+
+  // Calculate IP Billing Totals
+  const ipGrossTotal = useMemo(() => {
+    const bedTotal = ipDays * ipRoomRate;
+    const nursingTotal = ipDays * ipNursingRate;
+    const doctorTotal = ipDays * ipDoctorRoundRate;
+    return bedTotal + nursingTotal + doctorTotal + 4500; // includes medicines/labs
+  }, [ipDays, ipRoomRate, ipNursingRate, ipDoctorRoundRate]);
+
+  const ipNetPayable = useMemo(() => {
+    return Math.max(0, ipGrossTotal - ipAdvanceAdjusted);
+  }, [ipGrossTotal, ipAdvanceAdjusted]);
+
+  // ─── ACTION HANDLERS ────────────────────────────────────────────────────────
+
+  // 1. Create OP Visit
+  const handleSaveOpVisit = async () => {
     if (!opUhid.trim()) {
-      toast.error("Required Field", "Please enter a valid UHID.");
+      toast.error("Required Field", "Please enter a valid Patient UHID.");
       return;
     }
-    if (!opDoctor || opDoctor === "-Select-") {
-      toast.error("Required Field", "Please select a doctor.");
-      return;
+    try {
+      const patient = findPatientByUhid(opUhid);
+      const visit = await createOpVisit({
+        uhid: opUhid.trim(),
+        patientName: opPatientName || patient?.patientName || `Patient ${opUhid}`,
+        doctorName: opDoctor,
+        department: opDepartment,
+        payerType: opPayerType,
+        payer: opPayer,
+        sponsor: opSponsor,
+        network: opNetwork,
+        consultationFee: opFee,
+        visitType: opVisitType,
+        status: opStatus,
+      });
+
+      toast.success("OP Visit Created", `Generated Visit ${visit.visitNo} for UHID ${opUhid}.`);
+      loadAllBillingData();
+      setOpBillingUhid(opUhid);
+      setActiveTab("OP Billing");
+    } catch (err: any) {
+      toast.error("Visit Creation Failed", err.message || "Something went wrong.");
     }
-
-    toast.success("OP Visit Created", `Successfully created OP visit for UHID ${opUhid} with doctor ${opDoctor}.`);
-    setOpUhid("");
-    setOpPayerType("");
-    setOpPayer("");
-    setOpSponsor("");
-    setOpNetwork("");
-    setOpDoctor("");
   };
 
-  const addOpBillingPaymentRow = () => {
-    setOpBillingPaymentRows([...opBillingPaymentRows, { mode: "-Select-", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
+  // 2. Add / Remove OP Billing Item
+  const handleAddOpItem = (itemTemplate?: typeof SERVICE_CATALOG[0]) => {
+    const item = itemTemplate || SERVICE_CATALOG[0];
+    setOpBillingItems([
+      ...opBillingItems,
+      {
+        code: item.code,
+        name: item.name,
+        dept: item.dept,
+        doctor: opBillingDoctor,
+        rate: item.rate,
+        qty: 1,
+        discountPercent: 0,
+        discountAmt: 0,
+        taxPercent: 0,
+        netAmt: item.rate
+      }
+    ]);
   };
 
-  const removeOpBillingPaymentRow = (index: number) => {
-    if (opBillingPaymentRows.length === 1) return;
-    setOpBillingPaymentRows(opBillingPaymentRows.filter((_, idx) => idx !== index));
+  const handleRemoveOpItem = (index: number) => {
+    if (opBillingItems.length === 1) return;
+    setOpBillingItems(opBillingItems.filter((_, idx) => idx !== index));
   };
 
-  const handleSaveOpBilling = () => {
+  const handleUpdateOpItem = (index: number, field: keyof InvoiceItem, val: any) => {
+    const updated = [...opBillingItems];
+    const current = { ...updated[index], [field]: val };
+    
+    if (field === "rate" || field === "qty" || field === "discountPercent") {
+      const rate = Number(field === "rate" ? val : current.rate);
+      const qty = Number(field === "qty" ? val : current.qty);
+      const discPct = Number(field === "discountPercent" ? val : current.discountPercent || 0);
+      const gross = rate * qty;
+      const discAmt = (gross * discPct) / 100;
+      current.discountAmt = discAmt;
+      current.netAmt = Math.max(0, gross - discAmt);
+    }
+    updated[index] = current;
+    setOpBillingItems(updated);
+  };
+
+  // 3. Save OP Billing Invoice
+  const handleSaveOpBilling = async (printImmediately = false) => {
     if (!opBillingUhid.trim()) {
-      toast.error("Required Field", "Please enter a valid UHID.");
-      return;
-    }
-    if (!opBillingDoctor || opBillingDoctor === "-Select-") {
-      toast.error("Required Field", "Please select a doctor.");
+      toast.error("Required Field", "Please enter or select a valid Patient UHID.");
       return;
     }
 
-    toast.success("OP Invoice Saved", `OP Invoice for UHID ${opBillingUhid} has been successfully generated.`);
-    setOpBillingUhid("");
-    setOpBillingVisitNo("");
-    setOpBillingPayer("");
-    setOpBillingSponsor("");
-    setOpBillingNetwork("");
-    setOpBillingDoctor("");
-    setOpBillingNarration("");
-    setOpBillingPaymentRows([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
+    try {
+      const patient = findPatientByUhid(opBillingUhid);
+      const invoice = await createInvoice({
+        uhid: opBillingUhid.trim(),
+        patientName: opBillingPatientInfo?.name || patient?.patientName || `Patient ${opBillingUhid}`,
+        encNo: opBillingVisitNo || "1",
+        type: "OP",
+        company: opBillingPayer || "CASH / CASH",
+        doctorName: opBillingDoctor,
+        department: "OPD",
+        grossAmt: opGrossTotal,
+        discountAmt: opDiscountTotal,
+        taxAmt: 0,
+        netAmt: opNetPayable,
+        items: opBillingItems,
+        payments: opBillingPaymentRows.filter(p => Number(p.amount) > 0).map(p => ({
+          mode: p.mode,
+          amount: Number(p.amount),
+          bankName: p.bankName === "-Select-" ? undefined : p.bankName,
+          beneficiaryName: p.beneficiaryName === "-Select-" ? undefined : p.beneficiaryName,
+          refNo: p.refNo,
+          cardSwipingValue: p.cardSwipingValue,
+          description: p.description,
+        })),
+        remarks: opBillingNarration || "OPD Services Billed",
+      });
+
+      toast.success("OP Invoice Generated", `Invoice ${invoice.invoiceNo} created successfully! Net: ₹${invoice.netAmt}`);
+      loadAllBillingData();
+
+      if (printImmediately) {
+        setPrintInvoiceData(invoice);
+      } else {
+        setActiveTab("Master Activity List");
+      }
+    } catch (err: any) {
+      toast.error("Invoice Generation Failed", err.message || "Failed to generate invoice.");
+    }
+  };
+
+  // 4. Save IP Billing Invoice
+  const handleSaveIpBilling = async (printImmediately = false) => {
+    if (!ipBillingUhid.trim()) {
+      toast.error("Required Field", "Please select an admitted patient UHID or IP No.");
+      return;
+    }
+
+    try {
+      const patient = findPatientByUhid(ipBillingUhid);
+      const ipItems: InvoiceItem[] = [
+        { code: "BED-01", name: `Room & Bed Charges (${ipDays} Days @ ₹${ipRoomRate}/day)`, dept: "Ward", rate: ipRoomRate, qty: ipDays, netAmt: ipDays * ipRoomRate },
+        { code: "NUR-01", name: `Nursing & Care Charges (${ipDays} Days @ ₹${ipNursingRate}/day)`, dept: "Nursing", rate: ipNursingRate, qty: ipDays, netAmt: ipDays * ipNursingRate },
+        { code: "DOC-01", name: `Consultant Visiting Rounds (${ipDays} Days @ ₹${ipDoctorRoundRate}/day)`, dept: "Clinical", rate: ipDoctorRoundRate, qty: ipDays, netAmt: ipDays * ipDoctorRoundRate },
+        { code: "MED-01", name: "Inpatient Pharmacy & Consumables", dept: "Pharmacy", rate: 4500, qty: 1, netAmt: 4500 },
+      ];
+
+      const invoice = await createInvoice({
+        uhid: ipBillingUhid.trim(),
+        patientName: ipBillingPatientInfo?.name || patient?.patientName || `IP Patient ${ipBillingUhid}`,
+        encNo: `IP-${ipBillingUhid}`,
+        type: "IP",
+        company: ipBillingPayer || "Star Health Insurance",
+        doctorName: ipBillingConsultant,
+        department: "Inpatient Ward",
+        grossAmt: ipGrossTotal,
+        discountAmt: 0,
+        taxAmt: 0,
+        netAmt: ipNetPayable,
+        items: ipItems,
+        advanceAdjusted: ipAdvanceAdjusted,
+        payments: [
+          { mode: ipBillingType === "Cash" ? "Cash" : "Bank Transfer", amount: ipNetPayable, description: "Final Inpatient Clearance" }
+        ],
+        remarks: "Final Inpatient Discharge Settlement",
+      });
+
+      toast.success("IP Invoice Generated", `Inpatient Bill ${invoice.invoiceNo} successfully generated!`);
+      loadAllBillingData();
+
+      if (printImmediately) {
+        setPrintInvoiceData(invoice);
+      } else {
+        setActiveTab("Master Activity List");
+      }
+    } catch (err: any) {
+      toast.error("IP Billing Failed", err.message || "Failed to generate IP invoice.");
+    }
+  };
+
+  // 5. Settlement / Receipt Modal handler
+  const handleOpenSettlement = (inv: InvoiceData) => {
+    setSelectedInvoice(inv);
+    const amount = Math.abs(inv.balance);
+    setSettlementNotes("");
+    setPaymentRows([{
+      mode: "Cash",
+      amount,
+      balance: 0,
+      date: new Date().toLocaleDateString("en-GB"),
+      bankName: "",
+      beneficiaryName: "",
+      refNo: "",
+      description: "",
+      cardSwipingValue: 0
+    }]);
+    setIsSettleModalOpen(true);
   };
 
   const handleSaveSettlement = async () => {
     if (!selectedInvoice) return;
-
     const totalPaid = paymentRows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
     if (totalPaid <= 0) {
-      toast.error("Invalid Amount", "Please specify a split receipt amount greater than 0.");
+      toast.error("Invalid Amount", "Please specify a payment amount greater than 0.");
       return;
     }
 
     const isRefund = selectedInvoice.status === "Refundable" || selectedInvoice.balance < 0;
     if (isRefund && !settlementNotes.trim()) {
-      toast.error("Required Field", "Please fill the required Notes/Remarks for the refund.");
+      toast.error("Required Field", "Please fill in remarks for this refund.");
       return;
     }
 
     try {
       await settleInvoice({
         invoiceId: selectedInvoice.id,
-        payments: paymentRows.map((r) => {
-          let type = "Settlement";
-          if (r.mode === "CreditNote") type = "CreditNote";
-          else if (r.mode === "TDS") type = "TDS";
-          else if (isRefund) {
-            type = "Refund";
-          }
-
-          return {
-            mode: r.mode === "CreditNote" || r.mode === "TDS" ? r.mode : r.mode,
-            amount: r.amount,
-            bankName: r.bankName === "-Select-" ? undefined : r.bankName,
-            beneficiaryName: r.beneficiaryName === "-Select-" ? undefined : r.beneficiaryName,
-            refNo: r.refNo,
-            type,
-            notes: isRefund ? settlementNotes : undefined,
-          };
-        }),
+        payments: paymentRows.map((r) => ({
+          mode: r.mode,
+          amount: Number(r.amount),
+          bankName: r.bankName === "-Select-" ? undefined : r.bankName,
+          beneficiaryName: r.beneficiaryName === "-Select-" ? undefined : r.beneficiaryName,
+          refNo: r.refNo,
+          type: isRefund ? "Refund" : (r.mode === "CreditNote" || r.mode === "TDS" ? r.mode : "Settlement"),
+          notes: isRefund ? settlementNotes : r.description,
+          cardSwipingValue: r.cardSwipingValue,
+        })),
       });
 
       toast.success(
-        isRefund ? "Refund Saved Successfully!" : "Receipt Saved Successfully!",
-        isRefund 
-          ? `Processed refund of ₹${totalPaid} on Invoice ${selectedInvoice.invoiceNo}.`
-          : `Processed receipt settlement of ₹${totalPaid} on Invoice ${selectedInvoice.invoiceNo}.`
+        isRefund ? "Refund Processed" : "Receipt Processed",
+        `Successfully processed ₹${totalPaid} on Invoice ${selectedInvoice.invoiceNo}.`
       );
       setIsSettleModalOpen(false);
       setSelectedInvoice(null);
-      fetchInvoices();
+      loadAllBillingData();
     } catch (err: any) {
-      toast.error("Settlement Failed", err.message || "Something went wrong.");
+      toast.error("Settlement Failed", err.message || "Failed to process settlement.");
     }
   };
 
-  // Filter handlers
-  const filteredPatients = patients.filter((p) => {
-    // filter type
-    if (patientTypeFilter && p.type !== patientTypeFilter) return false;
-    
-    // filter status
-    if (patientStatusFilter !== "all" && p.encounterStatus !== patientStatusFilter) return false;
+  // 6. Cancel Invoice
+  const handleCancelInvoice = async (id: string) => {
+    if (!window.confirm("Are you sure you want to cancel this invoice?")) return;
+    try {
+      await cancelInvoice(id);
+      toast.success("Invoice Cancelled", "Invoice status successfully marked as Cancelled.");
+      loadAllBillingData();
+    } catch (err: any) {
+      toast.error("Cancel Failed", err.message || "Failed to cancel invoice.");
+    }
+  };
 
-    // filter search
+  // 7. Save OP Order
+  const handleSaveOrder = async (billImmediately = false) => {
+    if (!orderUhid.trim()) {
+      toast.error("Required Field", "Please enter or select a Patient UHID.");
+      return;
+    }
+    try {
+      const patient = findPatientByUhid(orderUhid);
+      const order = await createBillingOrder({
+        uhid: orderUhid.trim(),
+        patientName: patient?.patientName || `Patient ${orderUhid}`,
+        doctorName: orderDoctor,
+        orderType,
+        items: orderItems,
+        remarks: orderRemarks,
+      });
+
+      toast.success("Order Created", `Doctor order ${order.orderNo} created successfully!`);
+
+      if (billImmediately) {
+        const inv = await billOrder(order.id, { company: patient?.company || "CASH / CASH" });
+        toast.success("Order Billed", `Converted Order ${order.orderNo} to Invoice ${inv.invoiceNo}!`);
+      }
+
+      loadAllBillingData();
+      setActiveTab(billImmediately ? "Master Activity List" : "UnBilled Orders");
+    } catch (err: any) {
+      toast.error("Order Creation Failed", err.message || "Failed to create order.");
+    }
+  };
+
+  // 8. Collect Advance
+  const handleSaveAdvance = async () => {
+    if (!advUhid.trim() || Number(advAmount) <= 0) {
+      toast.error("Required Fields", "Please provide a valid UHID and advance amount.");
+      return;
+    }
+    try {
+      const patient = findPatientByUhid(advUhid);
+      const adv = await createAdvance({
+        uhid: advUhid.trim(),
+        patientName: patient?.patientName || `Patient ${advUhid}`,
+        amount: Number(advAmount),
+        mode: advMode,
+        bankName: advBank,
+        refNo: advRefNo,
+        purpose: advPurpose,
+      });
+
+      toast.success("Advance Collected", `Generated Advance Receipt Voucher ${adv.advanceNo} for ₹${adv.amount}!`);
+      setAdvUhid("");
+      setAdvAmount(5000);
+      loadAllBillingData();
+    } catch (err: any) {
+      toast.error("Advance Failed", err.message || "Failed to collect advance.");
+    }
+  };
+
+  // 9. Issue Credit Note
+  const handleSaveCreditNote = async () => {
+    if (!cnInvoiceNo.trim() || Number(cnAmount) <= 0 || !cnReason.trim()) {
+      toast.error("Required Fields", "Please enter Invoice No, Amount, and Reason.");
+      return;
+    }
+    try {
+      const cn = await createCreditNote({
+        invoiceNo: cnInvoiceNo.trim(),
+        uhid: cnUhid || "222",
+        patientName: findPatientByUhid(cnUhid)?.patientName || "Mr. Somesh Kumar",
+        amount: Number(cnAmount),
+        reason: cnReason,
+        authorizedBy: "Dr. Admin",
+      });
+
+      toast.success("Credit Note Issued", `Credit Note ${cn.creditNoteNo} of ₹${cn.amount} applied to ${cn.invoiceNo}!`);
+      setCnInvoiceNo("");
+      loadAllBillingData();
+    } catch (err: any) {
+      toast.error("Credit Note Failed", err.message || "Failed to issue credit note.");
+    }
+  };
+
+  // 10. Process Refund
+  const handleSaveRefund = async () => {
+    if (!refUhid.trim() || Number(refAmount) <= 0 || !refReason.trim()) {
+      toast.error("Required Fields", "Please enter UHID, refund amount, and reason.");
+      return;
+    }
+    try {
+      const ref = await createRefund({
+        uhid: refUhid.trim(),
+        patientName: findPatientByUhid(refUhid)?.patientName || `Patient ${refUhid}`,
+        invoiceNo: refInvoiceNo || undefined,
+        amount: Number(refAmount),
+        mode: refMode,
+        reason: refReason,
+        authorizedBy: "Dr. Admin",
+      });
+
+      toast.success("Refund Processed", `Refund Voucher ${ref.refundNo} of ₹${ref.amount} generated.`);
+      setRefUhid("");
+      setRefInvoiceNo("");
+      loadAllBillingData();
+    } catch (err: any) {
+      toast.error("Refund Failed", err.message || "Failed to process refund.");
+    }
+  };
+
+  // 11. Create / Update Intimation
+  const handleSaveIntimation = async () => {
+    if (!intUhid.trim() || !intTpa.trim() || !intClaimNo.trim()) {
+      toast.error("Required Fields", "Please enter UHID, TPA Name, and Claim Number.");
+      return;
+    }
+    try {
+      const patient = findPatientByUhid(intUhid);
+      const intObj = await createIntimation({
+        uhid: intUhid.trim(),
+        patientName: patient?.patientName || `Patient ${intUhid}`,
+        tpaName: intTpa,
+        policyNo: intPolicyNo,
+        claimNo: intClaimNo,
+        requestedAmt: Number(intReqAmt),
+        approvedAmt: Number(intApprAmt),
+        coPayAmt: Number(intCoPay),
+        status: "Approved",
+        remarks: "Pre-authorization approved by TPA portal",
+      });
+
+      toast.success("TPA Claim Registered", `Claim Intimation ${intObj.claimNo} saved with approved limit ₹${intObj.approvedAmt}.`);
+      setIntUhid("");
+      loadAllBillingData();
+    } catch (err: any) {
+      toast.error("Intimation Failed", err.message || "Failed to save intimation.");
+    }
+  };
+
+  // 12. Convert Selected Unbilled Orders to Combined Bill
+  const handleBillSelectedOrders = async () => {
+    if (selectedUnbilledOrders.length === 0) {
+      toast.error("No Orders Selected", "Please select at least one pending order.");
+      return;
+    }
+    try {
+      let billedCount = 0;
+      for (const ordId of selectedUnbilledOrders) {
+        await billOrder(ordId, { company: "CASH / CASH" });
+        billedCount++;
+      }
+      toast.success("Orders Billed", `Successfully converted ${billedCount} orders into invoices!`);
+      setSelectedUnbilledOrders([]);
+      loadAllBillingData();
+      setActiveTab("Master Activity List");
+    } catch (err: any) {
+      toast.error("Billing Failed", err.message || "Failed to bill orders.");
+    }
+  };
+
+  // ─── FILTERED DATA ───────────────────────────────────────────────────────────
+  const filteredPatients = patients.filter((p) => {
+    if (patientTypeFilter && p.type !== patientTypeFilter) return false;
+    if (patientStatusFilter !== "all" && p.encounterStatus !== patientStatusFilter) return false;
     if (patientSearch) {
       const term = patientSearch.toLowerCase();
       if (patientSearchOn === "Patient Name") return p.patientName.toLowerCase().includes(term);
-      if (patientSearchOn === "UHID") return p.uhid.includes(term);
-      if (patientSearchOn === "IP No.") return p.ipNo.includes(term);
+      if (patientSearchOn === "UHID") return p.uhid.toLowerCase().includes(term);
+      if (patientSearchOn === "IP No.") return p.ipNo.toLowerCase().includes(term);
       if (patientSearchOn === "Mobile #") return p.mobileNo.includes(term);
       if (patientSearchOn === "Bed No") return p.bedNo.toLowerCase().includes(term);
       if (patientSearchOn === "Doctor Name") return p.doctor.toLowerCase().includes(term);
       if (patientSearchOn === "Company") return p.company.toLowerCase().includes(term);
-      if (patientSearchOn === "Patient Address") return p.patientName.toLowerCase().includes(term);
     }
     return true;
   });
 
-  const filteredInvoices = invoices.filter((inv) => {
-    // filter status
-    if (invoiceStatusFilter === "settled" && inv.status !== "Settled") return false;
-    if (invoiceStatusFilter === "unsettled" && inv.status !== "Outstanding") return false;
-
-    // filter search
-    if (invoiceSearch) {
-      const term = invoiceSearch.toLowerCase();
-      return (
-        inv.patientName.toLowerCase().includes(term) ||
-        inv.uhid.includes(term) ||
-        inv.invoiceNo.toLowerCase().includes(term)
-      );
+  // ─── Master Activity List Preset and Reset Handlers ─────────────────────────
+  const handleDateRangePresetChange = (preset: string) => {
+    setMalDateRangePreset(preset);
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    if (preset === "Today") {
+      setMalFromDate(todayStr);
+      setMalToDate(todayStr);
+    } else if (preset === "Yesterday") {
+      const yest = new Date(today);
+      yest.setDate(yest.getDate() - 1);
+      const yestStr = yest.toISOString().split("T")[0];
+      setMalFromDate(yestStr);
+      setMalToDate(yestStr);
+    } else if (preset === "This Week") {
+      const weekAgo = new Date(today);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      setMalFromDate(weekAgo.toISOString().split("T")[0]);
+      setMalToDate(todayStr);
+    } else if (preset === "This Month") {
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      setMalFromDate(monthStart.toISOString().split("T")[0]);
+      setMalToDate(todayStr);
+    } else if (preset === "Date Range" || preset === "All") {
+      setMalFromDate("");
+      setMalToDate("");
     }
-    return true;
-  });
+  };
 
-  // Dynamic patient lookup for OP Billing
-  const opBillingPatientInfo = useMemo(() => {
-    if (opBillingUhid.trim() === "2710") {
-      return {
-        name: "Mr. Raj Pal Yadav",
-        genderAge: "Male/70 Yr",
-        address: "ETAH UTTAR PRADESH",
-        doctor: "Dr. Sameer Sen 3105",
-        payerType: "Direct Patient",
-        payer: "CASH",
-        sponsor: "CASH",
-        network: "Select"
-      };
-    }
-    
-    const found = patients.find(p => p.uhid === opBillingUhid.trim());
-    if (found) {
-      return {
-        name: found.patientName,
-        genderAge: `${found.gender || "Male"}/${found.age || "35"} Yr`,
-        address: "NEW DELHI, INDIA",
-        doctor: found.doctor.includes("Bansal") ? "Dr. Abhishek Bansal 2273" : "Dr. Sameer Sen 3105",
-        payerType: found.company ? "Corporate" : "Direct Patient",
-        payer: found.company || "CASH",
-        sponsor: found.company || "CASH",
-        network: "Select"
-      };
-    }
+  const handleResetMalFilters = () => {
+    setMalUhid("");
+    setMalBillNo("");
+    setMalDateRangePreset("Date Range");
+    setMalFromDate("");
+    setMalToDate("");
+    setMalFacility("CMK HEALTHCARE PVT. LTD.");
+    setMalPayerType("Select All");
+    setMalPayer("Select All");
+    setMalSponsor("Select All");
+    setMalPatientType("Both");
+    setMalPrintAs("Summary");
+    setMalPatientRefundableOnly(false);
+    setMalSearchFor("All Invoices");
+    setColFilterCompany("");
+    setColFilterUhid("");
+    setColFilterPatient("");
+    setColFilterEnc("");
+    setColFilterInvoiceNo("");
+    setSelectedInvoiceIds([]);
+    toast.success("Filters Cleared", "All master activity filters have been reset.");
+  };
 
-    return null;
-  }, [opBillingUhid, patients]);
-
-  useEffect(() => {
-    if (opBillingPatientInfo) {
-      setOpBillingPayerType(opBillingPatientInfo.payerType);
-      setOpBillingPayer(opBillingPatientInfo.payer);
-      setOpBillingSponsor(opBillingPatientInfo.sponsor);
-      setOpBillingDoctor(opBillingPatientInfo.doctor);
-      setOpBillingNetwork(opBillingPatientInfo.network);
+  const toggleSelectAllInvoices = () => {
+    if (selectedInvoiceIds.length === filteredInvoices.length && filteredInvoices.length > 0) {
+      setSelectedInvoiceIds([]);
     } else {
-      setOpBillingPayerType("Insurance");
-      setOpBillingPayer("");
-      setOpBillingSponsor("");
-      setOpBillingDoctor("");
-      setOpBillingNetwork("");
+      setSelectedInvoiceIds(filteredInvoices.map(inv => inv.id));
     }
-  }, [opBillingPatientInfo]);
+  };
 
+  const toggleSelectInvoice = (id: string) => {
+    if (selectedInvoiceIds.includes(id)) {
+      setSelectedInvoiceIds(selectedInvoiceIds.filter(i => i !== id));
+    } else {
+      setSelectedInvoiceIds([...selectedInvoiceIds, id]);
+    }
+  };
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((inv) => {
+      // Top Filter Panel criteria
+      if (malUhid.trim() && !inv.uhid.toLowerCase().includes(malUhid.trim().toLowerCase())) return false;
+      if (malBillNo.trim() && !inv.invoiceNo.toLowerCase().includes(malBillNo.trim().toLowerCase())) return false;
+      if (malPatientType !== "Both" && inv.type !== malPatientType) return false;
+      
+      if (malPayerType !== "Select All") {
+        const isIns = inv.company.toLowerCase().includes("insurance") || inv.company.toLowerCase().includes("star") || inv.company.toLowerCase().includes("hdfc") || inv.company.toLowerCase().includes("tpa");
+        if (malPayerType === "Direct Patient" && isIns) return false;
+        if (malPayerType === "Insurance" && !isIns) return false;
+        if (malPayerType === "Corporate" && !inv.company.toLowerCase().includes("corporate") && !inv.company.toLowerCase().includes("sponsor")) return false;
+      }
+      
+      if (malPayer !== "Select All" && !inv.company.toLowerCase().includes(malPayer.toLowerCase())) return false;
+      if (malSponsor !== "Select All" && !inv.company.toLowerCase().includes(malSponsor.toLowerCase())) return false;
+
+      if (malPatientRefundableOnly && inv.status !== "Refundable" && inv.refund <= 0 && inv.balance >= 0) return false;
+
+      if (malSearchFor === "UnSettled") {
+        if (inv.status !== "Outstanding") return false;
+      } else if (malSearchFor === "Settled") {
+        if (inv.status !== "Settled") return false;
+      } else if (malSearchFor === "Refundable") {
+        if (inv.status !== "Refundable") return false;
+      } else if (malSearchFor === "Cancelled") {
+        if (inv.status !== "Cancelled") return false;
+      }
+
+      if (malFromDate) {
+        const invDate = new Date(inv.date);
+        const fromD = new Date(malFromDate);
+        fromD.setHours(0, 0, 0, 0);
+        if (invDate < fromD) return false;
+      }
+      if (malToDate) {
+        const invDate = new Date(inv.date);
+        const toD = new Date(malToDate);
+        toD.setHours(23, 59, 59, 999);
+        if (invDate > toD) return false;
+      }
+
+      // Column-level search filters
+      if (colFilterCompany.trim() && !inv.company.toLowerCase().includes(colFilterCompany.trim().toLowerCase())) return false;
+      if (colFilterUhid.trim() && !inv.uhid.toLowerCase().includes(colFilterUhid.trim().toLowerCase())) return false;
+      if (colFilterPatient.trim() && !inv.patientName.toLowerCase().includes(colFilterPatient.trim().toLowerCase())) return false;
+      if (colFilterEnc.trim() && !String(inv.encNo || "").toLowerCase().includes(colFilterEnc.trim().toLowerCase())) return false;
+      if (colFilterInvoiceNo.trim() && !inv.invoiceNo.toLowerCase().includes(colFilterInvoiceNo.trim().toLowerCase())) return false;
+
+      return true;
+    });
+  }, [
+    invoices,
+    malUhid,
+    malBillNo,
+    malPatientType,
+    malPayerType,
+    malPayer,
+    malSponsor,
+    malPatientRefundableOnly,
+    malSearchFor,
+    malFromDate,
+    malToDate,
+    colFilterCompany,
+    colFilterUhid,
+    colFilterPatient,
+    colFilterEnc,
+    colFilterInvoiceNo
+  ]);
+
+  const selectedInvoicesList = useMemo(() => {
+    return filteredInvoices.filter(inv => selectedInvoiceIds.includes(inv.id));
+  }, [filteredInvoices, selectedInvoiceIds]);
+
+  const selectedTotalAmount = useMemo(() => {
+    return selectedInvoicesList.reduce((sum, inv) => sum + inv.netAmt, 0);
+  }, [selectedInvoicesList]);
+
+  const totalAdvanceAvailable = useMemo(() => {
+    return advances.filter(a => a.status === "Active").reduce((sum, a) => sum + a.balanceAmount, 0);
+  }, [advances]);
+
+  const allReceiptsList = useMemo(() => {
+    if (receiptsList && receiptsList.length > 0) return receiptsList;
+    const list: Array<{
+      id: string;
+      receiptNo: string;
+      invoiceNo: string;
+      uhid: string;
+      patientName: string;
+      company: string;
+      encNo: string;
+      date: string;
+      mode: string;
+      bankName?: string;
+      refNo?: string;
+      amount: number;
+      type: string;
+      notes?: string;
+    }> = [];
+
+    invoices.forEach(inv => {
+      if (inv.receipts && Array.isArray(inv.receipts)) {
+        inv.receipts.forEach((rc: any, idx: number) => {
+          list.push({
+            id: rc.id || `${inv.id}-${idx}`,
+            receiptNo: rc.receiptNo || `RCT-${inv.invoiceNo}-${idx + 1}`,
+            invoiceNo: inv.invoiceNo,
+            uhid: inv.uhid,
+            patientName: inv.patientName,
+            company: inv.company,
+            encNo: inv.encNo || "1",
+            date: rc.createdAt || inv.date,
+            mode: rc.mode || "Cash",
+            bankName: rc.bankName,
+            refNo: rc.refNo,
+            amount: rc.amount || 0,
+            type: rc.type || "Settlement",
+            notes: rc.notes || rc.remarks
+          });
+        });
+      }
+    });
+
+    return list;
+  }, [receiptsList, invoices]);
+
+  const unbilledOrders = orders.filter(o => o.status === "Unbilled");
+
+  // ─── RENDER UI ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] bg-slate-50/60 p-5 space-y-4 overflow-y-auto animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 flex-shrink-0">
+    <div className="flex flex-col h-[calc(100vh-56px)] bg-slate-50/70 p-4 space-y-3.5 overflow-y-auto">
+      
+      {/* Top Header Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 flex-shrink-0">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Billing & Payments</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Manage patient transactions, activity lists, and settlement receipts</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight">Billing & Payments</h2>
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-bold">
+              CMK CareSuite Core
+            </Badge>
+          </div>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Comprehensive hospital accounting, OPD/IPD invoices, split receipts, deposits & TPA claims
+          </p>
         </div>
+        
         <div className="flex items-center gap-2">
-          <Button size="sm" className="gap-2">
-            <ReceiptText className="h-4 w-4" />
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={loadAllBillingData} 
+            className="h-8 gap-1 text-xs font-bold bg-white text-slate-700 hover:bg-slate-50 border-slate-300 shadow-2xs"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-blue-600" : ""}`} />
+            Refresh
+          </Button>
+
+          <Button 
+            size="sm" 
+            onClick={() => {
+              setOpUhid("");
+              setActiveTab("Create OP Visit");
+            }} 
+            className="h-8 gap-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs"
+          >
+            <Plus className="h-3.5 w-3.5" />
             New OP Visit
           </Button>
         </div>
       </div>
 
 
-
-      {/* Billing Modules Horizontal sub-navigation tabs */}
-      <div className="border-b border-slate-200 bg-white px-4 pt-2.5 rounded-t-xl flex-shrink-0 flex items-center overflow-x-auto gap-2">
+      {/* 11 Horizontal Navigation Tabs */}
+      <div className="border-b border-slate-200 bg-white px-3 pt-2 rounded-t-xl flex-shrink-0 flex items-center overflow-x-auto gap-1 shadow-2xs scrollbar-none">
         {[
-          "Patient Lists",
-          "Master Activity List",
-          "Create OP Visit",
-          "OP Order",
-          "OP Billing",
-          "IP Billing",
-          "Refund",
-          "Advance Collection",
-          "Credit Note",
-          "Intimation",
-          "UnBilled Orders"
-        ].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => {
-              if (
-                tab === "Patient Lists" || 
-                tab === "Master Activity List" || 
-                tab === "Create OP Visit" ||
-                tab === "OP Billing" ||
-                tab === "IP Billing"
-              ) {
-                setActiveTab(tab);
-              } else {
-                toast.success(`${tab} Pressed`, "Tab placeholder activated successfully.");
-              }
-            }}
-            className={`h-8 border-b-2 px-3 pb-1 text-xs font-semibold whitespace-nowrap transition-colors ${
-              activeTab === tab
-                ? "border-primary text-primary"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+          { id: "Patient Lists", label: "Patient Lists", icon: User },
+          { id: "Master Activity List", label: "Master Activity List", icon: ReceiptText },
+          { id: "Create OP Visit", label: "Create OP Visit", icon: Calendar },
+          { id: "OP Order", label: "OP Order", icon: ClipboardList },
+          { id: "OP Billing", label: "OP Billing", icon: FileText },
+          { id: "IP Billing", label: "IP Billing", icon: Building2 },
+          { id: "Refund", label: "Refund", icon: RotateCcw },
+          { id: "Advance Collection", label: "Advance Collection", icon: Wallet },
+          { id: "Credit Note", label: "Credit Note", icon: CreditCard },
+          { id: "Intimation", label: "Intimation", icon: ShieldCheck },
+          { id: "UnBilled Orders", label: "UnBilled Orders", icon: FileCheck, count: unbilledOrders.length },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isSelected = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`h-8 border-b-2 px-3 pb-1 text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                isSelected
+                  ? "border-blue-600 text-blue-600 bg-blue-50/50 rounded-t-md"
+                  : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              }`}
+            >
+              <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-blue-600" : "text-slate-400"}`} />
+              <span>{tab.label}</span>
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className="ml-0.5 px-1.5 py-0.2 text-[9px] bg-red-500 text-white rounded-full font-bold">
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* Dynamic Content Cards */}
+      {/* Main Dynamic View Content */}
       <div className="flex-1 min-h-0 flex flex-col">
+
+        {/* ─── TAB 1: PATIENT LISTS ────────────────────────────────────────── */}
         {activeTab === "Patient Lists" && (
-          <Card className="flex-1 flex flex-col overflow-hidden">
-            {/* Table Header Bar */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 select-none flex-shrink-0">
-              <span>Patient Lists</span>
-              <div className="flex items-center gap-4 text-[11px] font-semibold">
-                <span className="text-red-500">Total Record(s) Found - {filteredPatients.length}</span>
-                <span className="text-red-500">Discharge Intimation - 0</span>
-                <span className="text-blue-600">Marked For Discharge (0)</span>
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            {/* Header / Actions Bar */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 flex-shrink-0">
+              <span className="font-extrabold text-slate-800">Inpatient & Outpatient Census List</span>
+              <div className="flex items-center gap-3 text-[11px] font-semibold">
+                <span className="text-red-500 font-bold">Total Found: {filteredPatients.length}</span>
                 <div className="flex items-center gap-1.5 ml-2">
                   <Button
-                    variant="outline"
                     size="xs"
-                    className="h-6 px-3 bg-blue-600 hover:bg-blue-700 border-blue-600 text-white font-bold"
+                    className="h-6 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold"
                     onClick={() => {}}
                   >
                     Filter
                   </Button>
                   <Button
-                    variant="outline"
                     size="xs"
-                    className="h-6 px-3 bg-blue-600 hover:bg-blue-700 border-blue-600 text-white font-bold"
+                    variant="outline"
+                    className="h-6 px-3 bg-white text-slate-700 border-slate-300 font-bold hover:bg-slate-100"
                     onClick={() => {
                       setPatientSearch("");
                       setPatientStatusFilter("all");
@@ -538,212 +1367,894 @@ export default function BillingPage() {
                   >
                     Clear Filter
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    className="h-6 px-3 bg-blue-600 hover:bg-blue-700 border-blue-600 text-white font-bold"
-                    onClick={() => {}}
-                  >
-                    Excel Export
-                  </Button>
                 </div>
               </div>
             </div>
 
-            {/* Filters Bar */}
+            {/* Filters Sub-bar */}
             <div className="p-3 border-b border-slate-100 bg-white flex-shrink-0 flex items-center justify-between flex-wrap gap-4 text-xs font-medium text-slate-700">
-              <div className="flex items-center gap-6 flex-wrap">
-                {/* Status Dropdown */}
+              <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <span>Status</span>
+                  <span className="text-slate-500 font-bold">Encounter Status:</span>
                   <Select value={patientStatusFilter} onValueChange={setPatientStatusFilter}>
                     <SelectTrigger className="h-7 text-xs w-44 bg-white border-slate-200">
                       <SelectValue placeholder="Select All" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Select All</SelectItem>
-                      <SelectItem value="Open" className="bg-[#abbfda]/40 hover:bg-[#abbfda]/60">Open</SelectItem>
-                      <SelectItem value="Marked For Discharged" className="bg-[#fffee0] hover:bg-[#fffee0]/80">Marked For Discharged</SelectItem>
-                      <SelectItem value="Sent For Billing" className="bg-[#eedaff] hover:bg-[#eedaff]/80">Sent For Billing</SelectItem>
-                      <SelectItem value="Pharmacy Clearance" className="bg-[#d8fcd0] hover:bg-[#d8fcd0]/80">Pharmacy Clearance</SelectItem>
-                      <SelectItem value="File Received" className="bg-[#fcd09a] hover:bg-[#fcd09a]/80">File Received</SelectItem>
-                      <SelectItem value="Send to TPA for Approval" className="bg-[#badafc] hover:bg-[#badafc]/80">Send to TPA for Approval</SelectItem>
-                      <SelectItem value="Bill Prepared" className="bg-[#fcd0d0] hover:bg-[#fcd0d0]/80">Bill Prepared</SelectItem>
+                      <SelectItem value="Open">Open</SelectItem>
+                      <SelectItem value="Marked For Discharged">Marked For Discharged</SelectItem>
+                      <SelectItem value="Sent For Billing">Sent For Billing</SelectItem>
+                      <SelectItem value="Pharmacy Clearance">Pharmacy Clearance</SelectItem>
+                      <SelectItem value="File Received">File Received</SelectItem>
+                      <SelectItem value="Bill Prepared">Bill Prepared</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Search On dropdown + query input */}
                 <div className="flex items-center gap-2">
-                  <span>Search On</span>
+                  <span className="text-slate-500 font-bold">Search On:</span>
                   <Select value={patientSearchOn} onValueChange={setPatientSearchOn}>
                     <SelectTrigger className="h-7 text-xs w-36 bg-white border-slate-200">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="Patient Name">Patient Name</SelectItem>
                       <SelectItem value="UHID">UHID</SelectItem>
                       <SelectItem value="IP No.">IP No.</SelectItem>
                       <SelectItem value="Mobile #">Mobile #</SelectItem>
-                      <SelectItem value="Patient Name">Patient Name</SelectItem>
                       <SelectItem value="Bed No">Bed No</SelectItem>
                       <SelectItem value="Doctor Name">Doctor Name</SelectItem>
-                      <SelectItem value="Admission Date">Admission Date</SelectItem>
                       <SelectItem value="Company">Company</SelectItem>
-                      <SelectItem value="Father Name">Father Name</SelectItem>
-                      <SelectItem value="Mother Name">Mother Name</SelectItem>
-                      <SelectItem value="Patient Address">Patient Address</SelectItem>
                     </SelectContent>
                   </Select>
                   <Input
                     className="h-7 text-xs w-44 bg-white border-slate-200 px-2"
+                    placeholder="Search keywords..."
                     value={patientSearch}
                     onChange={(e) => setPatientSearch(e.target.value)}
-                    placeholder=""
                   />
                 </div>
               </div>
 
-              {/* Radio Group */}
-              <div className="flex items-center gap-4 text-[11px] font-semibold text-slate-700">
-                {[
-                  { value: "Registration", label: "Registration" },
-                  { value: "Admission", label: "Admission" },
-                  { value: "Discharge But Not Bill", label: "Discharge But Not Bill" },
-                  { value: "Discharge", label: "Discharge" }
-                ].map((item) => (
-                  <label key={item.value} className="flex items-center gap-1.5 cursor-pointer select-none">
-                    <input
-                      type="radio"
-                      name="patient-type"
-                      checked={patientTypeFilter === item.value}
-                      onChange={() => setPatientTypeFilter(item.value)}
-                      className="h-3.5 w-3.5 text-primary border-slate-300 focus:ring-0"
-                    />
-                    <span>{item.label}</span>
-                  </label>
+              {/* Patient Category Tabs */}
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+                {["Registration", "Admission", "Discharge But Not Bill", "Discharge"].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setPatientTypeFilter(t)}
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${
+                      patientTypeFilter === t
+                        ? "bg-white text-blue-700 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    {t}
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto flex-1 bg-white">
+            {/* Patients Table */}
+            <div className="flex-1 overflow-auto bg-white">
               <table className="w-full text-xs text-left">
-                <thead className="text-[10px] text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200 sticky top-0 z-10">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold sticky top-0 z-10">
                   <tr>
-                    <th className="px-4 py-2.5 font-bold">UHID</th>
-                    <th className="px-4 py-2.5 font-bold">IP No.</th>
-                    <th className="px-4 py-2.5 font-bold">Patient Name</th>
-                    <th className="px-4 py-2.5 font-bold">Gender/Age</th>
-                    <th className="px-4 py-2.5 font-bold">Admission Date</th>
-                    <th className="px-4 py-2.5 font-bold">Bed No</th>
-                    <th className="px-4 py-2.5 font-bold">Bed/Billing Category</th>
-                    <th className="px-4 py-2.5 font-bold">Doctor</th>
-                    <th className="px-4 py-2.5 font-bold">Encounter Status</th>
-                    <th className="px-4 py-2.5 font-bold">Company</th>
-                    <th className="px-4 py-2.5 font-bold">MobileNo</th>
+                    <th className="px-3 py-2.5">UHID</th>
+                    <th className="px-3 py-2.5">IP / Visit No</th>
+                    <th className="px-3 py-2.5">Patient Name</th>
+                    <th className="px-3 py-2.5">Gender / Age</th>
+                    <th className="px-3 py-2.5">Bed / Room</th>
+                    <th className="px-3 py-2.5">Category</th>
+                    <th className="px-3 py-2.5">Doctor</th>
+                    <th className="px-3 py-2.5">Status</th>
+                    <th className="px-3 py-2.5">Company / Payer</th>
+                    <th className="px-3 py-2.5">Mobile</th>
+                    <th className="px-3 py-2.5 text-center">Fast Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {filteredPatients.length > 0 ? (
-                    filteredPatients.map((p) => {
-                      const isDiffCategory = p.billingCategory && p.billingCategory.includes("/") &&
-                        p.billingCategory.split("/")[0].trim() !== p.billingCategory.split("/")[1].trim();
-                      
-                      let rowBgClass = "hover:bg-slate-50/50";
-                      if (p.isMlc) rowBgClass = "bg-red-50/40 hover:bg-red-50/60";
-                      else if (p.isVip) rowBgClass = "bg-cyan-50/40 hover:bg-cyan-50/60";
-                      else if (p.type === "Discharge") rowBgClass = "bg-orange-50/20 hover:bg-orange-50/40";
-
-                      return (
-                        <tr key={p.uhid} className={`transition-colors ${rowBgClass}`}>
-                          <td className="px-4 py-3 font-mono text-primary">{p.uhid}</td>
-                          <td className="px-4 py-3 text-emerald-700 font-semibold underline cursor-pointer">{p.ipNo}</td>
-                          <td className="px-4 py-3 font-bold text-slate-800">{p.patientName}</td>
-                          <td className="px-4 py-3 text-slate-500">{p.genderAge}</td>
-                          <td className="px-4 py-3 text-slate-600">
-                            {new Date(p.admissionDate).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}
-                          </td>
-                          <td className="px-4 py-3 text-slate-800">{p.bedNo}</td>
-                          <td className={`px-4 py-3 text-[10px] truncate max-w-[150px] font-semibold ${
-                            isDiffCategory ? "bg-[#f6efe7] border-l-2 border-[#d7bba0] text-[#7c5e3d]" : "text-slate-500"
-                          }`}>
-                            {p.billingCategory}
-                          </td>
-                          <td className="px-4 py-3 text-slate-600 text-[10px]">{p.doctor}</td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded border ${
-                              p.encounterStatus === "Open"
-                                ? "bg-[#abbfda] text-slate-800 border-[#94adc9]"
-                                : p.encounterStatus === "Marked For Discharged"
-                                ? "bg-[#fffee0] text-amber-900 border-[#eae8b3]"
-                                : p.encounterStatus === "Sent For Billing"
-                                ? "bg-[#eedaff] text-purple-950 border-[#dac0f3]"
-                                : p.encounterStatus === "Pharmacy Clearance"
-                                ? "bg-[#d8fcd0] text-emerald-950 border-[#bfebb6]"
-                                : p.encounterStatus === "File Received"
-                                ? "bg-[#fcd09a] text-orange-950 border-[#e9bc83]"
-                                : p.encounterStatus === "Send to TPA for Approval"
-                                ? "bg-[#badafc] text-blue-950 border-[#a2c8ec]"
-                                : p.encounterStatus === "Bill Prepared"
-                                ? "bg-[#fcd0d0] text-red-950 border-[#ecb5b5]"
-                                : "bg-slate-100 text-slate-700 border-slate-300"
-                            }`}>
-                              {p.encounterStatus}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-500 text-[10px]">{p.company}</td>
-                          <td className="px-4 py-3 text-slate-600">{p.mobileNo}</td>
-                        </tr>
-                      );
-                    })
-                  ) : (
+                  {filteredPatients.map((p) => (
+                    <tr key={p.uhid} className="hover:bg-blue-50/40 group">
+                      <td className="px-3 py-2.5 font-mono font-bold text-blue-600">{p.uhid}</td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">{p.ipNo}</td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">
+                        {p.patientName}
+                        {p.isVip && <Badge className="ml-1.5 bg-amber-500 text-[9px] h-4">VIP</Badge>}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-500">{p.genderAge}</td>
+                      <td className="px-3 py-2.5 font-semibold text-slate-700">{p.bedNo}</td>
+                      <td className="px-3 py-2.5 text-[10px] text-slate-500 font-bold">{p.billingCategory}</td>
+                      <td className="px-3 py-2.5 text-slate-700 font-semibold">{p.doctor}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          p.encounterStatus === "Open" ? "bg-blue-50 text-blue-700" :
+                          p.encounterStatus === "Bill Prepared" ? "bg-purple-50 text-purple-700" :
+                          p.encounterStatus === "Marked For Discharged" ? "bg-amber-50 text-amber-700" :
+                          "bg-emerald-50 text-emerald-700"
+                        }`}>
+                          {p.encounterStatus}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600">{p.company}</td>
+                      <td className="px-3 py-2.5 text-slate-500 font-mono">{p.mobileNo}</td>
+                      <td className="px-3 py-2.5 text-center">
+                        <div className="flex items-center justify-center gap-1 opacity-90 group-hover:opacity-100">
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="h-6 text-[10px] font-bold bg-white text-blue-600 border-blue-200 hover:bg-blue-50"
+                            onClick={() => {
+                              setOpBillingUhid(p.uhid);
+                              setActiveTab("OP Billing");
+                            }}
+                          >
+                            OP Bill
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="h-6 text-[10px] font-bold bg-white text-purple-600 border-purple-200 hover:bg-purple-50"
+                            onClick={() => {
+                              setIpBillingUhid(p.uhid);
+                              setActiveTab("IP Billing");
+                            }}
+                          >
+                            IP Bill
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            className="h-6 text-[10px] font-bold bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+                            onClick={() => {
+                              setAdvUhid(p.uhid);
+                              setActiveTab("Advance Collection");
+                            }}
+                          >
+                            +Deposit
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredPatients.length === 0 && (
                     <tr>
-                      <td colSpan={11} className="px-4 py-12 text-center text-slate-400">
-                        No patient encounters found.
+                      <td colSpan={11} className="px-3 py-10 text-center text-slate-400 font-bold">
+                        No patients matching filter criteria.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
             </div>
+          </Card>
+        )}
 
-            {/* Legend Bar */}
-            <div className="border-t border-slate-200 px-4 py-2.5 bg-slate-50 text-[10px] text-slate-600 flex items-center gap-4 flex-wrap select-none flex-shrink-0">
-              <span className="font-bold text-slate-400 uppercase tracking-wider text-[9px] mr-1">Legend:</span>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 bg-red-100 border border-red-300 rounded"></span>
-                <span>MLC Patient</span>
+        {/* ─── TAB 2: MASTER ACTIVITY LIST (INVOICES & RECEIPTS) ───────────── */}
+        {activeTab === "Master Activity List" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            {/* Header Title & Top Quick Action */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
+              <span className="text-sm font-bold text-slate-800">Master Activity List</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="xs"
+                  variant="outline"
+                  className="h-6 text-[11px] bg-white text-slate-700 hover:bg-slate-50 border-slate-300 font-bold cursor-pointer"
+                  onClick={handleResetMalFilters}
+                >
+                  <RotateCcw className="w-3 h-3 mr-1" /> Reset All Filters
+                </Button>
+                <Button
+                  size="xs"
+                  className="h-6 text-[11px] font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs cursor-pointer"
+                  onClick={() => {
+                    setOpBillingUhid("2710");
+                    setActiveTab("OP Billing");
+                  }}
+                >
+                  <Plus className="w-3 h-3 mr-1" /> + Generate New Bill
+                </Button>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 bg-cyan-100 border border-cyan-300 rounded"></span>
-                <span>VIP Patient</span>
+            </div>
+
+            {/* Filter Panel (Matching EMR Reference Layout) */}
+            <div className="p-3 border-b border-slate-200 bg-white flex-shrink-0 text-xs font-medium text-slate-700 space-y-2.5">
+              
+              {/* Row 1: UHID, Bill No, Date Range, From, To */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
+                {/* UHID */}
+                <div className="md:col-span-3 flex items-center gap-1.5">
+                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">UHID</span>
+                  <div className="flex items-center gap-1 flex-1">
+                    <Input
+                      placeholder="Enter UHID..."
+                      className="h-7 text-xs bg-white border-slate-300 font-mono font-bold"
+                      value={malUhid}
+                      onChange={(e) => setMalUhid(e.target.value)}
+                    />
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-7 w-7 text-blue-600 border-blue-200 hover:bg-blue-50 font-bold flex-shrink-0 cursor-pointer"
+                      title="Quick Patient Search (Q)"
+                      onClick={() => setIsPatientSearchModalOpen(true)}
+                    >
+                      <Search className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-7 w-7 text-slate-500 border-slate-300 hover:bg-slate-100 font-bold flex-shrink-0 text-[11px] cursor-pointer"
+                      title="Reset UHID (R)"
+                      onClick={() => setMalUhid("")}
+                    >
+                      R
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Bill No */}
+                <div className="md:col-span-3 flex items-center gap-1.5">
+                  <span className="w-14 text-slate-500 font-bold text-[11px] flex-shrink-0">Bill No</span>
+                  <Input
+                    placeholder="Invoice / Bill No..."
+                    className="h-7 text-xs bg-white border-slate-300 font-mono"
+                    value={malBillNo}
+                    onChange={(e) => setMalBillNo(e.target.value)}
+                  />
+                </div>
+
+                {/* Date Range Preset */}
+                <div className="md:col-span-2 flex items-center gap-1.5">
+                  <span className="w-20 text-slate-500 font-bold text-[11px] flex-shrink-0">Date Range</span>
+                  <Select value={malDateRangePreset} onValueChange={handleDateRangePresetChange}>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Date Range">Date Range</SelectItem>
+                      <SelectItem value="Today">Today</SelectItem>
+                      <SelectItem value="Yesterday">Yesterday</SelectItem>
+                      <SelectItem value="This Week">This Week</SelectItem>
+                      <SelectItem value="This Month">This Month</SelectItem>
+                      <SelectItem value="All">All Dates</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* From Date */}
+                <div className="md:col-span-2 flex items-center gap-1.5">
+                  <span className="w-10 text-slate-500 font-bold text-[11px] flex-shrink-0">From</span>
+                  <Input
+                    type="date"
+                    className="h-7 text-xs bg-white border-slate-300 font-mono"
+                    value={malFromDate}
+                    onChange={(e) => {
+                      setMalFromDate(e.target.value);
+                      setMalDateRangePreset("Custom");
+                    }}
+                  />
+                </div>
+
+                {/* To Date */}
+                <div className="md:col-span-2 flex items-center gap-1.5">
+                  <span className="w-6 text-slate-500 font-bold text-[11px] flex-shrink-0">To</span>
+                  <Input
+                    type="date"
+                    className="h-7 text-xs bg-white border-slate-300 font-mono"
+                    value={malToDate}
+                    onChange={(e) => {
+                      setMalToDate(e.target.value);
+                      setMalDateRangePreset("Custom");
+                    }}
+                  />
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 bg-orange-100 border border-orange-300 rounded"></span>
-                <span>Discharge Patient</span>
+
+              {/* Row 2: Facility, Payer Type, Payer, Sponsor */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
+                {/* Facility */}
+                <div className="md:col-span-3 flex items-center gap-1.5">
+                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">Facility</span>
+                  <Select value={malFacility} onValueChange={setMalFacility}>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300 font-bold text-slate-800"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CMK HEALTHCARE PVT. LTD.">CMK HEALTHCARE PVT. LTD.</SelectItem>
+                      <SelectItem value="Main Branch Hospital">Main Branch Hospital</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Payer Type */}
+                <div className="md:col-span-3 flex items-center gap-1.5">
+                  <span className="w-16 text-slate-500 font-bold text-[11px] flex-shrink-0">Payer Type</span>
+                  <Select value={malPayerType} onValueChange={setMalPayerType}>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Select All">Select All</SelectItem>
+                      <SelectItem value="Direct Patient">Direct Patient (Cash)</SelectItem>
+                      <SelectItem value="Insurance">Insurance / TPA</SelectItem>
+                      <SelectItem value="Corporate">Corporate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Payer */}
+                <div className="md:col-span-3 flex items-center gap-1.5">
+                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">Payer</span>
+                  <Select value={malPayer} onValueChange={setMalPayer}>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Select All">Select All</SelectItem>
+                      <SelectItem value="CASH">CASH</SelectItem>
+                      <SelectItem value="Star Health">Star Health & Allied Insurance</SelectItem>
+                      <SelectItem value="HDFC ERGO">HDFC ERGO General Insurance</SelectItem>
+                      <SelectItem value="ICICI Lombard">ICICI Lombard</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Sponsor */}
+                <div className="md:col-span-3 flex items-center gap-1.5">
+                  <span className="w-14 text-slate-500 font-bold text-[11px] flex-shrink-0">Sponsor</span>
+                  <Select value={malSponsor} onValueChange={setMalSponsor}>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Select All">Select All</SelectItem>
+                      <SelectItem value="CASH">CASH</SelectItem>
+                      <SelectItem value="Star Health">Star Health</SelectItem>
+                      <SelectItem value="Corporate">Corporate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 bg-[#f6efe7] border border-[#d7bba0] rounded"></span>
-                <span>Diff Bed/Bill Category</span>
+
+              {/* Row 3: Patient Type, Print As, Patient Refundable, Search For, Search Button */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
+                {/* Patient Type */}
+                <div className="md:col-span-3 flex items-center gap-1.5">
+                  <span className="w-20 text-slate-500 font-bold text-[11px] flex-shrink-0">Patient Type</span>
+                  <Select value={malPatientType} onValueChange={setMalPatientType}>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Both">Both (OP + IP)</SelectItem>
+                      <SelectItem value="OP">Outpatient (OP)</SelectItem>
+                      <SelectItem value="IP">Inpatient (IP)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Print As Radio Buttons */}
+                <div className="md:col-span-2 flex items-center gap-3 text-xs font-semibold text-slate-700">
+                  <span className="text-slate-500 font-bold text-[11px]">Print As</span>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="malPrintAs"
+                      value="Summary"
+                      checked={malPrintAs === "Summary"}
+                      onChange={() => setMalPrintAs("Summary")}
+                      className="h-3.5 w-3.5 text-blue-600"
+                    />
+                    <span>Summary</span>
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="malPrintAs"
+                      value="Detail"
+                      checked={malPrintAs === "Detail"}
+                      onChange={() => setMalPrintAs("Detail")}
+                      className="h-3.5 w-3.5 text-blue-600"
+                    />
+                    <span>Detail</span>
+                  </label>
+                </div>
+
+                {/* Patient Refundable Checkbox */}
+                <div className="md:col-span-2 flex items-center gap-1.5">
+                  <label className="flex items-center gap-1.5 cursor-pointer text-xs font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={malPatientRefundableOnly}
+                      onChange={(e) => setMalPatientRefundableOnly(e.target.checked)}
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600"
+                    />
+                    <span>Patient Refundable</span>
+                  </label>
+                </div>
+
+                {/* Search For */}
+                <div className="md:col-span-3 flex items-center gap-1.5">
+                  <span className="w-18 text-slate-500 font-bold text-[11px] flex-shrink-0">Search For</span>
+                  <Select value={malSearchFor} onValueChange={setMalSearchFor}>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300 font-bold text-blue-900"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All Invoices">All Invoices</SelectItem>
+                      <SelectItem value="UnSettled">UnSettled / Pending</SelectItem>
+                      <SelectItem value="Settled">Settled</SelectItem>
+                      <SelectItem value="Refundable">Refundable</SelectItem>
+                      <SelectItem value="Cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Search Action Button */}
+                <div className="md:col-span-2 flex items-center justify-end gap-1.5">
+                  <Button
+                    size="sm"
+                    className="h-7 px-4 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs w-full cursor-pointer"
+                    onClick={loadAllBillingData}
+                  >
+                    <Search className="w-3.5 h-3.5 mr-1" /> Search
+                  </Button>
+                </div>
               </div>
+            </div>
+
+            {/* Sub-tabs & Real-time Live Summary Bar */}
+            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-1 flex-shrink-0">
+              <div className="flex items-center gap-1">
+                {["Invoice Details", "Receipt Details", "Advance Details", "Selected Invoice"].map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setActiveSubTab(st)}
+                    className={`h-7 px-3 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
+                      activeSubTab === st
+                        ? "bg-blue-600 text-white font-bold shadow-2xs"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <span>{st}</span>
+                    {st === "Selected Invoice" && selectedInvoiceIds.length > 0 && (
+                      <span className="ml-1 px-1.5 py-0.2 bg-white text-blue-700 rounded-full text-[10px] font-black">
+                        {selectedInvoiceIds.length}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Right Side Live Totals (Matching Reference Screenshot) */}
+              <div className="flex items-center gap-4 text-xs font-semibold text-slate-700">
+                <div>
+                  <span className="text-slate-500 font-bold">Total Advance Available: </span>
+                  <span className="font-mono font-black text-emerald-600">₹{totalAdvanceAvailable.toFixed(2)}</span>
+                </div>
+                <div className="border-l pl-3 border-slate-300">
+                  <span className="text-slate-500 font-bold">Selected Invoice Amount: </span>
+                  <span className="font-mono font-black text-blue-700">₹{selectedTotalAmount.toFixed(2)} ({selectedInvoiceIds.length})</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Data Table with In-Table Column Filters */}
+            <div className="flex-1 overflow-auto bg-white flex flex-col justify-between">
+              
+              {/* SUBTAB 1: INVOICE DETAILS */}
+              {activeSubTab === "Invoice Details" && (
+                <div className="flex-1 overflow-auto">
+                  <table className="w-full text-xs text-left border-collapse">
+                    {/* Header Row 1: Titles */}
+                    <thead className="bg-[#eef5fc] border-b border-slate-300 text-slate-600 uppercase text-[9px] font-extrabold sticky top-0 z-10">
+                      <tr>
+                        <th className="px-2 py-2 text-center w-8">
+                          <input
+                            type="checkbox"
+                            checked={selectedInvoiceIds.length === filteredInvoices.length && filteredInvoices.length > 0}
+                            onChange={toggleSelectAllInvoices}
+                            className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 cursor-pointer"
+                          />
+                        </th>
+                        <th className="px-2.5 py-2">Company</th>
+                        <th className="px-2.5 py-2">UHID</th>
+                        <th className="px-2.5 py-2">Patient</th>
+                        <th className="px-2.5 py-2">Enc#</th>
+                        <th className="px-2.5 py-2 text-center">Type</th>
+                        <th className="px-2.5 py-2">Invoice#</th>
+                        <th className="px-2.5 py-2">Date</th>
+                        <th className="px-2.5 py-2 text-right">NetAmt</th>
+                        <th className="px-2.5 py-2 text-right">Patient</th>
+                        <th className="px-2.5 py-2 text-right">Payer</th>
+                        <th className="px-2.5 py-2 text-right">Adjusted</th>
+                        <th className="px-2.5 py-2 text-right">Refund</th>
+                        <th className="px-2.5 py-2 text-right">Cr.Note</th>
+                        <th className="px-2.5 py-2 text-right">Balance</th>
+                        <th className="px-2.5 py-2 text-center">Status</th>
+                        <th className="px-2.5 py-2 text-center">Cancel / Actions</th>
+                      </tr>
+
+                      {/* Header Row 2: In-Table Search Inputs (as in legacy reference screenshot) */}
+                      <tr className="bg-white border-b border-slate-200">
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1">
+                          <Input
+                            value={colFilterCompany}
+                            onChange={(e) => setColFilterCompany(e.target.value)}
+                            placeholder="Filter..."
+                            className="h-5 text-[10px] px-1 py-0 w-full bg-slate-50 border-slate-200"
+                          />
+                        </th>
+                        <th className="px-1 py-1">
+                          <Input
+                            value={colFilterUhid}
+                            onChange={(e) => setColFilterUhid(e.target.value)}
+                            placeholder="Filter..."
+                            className="h-5 text-[10px] px-1 py-0 w-full bg-slate-50 border-slate-200 font-mono"
+                          />
+                        </th>
+                        <th className="px-1 py-1">
+                          <Input
+                            value={colFilterPatient}
+                            onChange={(e) => setColFilterPatient(e.target.value)}
+                            placeholder="Filter..."
+                            className="h-5 text-[10px] px-1 py-0 w-full bg-slate-50 border-slate-200"
+                          />
+                        </th>
+                        <th className="px-1 py-1">
+                          <Input
+                            value={colFilterEnc}
+                            onChange={(e) => setColFilterEnc(e.target.value)}
+                            placeholder="Filter..."
+                            className="h-5 text-[10px] px-1 py-0 w-full bg-slate-50 border-slate-200 font-mono"
+                          />
+                        </th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1">
+                          <Input
+                            value={colFilterInvoiceNo}
+                            onChange={(e) => setColFilterInvoiceNo(e.target.value)}
+                            placeholder="Filter..."
+                            className="h-5 text-[10px] px-1 py-0 w-full bg-slate-50 border-slate-200 font-mono"
+                          />
+                        </th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                        <th className="px-1 py-1"></th>
+                      </tr>
+                    </thead>
+
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                      {filteredInvoices.map((inv) => {
+                        const isChecked = selectedInvoiceIds.includes(inv.id);
+                        return (
+                          <tr
+                            key={inv.id}
+                            className={`hover:bg-blue-50/40 transition-colors ${isChecked ? "bg-blue-50/60" : ""}`}
+                          >
+                            <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => toggleSelectInvoice(inv.id)}
+                                className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 cursor-pointer"
+                              />
+                            </td>
+                            <td className="px-2.5 py-2 text-[10px] font-bold text-slate-600">{inv.company}</td>
+                            <td className="px-2.5 py-2 font-mono text-blue-600 font-bold">
+                              <button
+                                type="button"
+                                className="hover:underline cursor-pointer"
+                                onClick={() => {
+                                  setOpBillingUhid(inv.uhid);
+                                  setActiveTab("OP Billing");
+                                }}
+                              >
+                                {inv.uhid}
+                              </button>
+                            </td>
+                            <td className="px-2.5 py-2 font-bold text-slate-800">{inv.patientName}</td>
+                            <td className="px-2.5 py-2 font-mono text-slate-500">{inv.encNo || "-"}</td>
+                            <td className="px-2.5 py-2 text-center">
+                              <Badge variant="outline" className={inv.type === "IP" ? "bg-purple-50 text-purple-700 border-purple-200 text-[10px]" : "bg-blue-50 text-blue-700 border-blue-200 text-[10px]"}>
+                                {inv.type}
+                              </Badge>
+                            </td>
+                            <td className="px-2.5 py-2 font-mono font-bold text-slate-800">{inv.invoiceNo}</td>
+                            <td className="px-2.5 py-2 text-slate-500 font-mono">{new Date(inv.date).toLocaleDateString("en-GB")}</td>
+                            <td className="px-2.5 py-2 text-right font-mono font-bold text-slate-900">₹{inv.netAmt.toFixed(2)}</td>
+                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">₹{inv.patientPayable ? inv.patientPayable.toFixed(2) : (inv.company.includes("Insurance") ? "0.00" : inv.netAmt.toFixed(2))}</td>
+                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">₹{inv.companyPayable ? inv.companyPayable.toFixed(2) : (inv.company.includes("Insurance") ? inv.netAmt.toFixed(2) : "0.00")}</td>
+                            <td className="px-2.5 py-2 text-right font-mono text-emerald-600 font-semibold">₹{inv.adjusted.toFixed(2)}</td>
+                            <td className="px-2.5 py-2 text-right font-mono text-amber-600 font-semibold">₹{inv.refund.toFixed(2)}</td>
+                            <td className="px-2.5 py-2 text-right font-mono text-purple-600 font-semibold">₹{inv.creditNote.toFixed(2)}</td>
+                            <td className="px-2.5 py-2 text-right font-mono font-black text-slate-900">₹{Math.abs(inv.balance).toFixed(2)}</td>
+                            <td className="px-2.5 py-2 text-center">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black ${
+                                inv.status === "Settled" ? "bg-emerald-100 text-emerald-800" :
+                                inv.status === "Refundable" ? "bg-amber-100 text-amber-800" :
+                                inv.status === "Cancelled" ? "bg-slate-100 text-slate-600" :
+                                "bg-red-100 text-red-800"
+                              }`}>
+                                {inv.status}
+                              </span>
+                            </td>
+                            <td className="px-2.5 py-2 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                {inv.status !== "Settled" && inv.status !== "Cancelled" && (
+                                  <Button
+                                    size="xs"
+                                    className="h-5 px-1.5 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                                    onClick={() => handleOpenSettlement(inv)}
+                                  >
+                                    Settle
+                                  </Button>
+                                )}
+                                <Button
+                                  size="xs"
+                                  variant="outline"
+                                  className="h-5 w-5 p-0 text-slate-700 hover:bg-slate-100 border-slate-300 cursor-pointer"
+                                  title="Print Invoice"
+                                  onClick={() => setPrintInvoiceData(inv)}
+                                >
+                                  <Printer className="w-2.5 h-2.5" />
+                                </Button>
+                                {inv.status !== "Cancelled" && (
+                                  <Button
+                                    size="xs"
+                                    variant="outline"
+                                    className="h-5 w-5 p-0 text-red-600 hover:bg-red-50 border-red-200 cursor-pointer"
+                                    title="Cancel Invoice"
+                                    onClick={() => handleCancelInvoice(inv.id)}
+                                  >
+                                    <Trash2 className="w-2.5 h-2.5" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      {filteredInvoices.length === 0 && (
+                        <tr>
+                          <td colSpan={17} className="px-3 py-16 text-center text-red-600 font-bold text-xs">
+                            No Record Found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* SUBTAB 2: RECEIPT DETAILS */}
+              {activeSubTab === "Receipt Details" && (
+                <div className="flex-1 overflow-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-[#eef5fc] border-b border-slate-300 text-slate-600 uppercase text-[9px] font-extrabold sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-2.5">Receipt#</th>
+                        <th className="px-3 py-2.5">Invoice#</th>
+                        <th className="px-3 py-2.5">UHID</th>
+                        <th className="px-3 py-2.5">Patient Name</th>
+                        <th className="px-3 py-2.5">Enc#</th>
+                        <th className="px-3 py-2.5">Date</th>
+                        <th className="px-3 py-2.5">Mode</th>
+                        <th className="px-3 py-2.5">Bank / Ref#</th>
+                        <th className="px-3 py-2.5 text-right">Amount Paid</th>
+                        <th className="px-3 py-2.5 text-center">Type</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                      {allReceiptsList.map((rc) => (
+                        <tr key={rc.id} className="hover:bg-slate-50">
+                          <td className="px-3 py-2.5 font-mono font-bold text-blue-700">{rc.receiptNo}</td>
+                          <td className="px-3 py-2.5 font-mono font-bold text-slate-800">{rc.invoiceNo}</td>
+                          <td className="px-3 py-2.5 font-mono text-blue-600">{rc.uhid}</td>
+                          <td className="px-3 py-2.5 font-bold text-slate-800">{rc.patientName}</td>
+                          <td className="px-3 py-2.5 font-mono text-slate-500">{rc.encNo}</td>
+                          <td className="px-3 py-2.5 text-slate-500 font-mono">{new Date(rc.date).toLocaleDateString("en-GB")}</td>
+                          <td className="px-3 py-2.5 font-semibold text-slate-700">{rc.mode}</td>
+                          <td className="px-3 py-2.5 text-slate-500 font-mono">{rc.bankName || rc.refNo || "-"}</td>
+                          <td className="px-3 py-2.5 text-right font-mono font-black text-emerald-600">₹{rc.amount.toFixed(2)}</td>
+                          <td className="px-3 py-2.5 text-center">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
+                              {rc.type}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                      {allReceiptsList.length === 0 && (
+                        <tr>
+                          <td colSpan={10} className="px-3 py-16 text-center text-red-600 font-bold text-xs">
+                            No Record Found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* SUBTAB 3: ADVANCE DETAILS */}
+              {activeSubTab === "Advance Details" && (
+                <div className="flex-1 overflow-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-[#eef5fc] border-b border-slate-300 text-slate-600 uppercase text-[9px] font-extrabold sticky top-0 z-10">
+                      <tr>
+                        <th className="px-3 py-2.5">Advance Voucher#</th>
+                        <th className="px-3 py-2.5">UHID</th>
+                        <th className="px-3 py-2.5">Patient Name</th>
+                        <th className="px-3 py-2.5">Enc#</th>
+                        <th className="px-3 py-2.5">Date</th>
+                        <th className="px-3 py-2.5 text-right">Advance Amount</th>
+                        <th className="px-3 py-2.5 text-right">Adjusted</th>
+                        <th className="px-3 py-2.5 text-right">Refund</th>
+                        <th className="px-3 py-2.5 text-right">Balance</th>
+                        <th className="px-3 py-2.5">Purpose</th>
+                        <th className="px-3 py-2.5 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                      {advances.map((adv) => (
+                        <tr key={adv.id} className="hover:bg-slate-50/50">
+                          <td className="px-3 py-2.5 font-mono font-bold text-blue-700">{adv.advanceNo}</td>
+                          <td className="px-3 py-2.5 font-mono text-slate-600">{adv.uhid}</td>
+                          <td className="px-3 py-2.5 font-bold text-slate-800">{adv.patientName}</td>
+                          <td className="px-3 py-2.5 font-mono">{adv.encNo || "-"}</td>
+                          <td className="px-3 py-2.5 text-slate-500">{new Date(adv.createdAt).toLocaleDateString("en-GB")}</td>
+                          <td className="px-3 py-2.5 text-right font-mono font-bold">₹{adv.amount.toFixed(2)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono text-emerald-600">₹{adv.adjustedAmount.toFixed(2)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono text-amber-600">₹{adv.refundAmount.toFixed(2)}</td>
+                          <td className="px-3 py-2.5 text-right font-mono font-black text-slate-800">₹{adv.balanceAmount.toFixed(2)}</td>
+                          <td className="px-3 py-2.5 text-slate-600">{adv.purpose}</td>
+                          <td className="px-3 py-2.5 text-center">
+                            <Badge variant="outline" className={adv.status === "Active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600"}>
+                              {adv.status}
+                            </Badge>
+                          </td>
+                        </tr>
+                      ))}
+                      {advances.length === 0 && (
+                        <tr>
+                          <td colSpan={11} className="px-3 py-16 text-center text-red-600 font-bold text-xs">
+                            No Record Found.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* SUBTAB 4: SELECTED INVOICE */}
+              {activeSubTab === "Selected Invoice" && (
+                <div className="flex-1 overflow-auto p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800">Selected Invoices Summary</h4>
+                      <p className="text-xs text-slate-500">Showing {selectedInvoicesList.length} checked invoice(s)</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        disabled={selectedInvoicesList.length === 0}
+                        onClick={() => {
+                          if (selectedInvoicesList.length > 0) {
+                            setPrintInvoiceData(selectedInvoicesList[0]);
+                          }
+                        }}
+                        className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold cursor-pointer"
+                      >
+                        <Printer className="w-3.5 h-3.5 mr-1" /> Print Selected
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSelectedInvoiceIds([])}
+                        className="h-7 text-xs cursor-pointer"
+                      >
+                        Deselect All
+                      </Button>
+                    </div>
+                  </div>
+
+                  <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                    <thead className="bg-slate-50 border-b text-slate-600 uppercase text-[9px] font-bold">
+                      <tr>
+                        <th className="px-3 py-2">Invoice#</th>
+                        <th className="px-3 py-2">UHID</th>
+                        <th className="px-3 py-2">Patient Name</th>
+                        <th className="px-3 py-2">Date</th>
+                        <th className="px-3 py-2 text-right">Net Amount</th>
+                        <th className="px-3 py-2 text-right">Adjusted</th>
+                        <th className="px-3 py-2 text-right">Balance</th>
+                        <th className="px-3 py-2 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                      {selectedInvoicesList.map(inv => (
+                        <tr key={inv.id} className="hover:bg-slate-50">
+                          <td className="px-3 py-2 font-mono font-bold text-blue-700">{inv.invoiceNo}</td>
+                          <td className="px-3 py-2 font-mono">{inv.uhid}</td>
+                          <td className="px-3 py-2 font-bold text-slate-800">{inv.patientName}</td>
+                          <td className="px-3 py-2 font-mono text-slate-500">{new Date(inv.date).toLocaleDateString("en-GB")}</td>
+                          <td className="px-3 py-2 text-right font-mono font-bold">₹{inv.netAmt.toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right font-mono text-emerald-600">₹{inv.adjusted.toFixed(2)}</td>
+                          <td className="px-3 py-2 text-right font-mono font-black text-slate-900">₹{Math.abs(inv.balance).toFixed(2)}</td>
+                          <td className="px-3 py-2 text-center">
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700">
+                              {inv.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {selectedInvoicesList.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="px-3 py-12 text-center text-slate-400 font-bold">
+                            No invoices currently selected. Check boxes in the "Invoice Details" tab to select.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Table Footer & Legend Bar (Matching Legacy Bottom Right Badges) */}
+              <div className="border-t border-slate-200 bg-slate-50/80 px-4 py-2 flex items-center justify-between text-xs flex-shrink-0">
+                <div className="text-slate-500 font-semibold text-[11px]">
+                  Showing <span className="font-bold text-slate-800">{filteredInvoices.length}</span> record(s)
+                </div>
+                <div className="flex items-center gap-2 font-bold text-[10px]">
+                  <span className="px-2.5 py-0.5 rounded bg-emerald-600 text-white font-bold tracking-wide shadow-2xs">
+                    Settled
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded bg-red-600 text-white font-bold tracking-wide shadow-2xs">
+                    Outstanding
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded bg-amber-500 text-white font-bold tracking-wide shadow-2xs">
+                    Refundable
+                  </span>
+                </div>
+              </div>
+
             </div>
           </Card>
         )}
+
+        {/* ─── TAB 3: CREATE OP VISIT ──────────────────────────────────────── */}
         {activeTab === "Create OP Visit" && (
-          <Card className="flex-1 flex flex-col overflow-hidden border-0 shadow-none">
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             {/* Header bar */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0 select-none">
-              <span className="text-sm font-bold text-slate-800">Create OP Visit</span>
-              
+            <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
+              <span className="text-sm font-bold text-slate-800">Create Outpatient (OP) Visit</span>
               <div className="flex items-center gap-3">
-                <span className="font-bold text-slate-800 text-[11px]">UHID</span>
-                <Input 
-                  type="text" 
-                  value={opUhid} 
-                  onChange={(e) => setOpUhid(e.target.value)} 
-                  className="h-6 text-xs w-48 bg-white border-slate-300 font-mono font-bold" 
-                  placeholder=""
-                />
+                <button
+                  type="button"
+                  onClick={() => setIsPatientSearchModalOpen(true)}
+                  className="font-bold text-blue-800 hover:text-blue-950 hover:underline cursor-pointer text-xs flex items-center gap-1 bg-blue-100/80 hover:bg-blue-100 px-2.5 py-1 rounded-md border border-blue-300 shadow-2xs transition-all"
+                  title="Click to search patient census"
+                >
+                  <Search className="w-3 h-3 text-blue-600" />
+                  <span>Patient UHID:</span>
+                </button>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <Input 
+                    type="text" 
+                    value={opUhid} 
+                    onChange={(e) => setOpUhid(e.target.value)} 
+                    onClick={() => { if (!opUhid) setIsPatientSearchModalOpen(true); }}
+                    className="h-6 text-xs w-36 border-0 p-0 shadow-none font-mono font-bold cursor-pointer" 
+                    placeholder="Enter or select UHID..."
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    title="Open Patient Lookup Dialog"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -752,14 +2263,9 @@ export default function BillingPage() {
                   size="sm" 
                   onClick={() => {
                     setOpUhid("");
-                    setOpStatus("Open");
-                    setOpPayerType("");
-                    setOpPayer("");
-                    setOpSponsor("");
-                    setOpNetwork("");
-                    setOpDoctor("");
+                    setOpPatientName("");
                   }} 
-                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 hover:bg-slate-50 px-4 font-bold"
+                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3"
                 >
                   New
                 </Button>
@@ -768,153 +2274,380 @@ export default function BillingPage() {
                   size="sm" 
                   className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4"
                 >
-                  Save
+                  Save & Proceed to OP Bill
                 </Button>
               </div>
             </div>
 
-            {/* Layout body */}
+            {/* Form grid */}
             <div className="p-6 bg-white grid grid-cols-1 md:grid-cols-3 gap-6 flex-1 overflow-y-auto">
               {/* Patient Details */}
-              <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-white shadow-xs">
-                <h4 className="text-xs font-bold text-[#7c5e3d] border-b pb-2 uppercase tracking-wide">Patient Details</h4>
-                <div className="flex flex-col items-center justify-center py-4 space-y-5">
-                  <div className="w-32 h-32 rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center overflow-hidden shadow-inner">
-                    <div className="w-full h-full bg-slate-50 flex items-center justify-center text-slate-300">
-                      <svg className="w-20 h-20" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                      </svg>
-                    </div>
+              <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-white shadow-2xs">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wide flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-blue-600" /> Patient Details
+                  </h4>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    className="h-6 px-2 text-[10px] font-bold text-blue-600 border-blue-200 hover:bg-blue-50 cursor-pointer"
+                  >
+                    <Search className="w-3 h-3 mr-1" /> Select Patient
+                  </Button>
+                </div>
+
+                <div className="flex flex-col items-center justify-center py-2 space-y-4">
+                  <div className="w-24 h-24 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50/50 flex flex-col items-center justify-center text-blue-500 shadow-inner p-2 text-center">
+                    {opVisitPatientInfo ? (
+                      <>
+                        <div className="w-11 h-11 rounded-full bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-xs">
+                          {opVisitPatientInfo.name.charAt(0)}
+                        </div>
+                        <span className="text-[10px] font-mono font-bold text-blue-800 mt-1 truncate max-w-[80px]">
+                          {opUhid}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <User className="w-10 h-10 text-blue-400/80" />
+                        <span className="text-[9px] text-slate-400 mt-1">No Patient</span>
+                      </>
+                    )}
                   </div>
                   
-                  <div className="flex items-center gap-5 text-xs font-bold text-slate-700 pt-2">
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="op-status" 
-                        value="Open" 
-                        checked={opStatus === "Open"} 
-                        onChange={() => setOpStatus("Open")} 
-                        className="h-3.5 w-3.5 text-primary border-slate-300 focus:ring-0" 
+                  <div className="w-full space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500 font-medium">Patient Name:</span>
+                      <Input
+                        value={opPatientName || opVisitPatientInfo?.name || ""}
+                        onChange={(e) => setOpPatientName(e.target.value)}
+                        placeholder="Patient Full Name"
+                        className="h-7 text-xs w-48 bg-white border-slate-200 font-bold text-right"
                       />
-                      <span>Open</span>
-                    </label>
-                    <label className="flex items-center gap-1.5 cursor-pointer">
-                      <input 
-                        type="radio" 
-                        name="op-status" 
-                        value="Closed" 
-                        checked={opStatus === "Closed"} 
-                        onChange={() => setOpStatus("Closed")} 
-                        className="h-3.5 w-3.5 text-primary border-slate-300 focus:ring-0" 
-                      />
-                      <span>Closed</span>
-                    </label>
+                    </div>
+
+                    {opVisitPatientInfo && (
+                      <>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span className="text-slate-500 font-medium">Gender / Age:</span>
+                          <span className="font-bold text-slate-800">{opVisitPatientInfo.genderAge}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span className="text-slate-500 font-medium">Mobile:</span>
+                          <span className="font-mono font-bold text-slate-800">{opVisitPatientInfo.mobile || "N/A"}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span className="text-slate-500 font-medium">Address:</span>
+                          <span className="font-medium text-slate-700 text-right truncate max-w-[150px]">{opVisitPatientInfo.address}</span>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="flex items-center justify-between pt-1">
+                      <span className="text-slate-500 font-medium">Encounter State:</span>
+                      <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="op-status" 
+                            value="Open" 
+                            checked={opStatus === "Open"} 
+                            onChange={() => setOpStatus("Open")} 
+                            className="h-3.5 w-3.5 text-blue-600"
+                          />
+                          <span>Open</span>
+                        </label>
+                        <label className="flex items-center gap-1 cursor-pointer">
+                          <input 
+                            type="radio" 
+                            name="op-status" 
+                            value="Closed" 
+                            checked={opStatus === "Closed"} 
+                            onChange={() => setOpStatus("Closed")} 
+                            className="h-3.5 w-3.5 text-blue-600"
+                          />
+                          <span>Closed</span>
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Payer Details */}
-              <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-white shadow-xs">
-                <h4 className="text-xs font-bold text-[#7c5e3d] border-b pb-2 uppercase tracking-wide">Payer Details</h4>
-                <div className="space-y-4 text-xs font-semibold text-slate-600">
+              <div className="border border-slate-200 rounded-xl p-5 space-y-3.5 bg-white shadow-2xs">
+                <h4 className="text-xs font-bold text-blue-900 border-b pb-2 uppercase tracking-wide flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Payer Details
+                </h4>
+                <div className="space-y-3 text-xs font-semibold text-slate-600">
                   <div className="flex items-center gap-2">
-                    <span className="w-16 flex-shrink-0 text-slate-500">Type</span>
-                    <Input 
-                      value={opPayerType} 
-                      onChange={(e) => setOpPayerType(e.target.value)} 
-                      className="h-7 text-xs flex-1 bg-white border-slate-200" 
-                    />
+                    <span className="w-20 text-slate-500">Payer Type:</span>
+                    <Select value={opPayerType} onValueChange={setOpPayerType}>
+                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Direct Patient">Direct Patient</SelectItem>
+                        <SelectItem value="Insurance">Insurance</SelectItem>
+                        <SelectItem value="Corporate">Corporate</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-16 flex-shrink-0 text-slate-500">Payer</span>
-                    <Input 
-                      value={opPayer} 
-                      onChange={(e) => setOpPayer(e.target.value)} 
-                      className="h-7 text-xs flex-1 bg-white border-slate-200" 
-                    />
+                    <span className="w-20 text-slate-500">Payer Name:</span>
+                    <Input value={opPayer} onChange={(e) => setOpPayer(e.target.value)} className="h-7 text-xs flex-1 bg-white border-slate-200" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-16 flex-shrink-0 text-slate-500">Sponsor</span>
-                    <Input 
-                      value={opSponsor} 
-                      onChange={(e) => setOpSponsor(e.target.value)} 
-                      className="h-7 text-xs flex-1 bg-white border-slate-200" 
-                    />
+                    <span className="w-20 text-slate-500">Sponsor:</span>
+                    <Input value={opSponsor} onChange={(e) => setOpSponsor(e.target.value)} className="h-7 text-xs flex-1 bg-white border-slate-200" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="w-16 flex-shrink-0 text-slate-500">Network</span>
-                    <Input 
-                      value={opNetwork} 
-                      onChange={(e) => setOpNetwork(e.target.value)} 
-                      className="h-7 text-xs flex-1 bg-white border-slate-200" 
-                    />
+                    <span className="w-20 text-slate-500">Network:</span>
+                    <Input value={opNetwork} onChange={(e) => setOpNetwork(e.target.value)} className="h-7 text-xs flex-1 bg-white border-slate-200" />
                   </div>
                 </div>
               </div>
 
               {/* Doctor Details */}
-              <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-white shadow-xs">
-                <h4 className="text-xs font-bold text-[#7c5e3d] border-b pb-2 uppercase tracking-wide">Doctor Details</h4>
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                  <span className="w-16 flex-shrink-0 text-slate-500">Doctor<span className="text-red-500">*</span></span>
-                  <Select value={opDoctor || "-Select-"} onValueChange={setOpDoctor}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="-Select-">-Select-</SelectItem>
-                      <SelectItem value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</SelectItem>
-                      <SelectItem value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</SelectItem>
-                      <SelectItem value="Dr. Ritu Sharma 1092">Dr. Ritu Sharma 1092</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="border border-slate-200 rounded-xl p-5 space-y-3.5 bg-white shadow-2xs">
+                <h4 className="text-xs font-bold text-blue-900 border-b pb-2 uppercase tracking-wide flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-blue-600" /> Doctor & Consultation
+                </h4>
+                <div className="space-y-3 text-xs font-semibold text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <span className="w-24 text-slate-500">Doctor*:</span>
+                    <Select value={opDoctor} onValueChange={setOpDoctor}>
+                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</SelectItem>
+                        <SelectItem value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</SelectItem>
+                        <SelectItem value="Dr. Rajesh Malhotra 1104">Dr. Rajesh Malhotra 1104</SelectItem>
+                        <SelectItem value="Dr. D K DAS 2268">Dr. D K DAS 2268</SelectItem>
+                        <SelectItem value="Dr. Sania Mirza 2231">Dr. Sania Mirza 2231</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-24 text-slate-500">Department:</span>
+                    <Select value={opDepartment} onValueChange={setOpDepartment}>
+                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="General OPD">General OPD</SelectItem>
+                        <SelectItem value="Cardiology">Cardiology</SelectItem>
+                        <SelectItem value="Orthopaedics">Orthopaedics</SelectItem>
+                        <SelectItem value="Paediatrics">Paediatrics</SelectItem>
+                        <SelectItem value="Neurology">Neurology</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-24 text-slate-500">Visit Type:</span>
+                    <Select value={opVisitType} onValueChange={(val: any) => setOpVisitType(val)}>
+                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="New">New Consultation</SelectItem>
+                        <SelectItem value="Follow-up">Follow-up</SelectItem>
+                        <SelectItem value="Emergency">Emergency</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-24 text-slate-500">Fee (₹):</span>
+                    <Input 
+                      type="number" 
+                      value={opFee} 
+                      onChange={(e) => setOpFee(Number(e.target.value))} 
+                      className="h-7 text-xs flex-1 bg-white border-slate-200 font-mono font-bold" 
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </Card>
         )}
 
-        {activeTab === "OP Billing" && (
-          <Card className="flex-1 flex flex-col overflow-hidden border-0 shadow-none">
+        {/* ─── TAB 4: OP ORDER ─────────────────────────────────────────────── */}
+        {activeTab === "OP Order" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             {/* Header bar */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0 select-none">
-              <div className="flex items-center gap-6">
-                <span className="text-sm font-bold text-slate-800">OP Invoice</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center gap-1.5 bg-white border border-slate-300 rounded-md px-2 py-0.5 shadow-2xs">
-                    <Button 
-                      variant="link"
-                      onClick={() => setIsPatientSearchModalOpen(true)}
-                      className="font-bold text-blue-700 hover:underline text-[10px] p-0 h-auto flex-shrink-0"
-                    >
-                      UHID
-                    </Button>
-                    <Input 
-                      type="text" 
-                      value={opBillingUhid} 
-                      onChange={(e) => setOpBillingUhid(e.target.value)} 
-                      className="h-5 text-xs w-24 border-0 p-0 shadow-none font-mono font-bold focus-visible:ring-0 focus-visible:ring-offset-0" 
-                    />
-                    <Button 
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 hover:bg-slate-100 flex-shrink-0 text-slate-400 hover:text-slate-600 p-0"
-                      onClick={() => setIsPatientSearchModalOpen(true)}
-                    >
-                      <Search className="h-3 w-3" />
-                    </Button>
-                  </div>
-                  <Button className="h-6 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5">
-                    Notes
+            <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
+              <span className="text-sm font-bold text-slate-800">Doctor / Outpatient Order Entry</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPatientSearchModalOpen(true)}
+                  className="font-bold text-blue-800 hover:text-blue-950 hover:underline cursor-pointer text-xs flex items-center gap-1 bg-blue-100/80 hover:bg-blue-100 px-2.5 py-1 rounded-md border border-blue-300 shadow-2xs transition-all"
+                  title="Click to select Patient from census"
+                >
+                  <Search className="w-3 h-3 text-blue-600" />
+                  <span>Patient UHID:</span>
+                </button>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <Input 
+                    type="text" 
+                    value={orderUhid} 
+                    onChange={(e) => setOrderUhid(e.target.value)} 
+                    onClick={() => { if (!orderUhid) setIsPatientSearchModalOpen(true); }}
+                    className="h-6 text-xs w-36 border-0 p-0 shadow-none font-mono font-bold cursor-pointer" 
+                    placeholder="Select UHID..."
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    title="Open Patient Lookup Dialog"
+                  >
+                    <Search className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-800 text-[11px]">Visit No</span>
-                  <Select value={opBillingVisitNo || "1"} onValueChange={setOpBillingVisitNo}>
-                    <SelectTrigger className="h-6 text-xs bg-white border-slate-300 w-36"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">Visit-1 (14/08/2026)</SelectItem>
-                    </SelectContent>
-                  </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => handleSaveOrder(false)}
+                  size="sm" 
+                  variant="outline"
+                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3"
+                >
+                  Save as Unbilled Order
+                </Button>
+                <Button 
+                  onClick={() => handleSaveOrder(true)}
+                  size="sm" 
+                  className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4"
+                >
+                  Save & Bill Immediately
+                </Button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border-b flex-shrink-0">
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Doctor</Label>
+                <Select value={orderDoctor} onValueChange={setOrderDoctor}>
+                  <SelectTrigger className="h-7 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</SelectItem>
+                    <SelectItem value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</SelectItem>
+                    <SelectItem value="Dr. Sania Mirza 2231">Dr. Sania Mirza 2231</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Order Category</Label>
+                <Select value={orderType} onValueChange={setOrderType}>
+                  <SelectTrigger className="h-7 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Lab">Laboratory Tests</SelectItem>
+                    <SelectItem value="Radiology">Radiology & Scans</SelectItem>
+                    <SelectItem value="Procedure">Procedures & Nursing</SelectItem>
+                    <SelectItem value="Pharmacy">Pharmacy Medicines</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1 md:col-span-2">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Quick Add Service</Label>
+                <Select onValueChange={(val) => {
+                  const s = SERVICE_CATALOG.find(c => c.code === val);
+                  if (s) {
+                    setOrderItems([...orderItems, { code: s.code, name: s.name, dept: s.dept, doctor: orderDoctor, rate: s.rate, qty: 1, netAmt: s.rate }]);
+                  }
+                }}>
+                  <SelectTrigger className="h-7 text-xs bg-white border-slate-200">
+                    <SelectValue placeholder="+ Select and Add Service from Catalog" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_CATALOG.map(s => (
+                      <SelectItem key={s.code} value={s.code}>
+                        {s.code} - {s.name} (₹{s.rate})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Order Items List */}
+            <div className="flex-1 overflow-auto bg-white p-4">
+              <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                  <tr>
+                    <th className="px-3 py-2">Code</th>
+                    <th className="px-3 py-2">Service / Investigation Name</th>
+                    <th className="px-3 py-2">Department</th>
+                    <th className="px-3 py-2 text-right">Unit Rate (₹)</th>
+                    <th className="px-3 py-2 text-center">Qty</th>
+                    <th className="px-3 py-2 text-right">Net Amount (₹)</th>
+                    <th className="px-3 py-2 text-center w-10"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {orderItems.map((item, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50/50">
+                      <td className="px-3 py-2 font-mono font-bold text-blue-600">{item.code}</td>
+                      <td className="px-3 py-2 font-bold text-slate-800">{item.name}</td>
+                      <td className="px-3 py-2 text-slate-500">{item.dept}</td>
+                      <td className="px-3 py-2 text-right font-mono">₹{item.rate}</td>
+                      <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
+                      <td className="px-3 py-2 text-right font-mono font-bold text-slate-900">₹{(item.rate * item.qty).toFixed(2)}</td>
+                      <td className="px-3 py-2 text-center">
+                        <button 
+                          onClick={() => setOrderItems(orderItems.filter((_, i) => i !== idx))} 
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="flex justify-end items-center gap-6 mt-4 p-3 bg-slate-50 rounded-lg border">
+                <div className="text-xs text-slate-500 font-bold">Total Order Value:</div>
+                <div className="text-base font-black text-slate-900 font-mono">
+                  ₹{orderItems.reduce((sum, it) => sum + it.rate * it.qty, 0).toFixed(2)}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* ─── TAB 5: OP BILLING ───────────────────────────────────────────── */}
+        {activeTab === "OP Billing" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            {/* Header bar */}
+            <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-slate-800">OP Invoice Generation</span>
+                <div className="flex items-center gap-1.5 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <button
+                    type="button"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    className="text-[11px] text-blue-700 hover:text-blue-900 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
+                    title="Click to select Patient from census"
+                  >
+                    <span>UHID:</span>
+                  </button>
+                  <Input 
+                    type="text" 
+                    value={opBillingUhid} 
+                    onChange={(e) => setOpBillingUhid(e.target.value)} 
+                    className="h-6 text-xs w-28 border-0 p-0 shadow-none font-mono font-bold" 
+                    placeholder="Enter UHID..."
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-5 w-5 text-slate-400 hover:text-slate-600"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                  >
+                    <Search className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
 
@@ -924,1830 +2657,1324 @@ export default function BillingPage() {
                   size="sm" 
                   onClick={() => {
                     setOpBillingUhid("");
-                    setOpBillingVisitNo("");
-                    setOpBillingPayer("");
-                    setOpBillingSponsor("");
-                    setOpBillingNetwork("");
-                    setOpBillingDoctor("");
-                    setOpBillingNarration("");
-                    setOpBillingPaymentRows([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
+                    setOpBillingItems([{ code: "CON-01", name: "OPD Consultation - Senior Specialist", dept: "General OPD", doctor: "Dr. Sameer Sen", rate: 500, qty: 1, discountPercent: 0, discountAmt: 0, taxPercent: 0, netAmt: 500 }]);
                   }} 
-                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 hover:bg-slate-50 px-4 font-bold"
+                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3"
                 >
                   New
                 </Button>
                 <Button 
-                  variant="outline" 
+                  onClick={() => handleSaveOpBilling(true)}
                   size="sm" 
-                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 hover:bg-slate-50 px-4 font-bold"
+                  variant="outline"
+                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3 gap-1"
                 >
-                  Print
+                  <Printer className="w-3.5 h-3.5" /> Save & Print
                 </Button>
                 <Button 
-                  onClick={handleSaveOpBilling}
+                  onClick={() => handleSaveOpBilling(false)}
                   size="sm" 
                   className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4"
                 >
-                  Save
+                  Save Invoice
                 </Button>
               </div>
             </div>
 
-            {/* Layout Header Row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-700 flex-shrink-0">
-              {/* Column 1 */}
-              <div className="border border-slate-200 rounded-xl p-3 bg-white flex items-center gap-4 h-28 shadow-xs">
-                <div className="w-16 h-16 flex-shrink-0 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300 overflow-hidden shadow-inner">
-                  <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
+            {/* 4 Demographics & Payer Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-slate-50 border-b border-slate-200 text-xs flex-shrink-0">
+              {/* Patient Demographics */}
+              <div className="border border-slate-200 rounded-xl p-3 bg-white flex items-center gap-3 shadow-2xs">
+                <div className="w-14 h-14 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
+                  <User className="w-7 h-7" />
                 </div>
-                
-                <div className="flex-1 min-w-0 flex flex-col justify-center space-y-1 py-1">
+                <div className="min-w-0 flex-1">
                   {opBillingPatientInfo ? (
                     <>
-                      <div className="font-bold text-slate-800 text-xs truncate">{opBillingPatientInfo.name}</div>
+                      <div className="font-extrabold text-slate-800 text-xs truncate">{opBillingPatientInfo.name}</div>
                       <div className="text-[10px] text-slate-500 font-semibold">{opBillingPatientInfo.genderAge}</div>
-                      <div className="text-[9px] text-[#7c5e3d] font-bold truncate uppercase">{opBillingPatientInfo.address}</div>
+                      <div className="text-[10px] text-blue-600 font-bold truncate">{opBillingPatientInfo.address}</div>
                     </>
                   ) : (
-                    <div className="text-slate-400 italic text-[11px]">Enter UHID to view details</div>
+                    <div className="text-slate-400 italic text-[11px]">Enter UHID above</div>
                   )}
                 </div>
               </div>
 
-              {/* Column 2 */}
-              <div className="border border-slate-200 rounded-xl p-3.5 bg-white space-y-2.5 shadow-xs">
-                <h4 className="font-bold text-[#7c5e3d] uppercase tracking-wide text-[10px] border-b pb-1.5 mb-1.5">Invoice Details</h4>
-                <div className="space-y-2 text-[11px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Year</span>
-                    <Select value={opBillingYear} onValueChange={setOpBillingYear}>
-                      <SelectTrigger className="h-6 w-28 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="26-27">26-27</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Type</span>
-                    <Select value={opBillingType} onValueChange={setOpBillingType}>
-                      <SelectTrigger className="h-6 w-28 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Credit">Credit</SelectItem>
-                        <SelectItem value="Cash">Cash</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-blue-600 underline cursor-pointer">Invoice#</span>
-                    <span className="font-mono text-slate-500">-</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Date</span>
-                    <span className="text-slate-700 font-mono">14/08/2026 15:15</span>
-                  </div>
+              {/* Invoice Config */}
+              <div className="border border-slate-200 rounded-xl p-3 bg-white space-y-1.5 shadow-2xs">
+                <div className="font-bold text-slate-700 text-[10px] uppercase border-b pb-1">Bill Details</div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Bill Type:</span>
+                  <Select value={opBillingType} onValueChange={setOpBillingType}>
+                    <SelectTrigger className="h-5 w-24 text-[10px] bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Credit">Credit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Financial Year:</span>
+                  <span className="font-mono text-slate-700 font-bold">{opBillingYear}</span>
                 </div>
               </div>
 
-              {/* Column 3 */}
-              <div className="border border-slate-200 rounded-xl p-3.5 bg-white space-y-2.5 shadow-xs">
-                <div className="flex justify-between items-center border-b pb-1.5 mb-1.5">
-                  <h4 className="font-bold text-[#7c5e3d] uppercase tracking-wide text-[10px]">Payer Details</h4>
-                  <span className="text-[10px] text-red-600 font-bold">Payer validity: 31/12/2099</span>
+              {/* Payer Details */}
+              <div className="border border-slate-200 rounded-xl p-3 bg-white space-y-1.5 shadow-2xs">
+                <div className="font-bold text-slate-700 text-[10px] uppercase border-b pb-1">Payer Details</div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Payer Type:</span>
+                  <span className="font-bold text-slate-700">{opBillingPayerType}</span>
                 </div>
-                <div className="space-y-2 text-[11px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Type <span className="text-red-500">*</span></span>
-                    <Select value={opBillingPayerType} onValueChange={setOpBillingPayerType}>
-                      <SelectTrigger className="h-6 w-28 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Insurance">Insurance</SelectItem>
-                        <SelectItem value="Corporate">Corporate</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Payer <span className="text-red-500">*</span></span>
-                    <Select value={opBillingPayer} onValueChange={setOpBillingPayer}>
-                      <SelectTrigger className="h-6 w-28 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Select">Select</SelectItem>
-                        <SelectItem value="Star Health">Star Health</SelectItem>
-                        <SelectItem value="HDFC Ergo">HDFC Ergo</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Sponsor <span className="text-red-500">*</span></span>
-                    <Input 
-                      value={opBillingSponsor} 
-                      onChange={(e) => setOpBillingSponsor(e.target.value)} 
-                      className="h-6 w-28 text-xs bg-slate-50 border-slate-200" 
-                      placeholder="CASH"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Network</span>
-                    <Select value={opBillingNetwork} onValueChange={setOpBillingNetwork}>
-                      <SelectTrigger className="h-6 w-28 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Select">Select</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Payer/Sponsor:</span>
+                  <span className="font-bold text-blue-700 truncate">{opBillingPayer}</span>
                 </div>
               </div>
 
-              {/* Column 4 */}
-              <div className="border border-slate-200 rounded-xl p-3.5 bg-white space-y-2.5 shadow-xs">
-                <h4 className="font-bold text-[#7c5e3d] uppercase tracking-wide text-[10px] border-b pb-1.5 mb-1.5">Other Details</h4>
-                <div className="space-y-2 text-[11px]">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Prescribing Doctor <span className="text-red-500">*</span></span>
-                    <Select value={opBillingDoctor} onValueChange={setOpBillingDoctor}>
-                      <SelectTrigger className="h-6 w-28 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</SelectItem>
-                        <SelectItem value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Referred Type</span>
-                    <Select value={opBillingReferredType} onValueChange={setOpBillingReferredType}>
-                      <SelectTrigger className="h-6 w-28 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="SELF">SELF</SelectItem>
-                        <SelectItem value="DOCTOR">DOCTOR</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500">Referred by Name</span>
-                    <Select value={opBillingReferredName} onValueChange={setOpBillingReferredName}>
-                      <SelectTrigger className="h-6 w-28 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Select">Select</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+              {/* Doctor Details */}
+              <div className="border border-slate-200 rounded-xl p-3 bg-white space-y-1.5 shadow-2xs">
+                <div className="font-bold text-slate-700 text-[10px] uppercase border-b pb-1">Attending Doctor</div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Consultant:</span>
+                  <Select value={opBillingDoctor} onValueChange={setOpBillingDoctor}>
+                    <SelectTrigger className="h-5 w-32 text-[10px] bg-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Dr. Sameer Sen 3105">Dr. Sameer Sen</SelectItem>
+                      <SelectItem value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal</SelectItem>
+                      <SelectItem value="Dr. D K DAS 2268">Dr. D K DAS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-500">Referred:</span>
+                  <span className="font-bold text-slate-700">SELF</span>
                 </div>
               </div>
             </div>
 
-            {/* Sub-tab Navigation */}
-            <div className="flex items-center justify-between px-6 py-2.5 border-b border-slate-100 bg-white flex-shrink-0 select-none">
+            {/* Sub-tab navigation */}
+            <div className="flex items-center justify-between px-4 py-1.5 border-b border-slate-200 bg-white flex-shrink-0">
               <div className="flex items-center gap-1">
-                {[
-                  "Service",
-                  "Payment",
-                  "Adjustment",
-                  "Outstanding",
-                  "Checklist",
-                  "Patient Diagnosis Entry"
-                ].map((subTab) => (
+                {["Service", "Payment", "Adjustment", "Outstanding"].map((st) => (
                   <button
-                    key={subTab}
-                    onClick={() => setOpBillingSubTab(subTab)}
+                    key={st}
+                    onClick={() => setOpBillingSubTab(st)}
                     className={`h-7 px-3 text-xs font-bold rounded-md transition-colors ${
-                      opBillingSubTab === subTab
+                      opBillingSubTab === st
                         ? "bg-blue-600 text-white font-bold"
-                        : "bg-transparent text-slate-600 hover:bg-slate-100"
+                        : "text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    {subTab}
+                    {st}
                   </button>
                 ))}
               </div>
-              <Button className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3">
-                Get Consultation Visit
-              </Button>
+
+              <div className="flex items-center gap-2">
+                <Select onValueChange={(val) => {
+                  const s = SERVICE_CATALOG.find(c => c.code === val);
+                  if (s) handleAddOpItem(s);
+                }}>
+                  <SelectTrigger className="h-7 text-xs bg-slate-50 w-52 font-bold text-blue-700 border-blue-200">
+                    <SelectValue placeholder="+ Quick Add Service Item" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SERVICE_CATALOG.map(s => (
+                      <SelectItem key={s.code} value={s.code}>
+                        {s.name} (₹{s.rate})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {/* Sub-tab Views */}
-            {opBillingSubTab === "Service" && (
-              <div className="flex-1 bg-white p-6 overflow-y-auto flex flex-col justify-center items-center text-slate-400 font-medium">
-                <span className="text-red-500 font-bold text-sm">No Order Found.</span>
-              </div>
-            )}
-
-            {opBillingSubTab === "Payment" && (
-              <div className="flex-1 bg-white p-6 overflow-y-auto flex flex-col gap-4">
+            {/* Sub-tab Content */}
+            <div className="flex-1 overflow-auto bg-white p-4">
+              {opBillingSubTab === "Service" && (
                 <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[9px]">
                     <tr>
-                      <th className="px-3 py-2">Mode</th>
-                      <th className="px-3 py-2 text-right">Amount</th>
-                      <th className="px-3 py-2 text-right">Balance</th>
-                      <th className="px-3 py-2 text-center">Date (dd/MM/YYYY)</th>
-                      <th className="px-3 py-2">Bank Name</th>
-                      <th className="px-3 py-2">Beneficiary Name</th>
-                      <th className="px-3 py-2">Reference No</th>
-                      <th className="px-3 py-2">Description/Card Holder Name</th>
-                      <th className="px-3 py-2 text-right">Card Swiping Value</th>
-                      <th className="px-3 py-2 text-center">Action</th>
+                      <th className="px-3 py-2">Code</th>
+                      <th className="px-3 py-2">Service Description</th>
+                      <th className="px-3 py-2">Dept</th>
+                      <th className="px-3 py-2 text-right">Rate (₹)</th>
+                      <th className="px-3 py-2 text-center">Qty</th>
+                      <th className="px-3 py-2 text-right">Discount %</th>
+                      <th className="px-3 py-2 text-right">Net Amount (₹)</th>
+                      <th className="px-3 py-2 text-center w-10"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
-                    {opBillingPaymentRows.map((row, idx) => (
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {opBillingItems.map((it, idx) => (
                       <tr key={idx} className="hover:bg-slate-50/50">
-                        <td className="px-3 py-2.5">
-                          <Select 
-                            value={row.mode} 
-                            onValueChange={(val) => {
-                              const updated = [...opBillingPaymentRows];
-                              updated[idx].mode = val;
-                              setOpBillingPaymentRows(updated);
-                            }}
-                          >
-                            <SelectTrigger className="h-6 w-24 text-[10px] bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Cash">Cash</SelectItem>
-                              <SelectItem value="Card">Card</SelectItem>
-                              <SelectItem value="UPI">UPI</SelectItem>
-                              <SelectItem value="Cheque">Cheque</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <Input 
-                            type="number" 
-                            value={row.amount || ""} 
-                            onChange={(e) => {
-                              const updated = [...opBillingPaymentRows];
-                              updated[idx].amount = Number(e.target.value);
-                              setOpBillingPaymentRows(updated);
-                            }}
-                            className="h-6 text-right w-20 text-[10px] bg-white border-slate-200 font-bold font-mono" 
+                        <td className="px-3 py-2 font-mono font-bold text-blue-600">{it.code}</td>
+                        <td className="px-3 py-2 font-bold text-slate-800">{it.name}</td>
+                        <td className="px-3 py-2 text-slate-500">{it.dept}</td>
+                        <td className="px-3 py-2 text-right">
+                          <Input
+                            type="number"
+                            value={it.rate}
+                            onChange={(e) => handleUpdateOpItem(idx, "rate", Number(e.target.value))}
+                            className="h-6 w-20 text-xs text-right bg-white font-mono font-bold"
                           />
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono text-[10px] text-slate-500 font-bold">₹{row.balance.toFixed(2)}</td>
-                        <td className="px-3 py-2.5">
-                          <Input 
-                            type="text" 
-                            value={row.date} 
-                            onChange={(e) => {
-                              const updated = [...opBillingPaymentRows];
-                              updated[idx].date = e.target.value;
-                              setOpBillingPaymentRows(updated);
-                            }}
-                            className="h-6 text-center w-24 text-[10px] bg-white border-slate-200 font-mono" 
+                        <td className="px-3 py-2 text-center">
+                          <Input
+                            type="number"
+                            value={it.qty}
+                            onChange={(e) => handleUpdateOpItem(idx, "qty", Number(e.target.value))}
+                            className="h-6 w-14 text-xs text-center bg-white font-mono"
                           />
                         </td>
-                        <td className="px-3 py-2.5">
-                          <Select 
-                            value={row.bankName || "-Select-"} 
-                            onValueChange={(val) => {
-                              const updated = [...opBillingPaymentRows];
-                              updated[idx].bankName = val;
-                              setOpBillingPaymentRows(updated);
-                            }}
-                          >
-                            <SelectTrigger className="h-6 w-28 text-[10px] bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="-Select-">-Select-</SelectItem>
-                              <SelectItem value="SBI">State Bank of India</SelectItem>
-                              <SelectItem value="HDFC">HDFC Bank</SelectItem>
-                              <SelectItem value="ICICI">ICICI Bank</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <Select 
-                            value={row.beneficiaryName || "-Select-"} 
-                            onValueChange={(val) => {
-                              const updated = [...opBillingPaymentRows];
-                              updated[idx].beneficiaryName = val;
-                              setOpBillingPaymentRows(updated);
-                            }}
-                          >
-                            <SelectTrigger className="h-6 w-28 text-[10px] bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="-Select-">-Select-</SelectItem>
-                              <SelectItem value="CMK Pvt Ltd">CMK Pvt Ltd</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <Input 
-                            type="text" 
-                            value={row.refNo} 
-                            onChange={(e) => {
-                              const updated = [...opBillingPaymentRows];
-                              updated[idx].refNo = e.target.value;
-                              setOpBillingPaymentRows(updated);
-                            }}
-                            className="h-6 w-24 text-[10px] bg-white border-slate-200 font-mono" 
+                        <td className="px-3 py-2 text-right">
+                          <Input
+                            type="number"
+                            value={it.discountPercent || 0}
+                            onChange={(e) => handleUpdateOpItem(idx, "discountPercent", Number(e.target.value))}
+                            className="h-6 w-16 text-xs text-right bg-white font-mono"
                           />
                         </td>
-                        <td className="px-3 py-2.5">
-                          <Input 
-                            type="text" 
-                            value={row.description} 
-                            onChange={(e) => {
-                              const updated = [...opBillingPaymentRows];
-                              updated[idx].description = e.target.value;
-                              setOpBillingPaymentRows(updated);
-                            }}
-                            className="h-6 w-44 text-[10px] bg-white border-slate-200" 
-                          />
+                        <td className="px-3 py-2 text-right font-mono font-bold text-slate-900">
+                          ₹{it.netAmt?.toFixed(2)}
                         </td>
-                        <td className="px-3 py-2.5">
-                          <Input 
-                            type="number" 
-                            value={row.cardSwipingValue || ""} 
-                            onChange={(e) => {
-                              const updated = [...opBillingPaymentRows];
-                              updated[idx].cardSwipingValue = Number(e.target.value);
-                              setOpBillingPaymentRows(updated);
-                            }}
-                            className="h-6 text-right w-20 text-[10px] bg-white border-slate-200 font-mono" 
-                          />
-                        </td>
-                        <td className="px-3 py-2.5 text-center">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => removeOpBillingPaymentRow(idx)}
-                            className="h-5 w-5 text-red-500 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                        <td className="px-3 py-2 text-center">
+                          <button onClick={() => handleRemoveOpItem(idx)} className="text-red-500 hover:text-red-700">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))}
-                    <tr>
-                      <td colSpan={10} className="px-3 py-2.5">
-                        <button 
-                          onClick={addOpBillingPaymentRow} 
-                          className="text-blue-600 hover:text-blue-800 text-[11px] font-bold flex items-center gap-1"
-                        >
-                          <span>+ Add Row</span>
-                        </button>
-                      </td>
-                    </tr>
                   </tbody>
                 </table>
+              )}
 
-                <div className="flex flex-col md:flex-row items-start gap-6 border border-slate-100 rounded-xl p-4 bg-slate-50/50 mt-2">
-                  <div className="flex items-center gap-4 text-xs font-bold text-slate-700 py-1">
-                    <span className="text-slate-500">Co-Payment Paid By</span>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="radio" name="co-payment" defaultChecked className="h-3.5 w-3.5 text-primary border-slate-300 focus:ring-0" />
-                      <span>Patient</span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="radio" name="co-payment" className="h-3.5 w-3.5 text-primary border-slate-300 focus:ring-0" />
-                      <span>Company</span>
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-2 flex-1 w-full text-xs font-bold text-slate-700">
-                    <span className="w-48 text-slate-500">Consultant Change Remarks</span>
-                    <Input className="h-7 text-xs flex-1 bg-white border-slate-200" placeholder="" />
-                  </div>
+              {opBillingSubTab === "Payment" && (
+                <div className="space-y-4">
+                  <div className="text-xs font-bold text-slate-700">Payment Collection & Split Breakdown</div>
+                  <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
+                    <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                      <tr>
+                        <th className="px-3 py-2">Mode</th>
+                        <th className="px-3 py-2 text-right">Amount (₹)</th>
+                        <th className="px-3 py-2">Bank</th>
+                        <th className="px-3 py-2">Reference No</th>
+                        <th className="px-3 py-2">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium">
+                      {opBillingPaymentRows.map((r, idx) => (
+                        <tr key={idx}>
+                          <td className="px-3 py-2">
+                            <Select 
+                              value={r.mode} 
+                              onValueChange={(val) => {
+                                const updated = [...opBillingPaymentRows];
+                                updated[idx].mode = val;
+                                setOpBillingPaymentRows(updated);
+                              }}
+                            >
+                              <SelectTrigger className="h-6 w-28 text-xs bg-white"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Cash">Cash</SelectItem>
+                                <SelectItem value="Card">Card</SelectItem>
+                                <SelectItem value="UPI">UPI</SelectItem>
+                                <SelectItem value="Cheque">Cheque</SelectItem>
+                                <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <Input
+                              type="number"
+                              value={r.amount}
+                              onChange={(e) => {
+                                const updated = [...opBillingPaymentRows];
+                                updated[idx].amount = Number(e.target.value);
+                                setOpBillingPaymentRows(updated);
+                              }}
+                              className="h-6 w-28 text-xs text-right bg-white font-mono font-bold"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input
+                              placeholder="Bank name..."
+                              value={r.bankName}
+                              onChange={(e) => {
+                                const updated = [...opBillingPaymentRows];
+                                updated[idx].bankName = e.target.value;
+                                setOpBillingPaymentRows(updated);
+                              }}
+                              className="h-6 text-xs bg-white"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input
+                              placeholder="Transaction / Ref#"
+                              value={r.refNo}
+                              onChange={(e) => {
+                                const updated = [...opBillingPaymentRows];
+                                updated[idx].refNo = e.target.value;
+                                setOpBillingPaymentRows(updated);
+                              }}
+                              className="h-6 text-xs bg-white font-mono"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input
+                              placeholder="Notes..."
+                              value={r.description}
+                              onChange={(e) => {
+                                const updated = [...opBillingPaymentRows];
+                                updated[idx].description = e.target.value;
+                                setOpBillingPaymentRows(updated);
+                              }}
+                              className="h-6 text-xs bg-white"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            )}
+              )}
 
-            {opBillingSubTab === "Adjustment" && (
-              <div className="flex-1 bg-white p-6 overflow-y-auto flex flex-col justify-start items-start gap-4">
-                <div className="text-xs font-bold text-slate-700">Total Advance: ₹0.00</div>
-                <span className="text-red-500 font-bold text-sm">No Record Found.</span>
-              </div>
-            )}
-
-            {["Outstanding", "Checklist", "Patient Diagnosis Entry"].includes(opBillingSubTab) && (
-              <div className="flex-1 bg-white p-6 overflow-y-auto flex flex-col justify-center items-center text-slate-400 font-medium">
-                <span className="text-red-500 font-bold text-sm">No Record Found.</span>
-              </div>
-            )}
-
-            {/* Bottom details footer bar */}
-            <div className="p-5 border-t border-slate-200 bg-[#e3f2fd]/60 grid grid-cols-1 md:grid-cols-3 gap-6 flex-shrink-0 text-xs font-semibold text-slate-700 select-none">
-              {/* Left side */}
-              <div className="space-y-3.5">
-                <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 bg-white/60 p-2 rounded-lg border border-slate-100 shadow-2xs">
-                  <div>Treatment / Available Limit: <span className="font-mono">0.00 / 0.00</span></div>
-                  <div>Advance / Outstanding: <span className="font-mono">0.00 / 0.00</span></div>
-                </div>
-                
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] text-slate-500 uppercase font-bold">Narration</span>
-                  <textarea 
-                    value={opBillingNarration}
-                    onChange={(e) => setOpBillingNarration(e.target.value)}
-                    className="w-full h-16 text-xs p-2 bg-white border border-slate-200 rounded-lg resize-none focus:outline-none focus:ring-0" 
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button className="h-6 text-[10px] bg-red-500 hover:bg-red-600 text-white font-bold px-2.5 rounded-md">Approval Required</Button>
-                  <Button className="h-6 text-[10px] bg-blue-500 hover:bg-blue-600 text-white font-bold px-2.5 rounded-md">Excluded Service</Button>
-                  <Button className="h-6 text-[10px] bg-blue-500 hover:bg-blue-600 text-white font-bold px-2.5 rounded-md">Refunded Service</Button>
-                </div>
-
-                <div className="flex items-center gap-4 pt-1">
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input type="checkbox" className="h-3.5 w-3.5 rounded text-primary border-slate-300 focus:ring-0" />
-                    <span>E-mail Result</span>
-                  </label>
-                  
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">Reporting DateTime</span>
-                    <Input type="text" defaultValue="14/08/2026 00:00" className="h-6 w-32 bg-white text-center font-mono text-[10px]" />
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-slate-500">PAN No.</span>
-                    <Input type="text" className="h-6 w-20 bg-white" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Middle side */}
-              <div className="space-y-2.5 bg-white/40 p-3 rounded-xl border border-slate-100">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-bold">Currency</span>
-                  <Select defaultValue="INR">
-                    <SelectTrigger className="h-6 w-32 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="INR">INR</SelectItem></SelectContent>
-                  </Select>
-                </div>
-                {[
-                  { label: "Received", val: "0.00" },
-                  { label: "Rate", val: "1.00" },
-                  { label: "Conv.Amt", val: "0.00" },
-                  { label: "Charge", val: "0.00" },
-                  { label: "Discount", val: "0.00" }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between">
-                    <span className="text-slate-500">{item.label}</span>
-                    <Input type="text" defaultValue={item.val} className="h-6 w-32 text-right font-mono font-bold" />
-                  </div>
-                ))}
-              </div>
-
-              {/* Right side */}
-              <div className="space-y-2.5 bg-[#e3f2fd]/40 p-3 rounded-xl border border-blue-100 shadow-2xs">
-                {[
-                  { label: "Net Amt", val: "0.00" },
-                  { label: "Deductable Amt", val: "0.00" },
-                  { label: "Received", val: "0.00" },
-                  { label: "Advance", val: "0.00" },
-                  { label: "Balance", val: "0.00" }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center justify-between">
-                    <span className="text-slate-600 font-bold">{item.label}</span>
-                    <Input type="text" defaultValue={item.val} className="h-6 w-32 text-right font-mono font-bold text-slate-800 bg-white border-blue-200" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-        )}
-        {activeTab === "Master Activity List" && (
-          <Card className="flex-1 flex flex-col overflow-hidden">
-            {/* Filters bar */}
-            <div className="p-4 border-b border-slate-100 bg-white flex-shrink-0 text-xs font-semibold text-slate-700">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-x-6 gap-y-3.5 items-center">
-                {/* Column 1 */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">UHID</span>
-                    <div className="flex items-center gap-1 flex-1">
-                      <Input
-                        placeholder=""
-                        className="h-7 text-xs w-full bg-white border-slate-200"
-                        value={invoiceSearch}
-                        onChange={(e) => setInvoiceSearch(e.target.value)}
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 font-bold flex-shrink-0"
-                        onClick={() => setIsPatientSearchModalOpen(true)}
-                      >
-                        <Search className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 font-bold flex-shrink-0"
-                        onClick={() => {
-                          setInvoiceSearch("");
-                          fetchInvoices();
-                        }}
-                      >
-                        R
-                      </Button>
+              {opBillingSubTab === "Adjustment" && (
+                <div className="p-4 space-y-3">
+                  <div className="text-xs font-bold text-slate-700">Patient Deposit Adjustments</div>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs">
+                    <div className="flex items-center justify-between font-bold text-blue-900">
+                      <span>Available Deposit for UHID {opBillingUhid || "—"}:</span>
+                      <span className="font-mono text-base">₹3,000.00</span>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">Facility</span>
-                    <Select defaultValue="CMK">
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="CMK">CMK HEALTHCARE PVT. LTD.</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">Patient Type</span>
-                    <Select defaultValue="Both">
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Both">Both</SelectItem>
-                        <SelectItem value="OP">OP</SelectItem>
-                        <SelectItem value="IP">IP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Column 2 */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">Bill No</span>
-                    <Input
-                      placeholder=""
-                      className="h-7 text-xs flex-1 bg-white border-slate-200"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">Payer Type</span>
-                    <Select defaultValue="Select All">
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Select All">Select All</SelectItem>
-                        <SelectItem value="Direct Patient">Direct Patient</SelectItem>
-                        <SelectItem value="Company">Company</SelectItem>
-                        <SelectItem value="Insurance">Insurance</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">Print As</span>
-                    <div className="flex items-center gap-4 py-1 flex-1">
-                      <label className="flex items-center gap-1 cursor-pointer select-none">
-                        <input type="radio" name="print-as" defaultChecked className="h-3.5 w-3.5 text-primary border-slate-300" />
-                        <span>Summary</span>
-                      </label>
-                      <label className="flex items-center gap-1 cursor-pointer select-none">
-                        <input type="radio" name="print-as" className="h-3.5 w-3.5 text-primary border-slate-300" />
-                        <span>Detail</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Column 3 */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">Date Range</span>
-                    <Select defaultValue="Date Range">
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Today">Today</SelectItem>
-                        <SelectItem value="Yesterday">Yesterday</SelectItem>
-                        <SelectItem value="Last Week">Last Week</SelectItem>
-                        <SelectItem value="Last Two Week">Last Two Week</SelectItem>
-                        <SelectItem value="This Month">This Month</SelectItem>
-                        <SelectItem value="Last One Month">Last One Month</SelectItem>
-                        <SelectItem value="Last Year">Last Year</SelectItem>
-                        <SelectItem value="Date Range">Date Range</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">Payer</span>
-                    <Select defaultValue="Select All">
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Select All">Select All</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0"></span>
-                    <div className="flex items-center gap-4 py-1 flex-1">
-                      <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                        <input type="checkbox" className="h-3.5 w-3.5 rounded text-primary border-slate-300" />
-                        <span>Patient</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                        <input type="checkbox" className="h-3.5 w-3.5 rounded text-primary border-slate-300" />
-                        <span>Refundable</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Column 4 */}
-                <div className="space-y-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">From</span>
-                    <div className="flex items-center gap-1.5 flex-1">
-                      <Input
-                        type="text"
-                        defaultValue="13/08/2026"
-                        className="h-7 text-xs flex-1 bg-white border-slate-200 text-center"
-                      />
-                      <span className="text-slate-400">To</span>
-                      <Input
-                        type="text"
-                        defaultValue="13/08/2026"
-                        className="h-7 text-xs flex-1 bg-white border-slate-200 text-center"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 flex-shrink-0">Sponsor</span>
-                    <Select defaultValue="Select All">
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Select All">Select All</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 flex-1">
-                      <span className="w-20 flex-shrink-0">Search For</span>
-                      <Select value={invoiceStatusFilter} onValueChange={setInvoiceStatusFilter}>
-                        <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Select All</SelectItem>
-                          <SelectItem value="settled">Settled</SelectItem>
-                          <SelectItem value="unsettled">UnSettled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Button onClick={fetchInvoices} size="sm" className="h-7 text-xs bg-blue-600 hover:bg-blue-700 border-blue-600 text-white font-bold px-5">
-                      Search
+                    <Button 
+                      size="sm" 
+                      onClick={() => {
+                        setOpBillingPaymentRows([{ mode: "Cash", amount: Math.min(3000, opNetPayable), balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "ADJUST-DEP", description: "Adjusted from Advance Deposit", cardSwipingValue: 0 }]);
+                        toast.success("Deposit Adjusted", "Applied ₹3,000 advance credit to bill.");
+                      }}
+                      className="mt-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      Apply Available Deposit to Bill
                     </Button>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Horizontal Sub-Tabs bar for Master Activity List */}
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-1.5 text-xs font-bold text-slate-700 select-none flex-shrink-0">
-              <div className="flex items-center gap-1">
-                {[
-                  "Invoice Details",
-                  "Receipt Details",
-                  "Advance Details",
-                  "Selected Invoice"
-                ].map((subTab) => (
-                  <button
-                    key={subTab}
-                    onClick={() => setActiveSubTab(subTab)}
-                    className={`h-7 px-3 rounded-md transition-colors ${
-                      subTab === activeSubTab
-                        ? "bg-blue-600 text-white font-bold"
-                        : "bg-transparent text-slate-600 hover:bg-slate-200/50"
-                    }`}
-                  >
-                    {subTab}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-4 text-[11px] font-semibold">
-                <span className="text-slate-600">Total Advance Available: 0.00</span>
-                <span className="text-slate-600">Selected Invoice Amount: 0.00 (0)</span>
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto flex-1 bg-white">
-              {activeSubTab === "Invoice Details" && (
-                <table className="w-full text-xs text-left">
-                  <thead className="text-[10px] text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200 sticky top-0 z-10 font-bold">
-                    <tr>
-                      <th className="px-3 py-2.5">Company</th>
-                      <th className="px-3 py-2.5">UHID</th>
-                      <th className="px-3 py-2.5">Patient</th>
-                      <th className="px-3 py-2.5">Enc#</th>
-                      <th className="px-3 py-2.5">Type</th>
-                      <th className="px-3 py-2.5">Invoice#</th>
-                      <th className="px-3 py-2.5">Date</th>
-                      <th className="px-3 py-2.5 text-right">NetAmt</th>
-                      <th className="px-3 py-2.5 text-right">Patient</th>
-                      <th className="px-3 py-2.5 text-right">Payer</th>
-                      <th className="px-3 py-2.5 text-right">Adjusted</th>
-                      <th className="px-3 py-2.5 text-right">Refund</th>
-                      <th className="px-3 py-2.5 text-right">Cr.Note</th>
-                      <th className="px-3 py-2.5 text-right">Balance</th>
-                      <th className="px-3 py-2.5 text-center">Status</th>
-                      <th className="px-3 py-2.5 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
-                    {isLoadingInvoices ? (
-                      <tr>
-                        <td colSpan={16} className="px-3 py-12 text-center text-slate-400">
-                          Loading invoice details from database...
-                        </td>
-                      </tr>
-                    ) : filteredInvoices.length > 0 ? (
-                      filteredInvoices.map((inv) => (
-                        <tr key={inv.id} className={`hover:bg-slate-50/40 ${inv.isCancelled ? "opacity-60 bg-slate-100" : ""}`}>
-                          <td className="px-3 py-3 text-[10px] font-semibold">{inv.company}</td>
-                          <td className="px-3 py-3 font-mono">{inv.uhid}</td>
-                          <td className="px-3 py-3 font-bold text-slate-800">{inv.patientName}</td>
-                          <td className="px-3 py-3 text-slate-500">{inv.encNo}</td>
-                          <td className="px-3 py-3 font-bold text-center">{inv.type}</td>
-                          <td className="px-3 py-3 font-mono text-emerald-800 font-bold">{inv.invoiceNo}</td>
-                          <td className="px-3 py-3 text-slate-500">{new Date(inv.date).toLocaleDateString()}</td>
-                          <td className="px-3 py-3 text-right font-bold text-slate-800">₹{inv.netAmt.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right text-slate-500">₹{inv.paidPatient.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right text-slate-500">₹{inv.paidPayer.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right text-slate-500">₹{inv.adjusted.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right text-slate-500">₹{inv.refund.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right text-red-500">₹{inv.creditNote.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-right font-bold text-slate-800">₹{inv.balance.toFixed(2)}</td>
-                          <td className="px-3 py-3 text-center">
-                            {inv.isCancelled ? (
-                              <span className="inline-block w-4 h-4 bg-slate-400 rounded shadow-xs" title="Cancelled"></span>
-                            ) : inv.status === "Settled" ? (
-                              <span className="inline-block w-4 h-4 bg-emerald-500 rounded shadow-xs" title="Settled"></span>
-                            ) : inv.status === "Refundable" ? (
-                              <span
-                                className="inline-block w-4 h-4 bg-amber-500 rounded shadow-xs cursor-pointer animate-pulse"
-                                title="Refundable"
-                                onClick={() => handleOpenSettlement(inv)}
-                              ></span>
-                            ) : (
-                              <span
-                                className="inline-block w-4 h-4 bg-red-500 rounded shadow-xs cursor-pointer animate-pulse"
-                                title="Outstanding"
-                                onClick={() => handleOpenSettlement(inv)}
-                              ></span>
-                            )}
-                          </td>
-                          <td className="px-3 py-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5 w-28 mx-auto">
-                              {/* Settle/Refund Button slot */}
-                              <div className="w-14 flex justify-center flex-shrink-0">
-                                {!inv.isCancelled && inv.balance !== 0 ? (
-                                  <Button
-                                    variant="outline"
-                                    size="xs"
-                                    className={`h-6 text-[10px] py-0 px-2 font-medium w-full ${
-                                      inv.status === "Refundable"
-                                        ? "bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-700 font-bold"
-                                        : "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700 font-bold"
-                                    }`}
-                                    onClick={() => handleOpenSettlement(inv)}
-                                  >
-                                    {inv.status === "Refundable" ? "Refund" : "Settle"}
-                                  </Button>
-                                ) : (
-                                  <div className="w-14 h-6 flex-shrink-0" />
-                                )}
-                              </div>
-
-                              {/* Cancel/Delete Button slot */}
-                              <div className="w-6 flex justify-center flex-shrink-0">
-                                {!inv.isCancelled ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 text-red-500 hover:bg-red-50 flex-shrink-0"
-                                    title="Cancel Invoice"
-                                    onClick={() => handleCancelInvoice(inv.id)}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
-                                ) : (
-                                  <div className="w-6 h-6 flex-shrink-0" />
-                                )}
-                              </div>
-
-                              {/* Print Button slot */}
-                              <div className="w-6 flex justify-center flex-shrink-0">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 text-slate-500 hover:bg-slate-100 flex-shrink-0"
-                                  title="Print Invoice"
-                                  onClick={() => setPrintInvoiceData(inv)}
-                                >
-                                  <Printer className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={16} className="px-3 py-12 text-center text-slate-400">
-                          No record found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
               )}
 
-              {activeSubTab === "Receipt Details" && (() => {
-                const receiptDetailsList = filteredInvoices.flatMap((inv) =>
-                  (inv.receipts || []).map((rec) => ({
-                    id: rec.id,
-                    company: inv.company,
-                    uhid: inv.uhid,
-                    patientName: inv.patientName,
-                    receiptNo: rec.id ? `REC-${rec.id.slice(0, 8).toUpperCase()}` : "REC-N/A",
-                    date: rec.createdAt ? new Date(rec.createdAt).toLocaleDateString() : new Date(inv.date).toLocaleDateString(),
-                    invoiceType: inv.type,
-                    grossAmt: inv.netAmt,
-                    adjusted: rec.type === "Settlement" ? rec.amount : 0,
-                    refund: rec.type === "Refund" ? rec.amount : 0,
-                    balance: inv.balance,
-                    status: inv.status,
-                  }))
-                );
-
-                return (
-                  <table className="w-full text-xs text-left">
-                    <thead className="text-[10px] text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200 sticky top-0 z-10 font-bold">
-                      <tr>
-                        <th className="px-3 py-2.5">Company</th>
-                        <th className="px-3 py-2.5">UHID</th>
-                        <th className="px-3 py-2.5">Patient</th>
-                        <th className="px-3 py-2.5">Receipt#</th>
-                        <th className="px-3 py-2.5">Date</th>
-                        <th className="px-3 py-2.5">InvoiceType</th>
-                        <th className="px-3 py-2.5 text-right">Gross Amt</th>
-                        <th className="px-3 py-2.5 text-right">Adjusted</th>
-                        <th className="px-3 py-2.5 text-right">Refund</th>
-                        <th className="px-3 py-2.5 text-right">Balance</th>
-                        <th className="px-3 py-2.5 text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium text-slate-600">
-                      {receiptDetailsList.length > 0 ? (
-                        receiptDetailsList.map((rec, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/40">
-                            <td className="px-3 py-3 text-[10px] font-semibold">{rec.company}</td>
-                            <td className="px-3 py-3 font-mono">{rec.uhid}</td>
-                            <td className="px-3 py-3 font-bold text-slate-800">{rec.patientName}</td>
-                            <td className="px-3 py-3 font-mono text-blue-800 font-bold">{rec.receiptNo}</td>
-                            <td className="px-3 py-3 text-slate-500">{rec.date}</td>
-                            <td className="px-3 py-3 font-bold text-center">{rec.invoiceType}</td>
-                            <td className="px-3 py-3 text-right">₹{rec.grossAmt.toFixed(2)}</td>
-                            <td className="px-3 py-3 text-right text-emerald-600">₹{rec.adjusted.toFixed(2)}</td>
-                            <td className="px-3 py-3 text-right text-amber-600">₹{rec.refund.toFixed(2)}</td>
-                            <td className="px-3 py-3 text-right font-bold">₹{rec.balance.toFixed(2)}</td>
-                            <td className="px-3 py-3 text-center">
-                              {rec.status === "Settled" ? (
-                                <span className="inline-block w-4 h-4 bg-emerald-500 rounded shadow-xs" title="Settled"></span>
-                              ) : rec.status === "Refundable" ? (
-                                <span className="inline-block w-4 h-4 bg-amber-500 rounded shadow-xs" title="Refundable"></span>
-                              ) : (
-                                <span className="inline-block w-4 h-4 bg-red-500 rounded shadow-xs" title="Outstanding"></span>
-                              )}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={11} className="px-3 py-12 text-center text-red-500 font-bold">
-                            No Record Found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                );
-              })()}
-
-              {activeSubTab === "Advance Details" && (
-                <table className="w-full text-xs text-left">
-                  <thead className="text-[10px] text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200 sticky top-0 z-10 font-bold">
-                    <tr>
-                      <th className="px-3 py-2.5">Company</th>
-                      <th className="px-3 py-2.5">UHID</th>
-                      <th className="px-3 py-2.5">Patient</th>
-                      <th className="px-3 py-2.5">Enc#</th>
-                      <th className="px-3 py-2.5">Advance#</th>
-                      <th className="px-3 py-2.5">Date</th>
-                      <th className="px-3 py-2.5 text-right">Advance Amt</th>
-                      <th className="px-3 py-2.5 text-right">Adjusted</th>
-                      <th className="px-3 py-2.5 text-right">Refund</th>
-                      <th className="px-3 py-2.5 text-right">Balance</th>
-                      <th className="px-3 py-2.5 text-center">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={11} className="px-3 py-12 text-center text-red-500 font-bold">
-                        No Record Found.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              )}
-
-              {activeSubTab === "Selected Invoice" && (
-                <table className="w-full text-xs text-left">
-                  <thead className="text-[10px] text-slate-500 uppercase bg-slate-50/80 border-b border-slate-200 sticky top-0 z-10 font-bold">
-                    <tr>
-                      <th className="px-3 py-2.5">Company</th>
-                      <th className="px-3 py-2.5">UHID</th>
-                      <th className="px-3 py-2.5">Patient</th>
-                      <th className="px-3 py-2.5">Enc#</th>
-                      <th className="px-3 py-2.5">Type</th>
-                      <th className="px-3 py-2.5">Invoice#</th>
-                      <th className="px-3 py-2.5">Date</th>
-                      <th className="px-3 py-2.5 text-right">NetAmt</th>
-                      <th className="px-3 py-2.5 text-right">Patient</th>
-                      <th className="px-3 py-2.5 text-right">Payer</th>
-                      <th className="px-3 py-2.5 text-right">Adjusted</th>
-                      <th className="px-3 py-2.5 text-right">Refund</th>
-                      <th className="px-3 py-2.5 text-right">Cr.Note</th>
-                      <th className="px-3 py-2.5 text-right">Balance</th>
-                      <th className="px-3 py-2.5 text-center">Status</th>
-                      <th className="px-3 py-2.5 text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td colSpan={16} className="px-3 py-12 text-center text-red-500 font-bold">
-                        No Record Found.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+              {opBillingSubTab === "Outstanding" && (
+                <div className="p-4 space-y-3">
+                  <div className="text-xs font-bold text-slate-700">Previous Invoices & Balance History</div>
+                  <div className="border rounded-lg p-4 bg-slate-50 text-xs text-slate-600">
+                    No overdue unpaid invoices for this patient. Account is clean.
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Status Legend Bar */}
-            <div className="border-t border-slate-200 px-4 py-2.5 bg-slate-50 text-[10px] text-slate-600 flex items-center justify-end gap-4 select-none flex-shrink-0">
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 bg-emerald-500 rounded-sm"></span>
-                <span>Settled</span>
+            {/* Bottom calculation summary bar */}
+            <div className="p-4 border-t border-slate-200 bg-[#e3f2fd]/50 grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0 text-xs font-semibold">
+              <div className="space-y-1.5">
+                <span className="text-[10px] text-slate-500 font-bold uppercase">Billing Narration / Remarks</span>
+                <textarea
+                  value={opBillingNarration}
+                  onChange={(e) => setOpBillingNarration(e.target.value)}
+                  placeholder="Enter diagnosis / billing remarks..."
+                  className="w-full h-14 text-xs p-2 bg-white border border-slate-200 rounded-lg resize-none"
+                />
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 bg-red-500 rounded-sm"></span>
-                <span>Outstanding</span>
+
+              <div className="space-y-1.5 bg-white p-3 rounded-lg border">
+                <div className="flex justify-between text-slate-600">
+                  <span>Gross Total:</span>
+                  <span className="font-mono font-bold">₹{opGrossTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-purple-600">
+                  <span>Total Discount:</span>
+                  <span className="font-mono font-bold">-₹{opDiscountTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-slate-900 border-t pt-1">
+                  <span>Net Payable:</span>
+                  <span className="font-mono text-sm text-blue-700">₹{opNetPayable.toFixed(2)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 bg-amber-500 rounded-sm"></span>
-                <span>Refundable</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-3.5 h-3.5 bg-slate-400 rounded-sm"></span>
-                <span>Cancelled</span>
+
+              <div className="space-y-1.5 bg-white p-3 rounded-lg border">
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Paid / Received:</span>
+                  <span className="font-mono">₹{opTotalPaid.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-slate-900 border-t pt-1">
+                  <span>Net Balance:</span>
+                  <span className={`font-mono text-sm ${opBalance > 0 ? "text-red-600" : "text-emerald-600"}`}>
+                    ₹{opBalance.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
           </Card>
         )}
 
-        {/* ========================================= */}
-        {/*           IP BILLING TAB VIEW            */}
-        {/* ========================================= */}
+        {/* ─── TAB 6: IP BILLING ───────────────────────────────────────────── */}
         {activeTab === "IP Billing" && (
-          <Card className="flex-1 flex flex-col overflow-hidden border-0 shadow-none bg-white">
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             {/* Header bar */}
-            <div className="flex items-center justify-between px-6 py-2 border-b border-slate-200 bg-[#cee6f8]">
-              <div className="flex items-center gap-3">
-                <span className="font-bold text-slate-800 text-sm">IP Invoice</span>
-                <div className="flex items-center gap-1">
-                  <Search className="w-4 h-4 text-slate-600 ml-1" />
-                  <Select defaultValue="IP No">
-                    <SelectTrigger className="h-7 w-28 text-xs bg-white border-slate-200">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="IP No">IP No</SelectItem>
-                      <SelectItem value="UHID">UHID</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <div className="relative">
-                    <Input 
-                      className="h-7 w-32 text-xs bg-white border-slate-200 pl-2 pr-8 font-mono" 
-                      placeholder="" 
-                      value={ipBillingUhid}
-                      onChange={(e) => setIpBillingUhid(e.target.value)}
-                    />
-                    <button 
-                      onClick={() => setIsPatientSearchModalOpen(true)}
-                      className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-700"
-                    >
-                      <Search className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button className="h-7 px-4 bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold rounded shadow-sm">
-                  Notes
-                </Button>
-                <div className="flex items-center gap-1.5 ml-4">
-                  <Button variant="outline" className="h-7 px-4 bg-white text-slate-700 hover:bg-slate-50 border-slate-300 text-xs font-bold shadow-sm">
-                    Discharge
-                  </Button>
-                  <Button variant="outline" className="h-7 px-4 bg-white text-slate-700 hover:bg-slate-50 border-slate-300 text-xs font-bold shadow-sm">
-                    New
-                  </Button>
-                  <Button className="h-7 px-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm border-blue-600">
-                    Save
-                  </Button>
-                  <Button variant="outline" className="h-7 px-4 bg-white text-slate-700 hover:bg-slate-50 border-slate-300 text-xs font-bold shadow-sm">
-                    Print
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Grid Sections */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-0 border-b border-slate-200 bg-white">
-              
-              {/* Patient Details */}
-              <div className="p-4 border-r border-slate-200">
-                <h3 className="font-bold text-slate-700 text-xs mb-3">Patient Details</h3>
-                <div className="flex gap-4">
-                  <div className="w-16 h-16 rounded-lg border border-slate-200 bg-slate-50 flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
-                    <img src="/images/patient_avatar.png" alt="Patient" className="w-12 h-12 opacity-50" />
-                  </div>
-                  <div className="flex flex-col flex-1 space-y-1 mt-1 text-xs">
-                    {ipBillingPatientInfo ? (
-                      <>
-                        <div className="font-bold text-slate-800 text-xs truncate">{ipBillingPatientInfo.name}</div>
-                        <div className="text-[10px] text-slate-500 font-semibold">{ipBillingPatientInfo.genderAge}</div>
-                        <div className="text-[9px] text-[#7c5e3d] font-bold truncate uppercase">{ipBillingPatientInfo.address}</div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="font-bold text-slate-400 text-xs truncate">Select Patient</div>
-                        <div className="text-[10px] text-slate-300 font-semibold">Gender/Age</div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 text-xs font-semibold w-16">IP Status</span>
-                    <span className="text-slate-800 text-xs font-bold"></span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button className="h-6 px-3 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold rounded shadow-sm flex-1">Audit Bill</Button>
-                    <Button className="h-6 px-3 bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold rounded shadow-sm flex-1">Bill Prepared</Button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Invoice Details */}
-              <div className="p-4 border-r border-slate-200 flex flex-col justify-center">
-                <h3 className="font-bold text-slate-700 text-xs mb-3">Invoice Details</h3>
-                <div className="space-y-1.5">
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-24">IP No.</span>
-                    <span className="text-slate-800 text-xs font-bold truncate">{ipBillingUhid ? `IP-26-${ipBillingUhid}` : ""}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-24">Type</span>
-                    <Select value={ipBillingType} onValueChange={setIpBillingType}>
-                      <SelectTrigger className="h-6 w-32 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Cash">Cash</SelectItem>
-                        <SelectItem value="Credit">Credit</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-blue-500 text-xs font-semibold w-24 underline cursor-pointer">Invoice No</span>
-                    <span className="text-slate-800 text-xs font-bold truncate"></span>
-                  </div>
-                  <div className="flex items-center mt-3 pt-2">
-                    <span className="text-slate-500 text-xs font-semibold w-24">Inv. Date</span>
-                    <span className="text-[#B94F70] text-[11px] font-bold tracking-wider">{new Date().toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', '')}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-24">Admission</span>
-                    <span className="text-slate-800 text-xs font-bold"></span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-24">Discharge Date</span>
-                    <span className="text-slate-800 text-xs font-bold"></span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payor Details */}
-              <div className="p-4 border-r border-slate-200 flex flex-col justify-center">
-                <h3 className="font-bold text-slate-700 text-xs mb-3">Payor Details</h3>
-                <div className="space-y-1.5">
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-32">Payer</span>
-                    <span className="text-slate-800 text-xs font-bold truncate flex-1">{ipBillingPayer}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-32">Sponsor</span>
-                    <span className="text-slate-800 text-xs font-bold truncate flex-1">{ipBillingSponsor}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-32">Network</span>
-                    <span className="text-slate-800 text-xs font-bold truncate flex-1">{ipBillingNetwork}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-32">Consultant</span>
-                    <span className="text-slate-800 text-xs font-bold truncate flex-1">{ipBillingConsultant}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-32">BillCategory /Bed No.</span>
-                    <span className="text-slate-800 text-xs font-bold truncate flex-1">{ipBillingCategory}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className="text-slate-500 text-xs font-semibold w-32">PAN No.</span>
-                    <Input className="h-6 w-40 text-xs bg-white border-slate-200 px-2" value={ipBillingPatientInfo?.pan || ""} readOnly />
-                  </div>
-                </div>
-              </div>
-
-              {/* Other Detail */}
-              <div className="p-4 flex flex-col justify-center">
-                <h3 className="font-bold text-slate-700 text-xs mb-3">Other Detail</h3>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 text-xs font-semibold">Treatment/Available Limit</span>
-                    <span className="text-[#B94F70] text-xs font-bold text-right tracking-wider">0.00 / 0.00</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 text-xs font-semibold">Advance</span>
-                    <span className="text-slate-800 text-xs font-bold text-right tracking-wider"></span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 text-xs font-semibold">Receivable/Refundable</span>
-                    <span className="text-blue-500 text-xs font-bold text-right tracking-wider">0.00</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-2">
-                    <span className="text-slate-500 text-xs font-semibold">Net Bill Amt</span>
-                    <span className="text-blue-500 text-xs font-bold text-right tracking-wider">0.00</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sub-tabs Section */}
-            <div className="flex flex-col flex-1 bg-slate-50/50">
-              <div className="flex items-center gap-0 border-b border-[#cee6f8] px-4 pt-2">
-                {["Department Wise", "Checklist"].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setIpBillingSubTab(tab)}
-                    className={`px-4 py-1.5 text-xs font-bold transition-all duration-200 border-t border-l border-r rounded-t-lg ${
-                      ipBillingSubTab === tab 
-                        ? "bg-[#cee6f8] text-blue-800 border-[#cee6f8]" 
-                        : "bg-white text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100"
-                    }`}
+            <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-bold text-slate-800">Inpatient (IP) Hospitalization Invoice</span>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5">
+                  <span className="text-[10px] text-slate-400 font-bold">UHID / IP#:</span>
+                  <Input 
+                    type="text" 
+                    value={ipBillingUhid} 
+                    onChange={(e) => setIpBillingUhid(e.target.value)} 
+                    className="h-6 text-xs w-28 border-0 p-0 shadow-none font-mono font-bold" 
+                    placeholder="Enter UHID..."
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-5 w-5 text-slate-400 hover:text-slate-600"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
                   >
-                    {tab}
-                  </button>
-                ))}
+                    <Search className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="flex-1 bg-white flex flex-col">
-                {ipBillingSubTab === "Department Wise" && (
-                   <div className="flex-1 overflow-y-auto p-4 flex items-center justify-center">
-                      <span className="text-slate-400 font-bold text-sm">No Record Found.</span>
-                   </div>
-                )}
-                {ipBillingSubTab === "Checklist" && (
-                   <div className="flex-1 overflow-y-auto p-4 flex items-center justify-center">
-                      <span className="text-slate-400 font-bold text-sm">No Checklist Available.</span>
-                   </div>
-                )}
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={() => handleSaveIpBilling(true)}
+                  size="sm" 
+                  variant="outline"
+                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3 gap-1"
+                >
+                  <Printer className="w-3.5 h-3.5" /> Save & Print IP Bill
+                </Button>
+                <Button 
+                  onClick={() => handleSaveIpBilling(false)}
+                  size="sm" 
+                  className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4"
+                >
+                  Final Discharge Bill
+                </Button>
               </div>
             </div>
 
-            {/* Footer Summary Bar */}
-            <div className="border-t border-slate-200 bg-[#cee6f8]/40 p-4 shrink-0 mt-auto">
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 text-[10px] font-bold">Discount Authorized By:</span>
-                    <Select>
-                      <SelectTrigger className="h-6 w-32 text-[10px] bg-white border-slate-200"><SelectValue placeholder="[Select]" /></SelectTrigger>
-                      <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
-                    </Select>
-                    <span className="text-slate-500 text-[10px] font-bold">(%)</span>
-                  </div>
-                  <div className="flex items-center gap-2 col-span-2">
-                    <span className="text-slate-500 text-[10px] font-bold w-16">Remarks:</span>
-                    <Select>
-                      <SelectTrigger className="h-6 flex-1 text-[10px] bg-white border-slate-200"><SelectValue placeholder="Select" /></SelectTrigger>
-                      <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 text-[10px] font-bold w-24">Facilitator Name</span>
-                    <Input className="h-6 flex-1 text-[10px] bg-white border-slate-200" />
-                  </div>
+            {/* IP Patient summary cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-slate-50 border-b text-xs flex-shrink-0">
+              <div className="p-3 bg-white border rounded-xl space-y-1">
+                <div className="font-bold text-slate-500 text-[10px] uppercase">Patient Details</div>
+                <div className="font-bold text-slate-800">{ipBillingPatientInfo?.name || "Mr. Somesh Kumar"}</div>
+                <div className="text-[10px] text-slate-500 font-semibold">{ipBillingPatientInfo?.genderAge || "Male/28 Yr"}</div>
+              </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 text-[10px] font-bold w-24">Package Name:</span>
-                    <div className="flex-1 h-6"></div>
+              <div className="p-3 bg-white border rounded-xl space-y-1">
+                <div className="font-bold text-slate-500 text-[10px] uppercase">Room / Bed Category</div>
+                <div className="font-bold text-slate-800">{ipBillingCategory}</div>
+                <div className="text-[10px] text-blue-600 font-bold">Consultant: {ipBillingConsultant}</div>
+              </div>
+
+              <div className="p-3 bg-white border rounded-xl space-y-1">
+                <div className="font-bold text-slate-500 text-[10px] uppercase">TPA / Insurance Sponsor</div>
+                <div className="font-bold text-slate-800">{ipBillingPayer}</div>
+                <div className="text-[10px] text-emerald-600 font-bold">Pre-auth Approved: ₹20,000</div>
+              </div>
+
+              <div className="p-3 bg-white border rounded-xl space-y-1">
+                <div className="font-bold text-slate-500 text-[10px] uppercase">Length of Stay</div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-slate-700">Days:</span>
+                  <Input 
+                    type="number" 
+                    value={ipDays} 
+                    onChange={(e) => setIpDays(Number(e.target.value))} 
+                    className="h-6 w-16 text-center font-mono font-bold bg-white" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Inpatient Billing Itemization */}
+            <div className="flex-1 overflow-auto bg-white p-4 space-y-4">
+              <div className="text-xs font-bold text-slate-700">Inpatient Department-Wise Itemized Charges</div>
+              <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                  <tr>
+                    <th className="px-3 py-2">Department / Head</th>
+                    <th className="px-3 py-2 text-right">Daily Rate (₹)</th>
+                    <th className="px-3 py-2 text-center">Days / Units</th>
+                    <th className="px-3 py-2 text-right">Total Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  <tr>
+                    <td className="px-3 py-2.5 font-bold text-slate-800">Room & Bed Charges (Deluxe Ward)</td>
+                    <td className="px-3 py-2.5 text-right font-mono">
+                      <Input type="number" value={ipRoomRate} onChange={(e) => setIpRoomRate(Number(e.target.value))} className="h-6 w-24 text-right bg-white inline-block font-mono" />
+                    </td>
+                    <td className="px-3 py-2.5 text-center font-mono">{ipDays}</td>
+                    <td className="px-3 py-2.5 text-right font-mono font-bold">₹{(ipDays * ipRoomRate).toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2.5 font-bold text-slate-800">Nursing & Patient Care Charges</td>
+                    <td className="px-3 py-2.5 text-right font-mono">
+                      <Input type="number" value={ipNursingRate} onChange={(e) => setIpNursingRate(Number(e.target.value))} className="h-6 w-24 text-right bg-white inline-block font-mono" />
+                    </td>
+                    <td className="px-3 py-2.5 text-center font-mono">{ipDays}</td>
+                    <td className="px-3 py-2.5 text-right font-mono font-bold">₹{(ipDays * ipNursingRate).toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2.5 font-bold text-slate-800">Consultant Daily Rounds & Physician Visits</td>
+                    <td className="px-3 py-2.5 text-right font-mono">
+                      <Input type="number" value={ipDoctorRoundRate} onChange={(e) => setIpDoctorRoundRate(Number(e.target.value))} className="h-6 w-24 text-right bg-white inline-block font-mono" />
+                    </td>
+                    <td className="px-3 py-2.5 text-center font-mono">{ipDays}</td>
+                    <td className="px-3 py-2.5 text-right font-mono font-bold">₹{(ipDays * ipDoctorRoundRate).toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-3 py-2.5 font-bold text-slate-800">Inpatient Pharmacy, Infusions & Consumables</td>
+                    <td className="px-3 py-2.5 text-right font-mono">₹4,500.00</td>
+                    <td className="px-3 py-2.5 text-center font-mono">1</td>
+                    <td className="px-3 py-2.5 text-right font-mono font-bold">₹4,500.00</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* Inpatient Calculations Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl border">
+                <div>
+                  <span className="text-[10px] text-slate-500 uppercase font-bold">Gross Inpatient Bill</span>
+                  <div className="text-base font-black text-slate-900 font-mono">₹{ipGrossTotal.toFixed(2)}</div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-emerald-600 uppercase font-bold">Less: Advance Deposit Adjusted</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Input 
+                      type="number" 
+                      value={ipAdvanceAdjusted} 
+                      onChange={(e) => setIpAdvanceAdjusted(Number(e.target.value))} 
+                      className="h-6 w-28 font-mono font-bold text-emerald-600 bg-white" 
+                    />
                   </div>
-                  <div className="flex items-center gap-2 col-span-2">
-                    <span className="text-slate-500 text-[10px] font-bold w-16 invisible">Discount</span>
-                    <Select>
-                      <SelectTrigger className="h-6 w-24 text-[10px] bg-white border-slate-200"><SelectValue placeholder="Discount On" /></SelectTrigger>
-                      <SelectContent><SelectItem value="none">None</SelectItem></SelectContent>
-                    </Select>
-                    <Input className="h-6 w-24 text-[10px] bg-white border-slate-200" />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-500 text-[10px] font-bold w-24">Billing Currency</span>
-                    <div className="flex-1 h-6"></div>
-                  </div>
-               </div>
+                </div>
+                <div>
+                  <span className="text-[10px] text-blue-600 uppercase font-bold">Net Final Settlement Payable</span>
+                  <div className="text-lg font-black text-blue-700 font-mono">₹{ipNetPayable.toFixed(2)}</div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* ─── TAB 7: REFUND ──────────────────────────────────────────────── */}
+        {activeTab === "Refund" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Patient Refund Management</h3>
+                <p className="text-xs text-slate-500">Process overpayment returns, cancelled order refunds, and deposit payouts</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Patient UHID*</Label>
+                <Input value={refUhid} onChange={(e) => setRefUhid(e.target.value)} placeholder="UHID..." className="h-7 text-xs bg-white" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Invoice No</Label>
+                <Input value={refInvoiceNo} onChange={(e) => setRefInvoiceNo(e.target.value)} placeholder="e.g. OPCA26/104" className="h-7 text-xs bg-white" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Refund Amount (₹)*</Label>
+                <Input type="number" value={refAmount} onChange={(e) => setRefAmount(Number(e.target.value))} className="h-7 text-xs bg-white font-mono font-bold" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Refund Mode</Label>
+                <Select value={refMode} onValueChange={setRefMode}>
+                  <SelectTrigger className="h-7 text-xs bg-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer / UPI</SelectItem>
+                    <SelectItem value="Cheque">Cheque</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <Button onClick={handleSaveRefund} className="h-7 text-xs w-full font-bold bg-amber-600 hover:bg-amber-700 text-white">
+                  Process Refund
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-white p-4">
+              <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                  <tr>
+                    <th className="px-3 py-2">Refund Voucher#</th>
+                    <th className="px-3 py-2">UHID</th>
+                    <th className="px-3 py-2">Patient Name</th>
+                    <th className="px-3 py-2">Invoice#</th>
+                    <th className="px-3 py-2 text-right">Amount (₹)</th>
+                    <th className="px-3 py-2">Mode</th>
+                    <th className="px-3 py-2">Reason</th>
+                    <th className="px-3 py-2">Authorized By</th>
+                    <th className="px-3 py-2 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {refunds.map((r) => (
+                    <tr key={r.id}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-amber-700">{r.refundNo}</td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">{r.uhid}</td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">{r.patientName}</td>
+                      <td className="px-3 py-2.5 font-mono">{r.invoiceNo || "-"}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-amber-600">₹{r.amount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5">{r.mode}</td>
+                      <td className="px-3 py-2.5 text-slate-600">{r.reason}</td>
+                      <td className="px-3 py-2.5">{r.authorizedBy}</td>
+                      <td className="px-3 py-2.5 text-center">
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                          {r.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                  {refunds.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="px-3 py-8 text-center text-slate-400 font-bold">No refund records yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {/* ─── TAB 8: ADVANCE COLLECTION ──────────────────────────────────── */}
+        {activeTab === "Advance Collection" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Advance & Patient Deposit Collection</h3>
+                <p className="text-xs text-slate-500">Collect pre-admission deposits and surgery advances with official receipt vouchers</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Patient UHID*</Label>
+                <Input value={advUhid} onChange={(e) => setAdvUhid(e.target.value)} placeholder="UHID..." className="h-7 text-xs bg-white" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Deposit Amount (₹)*</Label>
+                <Input type="number" value={advAmount} onChange={(e) => setAdvAmount(Number(e.target.value))} className="h-7 text-xs bg-white font-mono font-bold" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Payment Mode</Label>
+                <Select value={advMode} onValueChange={setAdvMode}>
+                  <SelectTrigger className="h-7 text-xs bg-white"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash</SelectItem>
+                    <SelectItem value="UPI">UPI / QR Code</SelectItem>
+                    <SelectItem value="Card">Card</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer (NEFT)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Purpose</Label>
+                <Input value={advPurpose} onChange={(e) => setAdvPurpose(e.target.value)} placeholder="e.g. Admission Deposit" className="h-7 text-xs bg-white" />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={handleSaveAdvance} className="h-7 text-xs w-full font-bold bg-teal-600 hover:bg-teal-700 text-white">
+                  + Collect Deposit
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-white p-4">
+              <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                  <tr>
+                    <th className="px-3 py-2">Advance Voucher#</th>
+                    <th className="px-3 py-2">UHID</th>
+                    <th className="px-3 py-2">Patient Name</th>
+                    <th className="px-3 py-2 text-right">Deposited (₹)</th>
+                    <th className="px-3 py-2 text-right">Adjusted (₹)</th>
+                    <th className="px-3 py-2 text-right">Balance Available (₹)</th>
+                    <th className="px-3 py-2">Mode</th>
+                    <th className="px-3 py-2">Purpose</th>
+                    <th className="px-3 py-2 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {advances.map((a) => (
+                    <tr key={a.id}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-teal-700">{a.advanceNo}</td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">{a.uhid}</td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">{a.patientName}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold">₹{a.amount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-emerald-600">₹{a.adjustedAmount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-black text-teal-700">₹{a.balanceAmount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5">{a.mode}</td>
+                      <td className="px-3 py-2.5 text-slate-600">{a.purpose}</td>
+                      <td className="px-3 py-2.5 text-center">
+                        <Badge variant="outline" className={a.status === "Active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600"}>
+                          {a.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {/* ─── TAB 9: CREDIT NOTE ─────────────────────────────────────────── */}
+        {activeTab === "Credit Note" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Credit Note & Bill Concessions</h3>
+                <p className="text-xs text-slate-500">Issue authorized bill waivers, discount adjustments, and post-billing credits</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Invoice No*</Label>
+                <Input value={cnInvoiceNo} onChange={(e) => setCnInvoiceNo(e.target.value)} placeholder="e.g. IPCA26/102" className="h-7 text-xs bg-white font-mono" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Patient UHID</Label>
+                <Input value={cnUhid} onChange={(e) => setCnUhid(e.target.value)} placeholder="UHID..." className="h-7 text-xs bg-white" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Waiver Amount (₹)*</Label>
+                <Input type="number" value={cnAmount} onChange={(e) => setCnAmount(Number(e.target.value))} className="h-7 text-xs bg-white font-mono font-bold" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Reason*</Label>
+                <Input value={cnReason} onChange={(e) => setCnReason(e.target.value)} placeholder="e.g. Courtesy Waiver" className="h-7 text-xs bg-white" />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={handleSaveCreditNote} className="h-7 text-xs w-full font-bold bg-purple-600 hover:bg-purple-700 text-white">
+                  Issue Credit Note
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-white p-4">
+              <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                  <tr>
+                    <th className="px-3 py-2">Credit Note#</th>
+                    <th className="px-3 py-2">Invoice#</th>
+                    <th className="px-3 py-2">UHID</th>
+                    <th className="px-3 py-2">Patient Name</th>
+                    <th className="px-3 py-2 text-right">Credit Amount (₹)</th>
+                    <th className="px-3 py-2">Reason</th>
+                    <th className="px-3 py-2">Authorized By</th>
+                    <th className="px-3 py-2">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {creditNotes.map((cn) => (
+                    <tr key={cn.id}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-purple-700">{cn.creditNoteNo}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-slate-800">{cn.invoiceNo}</td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">{cn.uhid}</td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">{cn.patientName}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-black text-purple-600">₹{cn.amount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-slate-600">{cn.reason}</td>
+                      <td className="px-3 py-2.5">{cn.authorizedBy}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{new Date(cn.createdAt).toLocaleDateString("en-GB")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {/* ─── TAB 10: INTIMATION ─────────────────────────────────────────── */}
+        {activeTab === "Intimation" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">TPA & Insurance Claims Intimation</h3>
+                <p className="text-xs text-slate-500">Track cashless pre-authorization, TPA query resolution, and insurance settlements</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-6 gap-3">
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Patient UHID*</Label>
+                <Input value={intUhid} onChange={(e) => setIntUhid(e.target.value)} placeholder="UHID..." className="h-7 text-xs bg-white" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">TPA Name*</Label>
+                <Input value={intTpa} onChange={(e) => setIntTpa(e.target.value)} placeholder="e.g. Star Health" className="h-7 text-xs bg-white" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Claim Ref#*</Label>
+                <Input value={intClaimNo} onChange={(e) => setIntClaimNo(e.target.value)} placeholder="Claim Number..." className="h-7 text-xs bg-white font-mono" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Requested (₹)</Label>
+                <Input type="number" value={intReqAmt} onChange={(e) => setIntReqAmt(Number(e.target.value))} className="h-7 text-xs bg-white font-mono" />
+              </div>
+              <div>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">Approved Limit (₹)</Label>
+                <Input type="number" value={intApprAmt} onChange={(e) => setIntApprAmt(Number(e.target.value))} className="h-7 text-xs bg-white font-mono font-bold" />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={handleSaveIntimation} className="h-7 text-xs w-full font-bold bg-blue-600 hover:bg-blue-700 text-white">
+                  + Add Intimation
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-white p-4">
+              <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                  <tr>
+                    <th className="px-3 py-2">Claim No</th>
+                    <th className="px-3 py-2">UHID</th>
+                    <th className="px-3 py-2">Patient Name</th>
+                    <th className="px-3 py-2">TPA / Insurance Company</th>
+                    <th className="px-3 py-2 text-right">Requested (₹)</th>
+                    <th className="px-3 py-2 text-right">Approved Limit (₹)</th>
+                    <th className="px-3 py-2 text-right">Patient Co-Pay (₹)</th>
+                    <th className="px-3 py-2 text-center">Status</th>
+                    <th className="px-3 py-2">Remarks</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {intimations.map((it) => (
+                    <tr key={it.id}>
+                      <td className="px-3 py-2.5 font-mono font-bold text-blue-700">{it.claimNo}</td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">{it.uhid}</td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">{it.patientName}</td>
+                      <td className="px-3 py-2.5 text-slate-700 font-semibold">{it.tpaName}</td>
+                      <td className="px-3 py-2.5 text-right font-mono">₹{it.requestedAmt.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-emerald-600">₹{it.approvedAmt.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right font-mono text-amber-600">₹{it.coPayAmt.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-center">
+                        <Badge variant="outline" className={it.status === "Approved" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-blue-50 text-blue-700 border-blue-200"}>
+                          {it.status}
+                        </Badge>
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-500">{it.remarks}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        )}
+
+        {/* ─── TAB 11: UNBILLED ORDERS ────────────────────────────────────── */}
+        {activeTab === "UnBilled Orders" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-black text-slate-800">Unbilled Doctor & Service Orders Queue</h3>
+                <p className="text-xs text-slate-500">Pending investigations and procedures waiting for invoicing & settlement</p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button 
+                  onClick={handleBillSelectedOrders}
+                  disabled={selectedUnbilledOrders.length === 0}
+                  className="h-7 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+                >
+                  Generate Combined Invoice ({selectedUnbilledOrders.length})
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-white p-4">
+              <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                  <tr>
+                    <th className="px-3 py-2 text-center w-10">Select</th>
+                    <th className="px-3 py-2">Order No</th>
+                    <th className="px-3 py-2">UHID</th>
+                    <th className="px-3 py-2">Patient Name</th>
+                    <th className="px-3 py-2">Ordering Doctor</th>
+                    <th className="px-3 py-2">Department / Category</th>
+                    <th className="px-3 py-2 text-right">Net Value (₹)</th>
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {unbilledOrders.map((ord) => {
+                    const isChecked = selectedUnbilledOrders.includes(ord.id);
+                    return (
+                      <tr key={ord.id} className="hover:bg-slate-50/50">
+                        <td className="px-3 py-2.5 text-center">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              if (isChecked) {
+                                setSelectedUnbilledOrders(selectedUnbilledOrders.filter(id => id !== ord.id));
+                              } else {
+                                setSelectedUnbilledOrders([...selectedUnbilledOrders, ord.id]);
+                              }
+                            }}
+                            className="h-3.5 w-3.5 rounded text-blue-600"
+                          />
+                        </td>
+                        <td className="px-3 py-2.5 font-mono font-bold text-blue-700">{ord.orderNo}</td>
+                        <td className="px-3 py-2.5 font-mono text-slate-600">{ord.uhid}</td>
+                        <td className="px-3 py-2.5 font-bold text-slate-800">{ord.patientName}</td>
+                        <td className="px-3 py-2.5 text-slate-700 font-semibold">{ord.doctorName}</td>
+                        <td className="px-3 py-2.5">
+                          <Badge variant="outline" className="bg-slate-50 text-slate-700">
+                            {ord.orderType}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900">₹{ord.netAmount.toFixed(2)}</td>
+                        <td className="px-3 py-2.5 text-slate-500">{new Date(ord.createdAt).toLocaleDateString("en-GB")}</td>
+                        <td className="px-3 py-2.5 text-center">
+                          <Button
+                            size="xs"
+                            onClick={async () => {
+                              try {
+                                const inv = await billOrder(ord.id);
+                                toast.success("Order Billed", `Invoice ${inv.invoiceNo} generated!`);
+                                loadAllBillingData();
+                                setActiveTab("Master Activity List");
+                              } catch (err: any) {
+                                toast.error("Billing Failed", err.message);
+                              }
+                            }}
+                            className="h-6 px-3 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            Bill Order
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {unbilledOrders.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="px-3 py-12 text-center text-slate-400 font-bold">
+                        All doctor orders have been billed. No pending items in queue.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </Card>
         )}
       </div>
 
-      {/* Settlement (Receipt) Dialog Modal */}
+      {/* ─── MODAL 1: SETTLEMENT / SPLIT RECEIPT DIALOG ────────────────────── */}
       {isSettleModalOpen && selectedInvoice && (() => {
         const isRefund = selectedInvoice.status === "Refundable" || selectedInvoice.balance < 0;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-4 animate-fade-in">
-            <div className="w-full max-w-6xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-[#cee6f8] flex-shrink-0">
+              <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-100 bg-[#cee6f8] flex-shrink-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white text-blue-600 shadow-xs">
+                  <div className="p-2 rounded-lg bg-white text-blue-600 shadow-2xs">
                     <ReceiptText className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 text-base">{isRefund ? "Settlement (Refund)" : "Settlement (Receipt)"}</h3>
+                    <h3 className="font-bold text-slate-800 text-sm">{isRefund ? "Refund Settlement" : "Invoice Payment Settlement"}</h3>
                     <p className="text-xs text-slate-600 font-mono">Invoice No: {selectedInvoice.invoiceNo}</p>
                   </div>
                 </div>
-                <button onClick={() => setIsSettleModalOpen(false)} className="p-1 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-100">
+                <button onClick={() => setIsSettleModalOpen(false)} className="p-1 rounded-md text-slate-500 hover:text-slate-700">
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              {/* Modal Body */}
-              <div className="p-6 space-y-5 overflow-y-auto flex-1 text-xs">
-                {/* Ledger Summary Grid in 3x3 layout */}
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-[#eaf4fc]/30 text-xs">
-                  <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200 bg-white">
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">UHID</span>
-                      <span className="font-bold text-slate-800 flex-1">{selectedInvoice.uhid}</span>
-                    </div>
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">Encounter</span>
-                      <span className="font-bold text-slate-800 flex-1">{selectedInvoice.encNo}</span>
-                    </div>
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">Patient Name</span>
-                      <span className="font-bold text-slate-800 flex-1">{selectedInvoice.patientName}</span>
-                    </div>
+              {/* Body */}
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+                <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 border rounded-xl">
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Patient</span>
+                    <div className="font-bold text-slate-800">{selectedInvoice.patientName} (UHID: {selectedInvoice.uhid})</div>
                   </div>
-                  
-                  <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200 bg-white">
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">Bill No</span>
-                      <span className="font-mono text-slate-800 flex-1">{selectedInvoice.invoiceNo}</span>
-                    </div>
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">Date On</span>
-                      <span className="text-slate-800 flex-1">{new Date(selectedInvoice.date).toLocaleDateString("en-GB")}</span>
-                    </div>
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">Payer</span>
-                      <span className="text-slate-800 flex-1">{selectedInvoice.company}</span>
-                    </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Invoice Total</span>
+                    <div className="font-bold text-slate-800 font-mono">₹{selectedInvoice.netAmt.toFixed(2)}</div>
                   </div>
-
-                  <div className="grid grid-cols-3 divide-x divide-slate-200 bg-white">
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">Advance</span>
-                      <Input className="h-6 text-xs w-28 bg-white border-slate-200 py-0" placeholder="" />
-                    </div>
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">Amt To Adjust</span>
-                      <span className="font-bold text-slate-800 flex-1">₹{selectedInvoice.netAmt.toFixed(2)}</span>
-                    </div>
-                    <div className="p-2.5 flex items-center justify-between">
-                      <span className="text-slate-500 font-bold w-24">Balance</span>
-                      <span className="font-bold text-slate-800 flex-1">₹{Math.abs(selectedInvoice.balance).toFixed(2)}</span>
-                    </div>
+                  <div>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Pending Balance</span>
+                    <div className="font-black text-red-600 font-mono text-sm">₹{Math.abs(selectedInvoice.balance).toFixed(2)}</div>
                   </div>
                 </div>
 
-                {/* Details Header */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-4 border-b border-slate-100 pb-1.5 font-bold text-slate-700">
-                    <span>Details</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs font-semibold text-slate-700 pb-2">
-                    <span>{isRefund ? "Refund Amount" : "Receipt Amount"}</span>
-                    <Input
-                      type="number"
-                      className="h-7 text-xs w-36 bg-white border-slate-200 font-bold"
-                      value={Math.abs(selectedInvoice.balance)}
-                      disabled
-                    />
-                    {isRefund ? (
-                      <button className="text-blue-600 hover:underline text-[11px] font-bold" onClick={() => toast.success("Advance Generated", "Advance credit processed.")}>Generate Advance</button>
-                    ) : (
-                      <button className="text-blue-600 hover:underline text-[11px] font-bold">Show Previous Receipt</button>
-                    )}
-                  </div>
-
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-slate-800 uppercase tracking-wider text-[10px]">Payment Split Modes</h4>
-                    <Button variant="outline" size="xs" onClick={addPaymentRow} className="h-7 text-[10px] gap-1 bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700 font-bold">
-                      <Plus className="h-3.5 w-3.5" /> Add Split Row
+                    <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Payment Split Modes</span>
+                    <Button 
+                      size="xs" 
+                      variant="outline" 
+                      onClick={() => setPaymentRows([...paymentRows, { mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }])}
+                      className="h-6 text-[10px] font-bold text-blue-600"
+                    >
+                      + Add Payment Mode
                     </Button>
                   </div>
 
-                  {/* Modes Table Grid */}
-                  <div className="border border-slate-200 rounded-lg overflow-hidden">
-                    <table className="w-full text-left">
-                      <thead className="text-[10px] text-slate-500 uppercase bg-[#cee6f8]/40 border-b border-slate-200 font-bold text-slate-700">
-                        <tr>
-                          <th className="px-2 py-2 w-28">Mode</th>
-                          <th className="px-2 py-2 w-24">Amount</th>
-                          <th className="px-2 py-2 w-20">Balance</th>
-                          <th className="px-2 py-2 w-28 text-center">Date (dd/MM/YYYY)</th>
-                          <th className="px-2 py-2 w-32">Bank Name</th>
-                          <th className="px-2 py-2 w-36">Beneficiary Name</th>
-                          <th className="px-2 py-2 w-28">Reference No</th>
-                          <th className="px-2 py-2 w-40">Description/Card Holder</th>
-                          <th className="px-2 py-2 w-24 text-right">Swiping Value</th>
-                          <th className="px-2 py-2 text-center w-8"></th>
+                  <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                    <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                      <tr>
+                        <th className="px-2 py-2">Mode</th>
+                        <th className="px-2 py-2 text-right">Amount (₹)</th>
+                        <th className="px-2 py-2">Bank</th>
+                        <th className="px-2 py-2">Reference No</th>
+                        <th className="px-2 py-2">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {paymentRows.map((row, idx) => (
+                        <tr key={idx}>
+                          <td className="p-2">
+                            <Select 
+                              value={row.mode} 
+                              onValueChange={(val) => {
+                                const updated = [...paymentRows];
+                                updated[idx].mode = val;
+                                setPaymentRows(updated);
+                              }}
+                            >
+                              <SelectTrigger className="h-7 text-xs bg-white"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Cash">Cash</SelectItem>
+                                <SelectItem value="Card">Card</SelectItem>
+                                <SelectItem value="UPI">UPI</SelectItem>
+                                <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                <SelectItem value="CreditNote">Credit Note</SelectItem>
+                                <SelectItem value="TDS">TDS</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-2 text-right">
+                            <Input
+                              type="number"
+                              value={row.amount}
+                              onChange={(e) => {
+                                const updated = [...paymentRows];
+                                updated[idx].amount = Number(e.target.value);
+                                setPaymentRows(updated);
+                              }}
+                              className="h-7 text-xs text-right bg-white font-mono font-bold"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Bank name"
+                              value={row.bankName}
+                              onChange={(e) => {
+                                const updated = [...paymentRows];
+                                updated[idx].bankName = e.target.value;
+                                setPaymentRows(updated);
+                              }}
+                              className="h-7 text-xs bg-white"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Transaction / Ref#"
+                              value={row.refNo}
+                              onChange={(e) => {
+                                const updated = [...paymentRows];
+                                updated[idx].refNo = e.target.value;
+                                setPaymentRows(updated);
+                              }}
+                              className="h-7 text-xs bg-white font-mono"
+                            />
+                          </td>
+                          <td className="p-2">
+                            <Input
+                              placeholder="Remarks"
+                              value={row.description}
+                              onChange={(e) => {
+                                const updated = [...paymentRows];
+                                updated[idx].description = e.target.value;
+                                setPaymentRows(updated);
+                              }}
+                              className="h-7 text-xs bg-white"
+                            />
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {paymentRows.map((row, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50/20 text-xs">
-                            <td className="p-1">
-                              <Select value={row.mode} onValueChange={(val) => updatePaymentField(idx, "mode", val)}>
-                                <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="-Select-">-Select-</SelectItem>
-                                  <SelectItem value="Cash">Cash</SelectItem>
-                                  <SelectItem value="Card">Card</SelectItem>
-                                  <SelectItem value="UPI">UPI</SelectItem>
-                                  <SelectItem value="Cheque">Cheque</SelectItem>
-                                  <SelectItem value="CreditNote">Credit Note</SelectItem>
-                                  <SelectItem value="TDS">TDS</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </td>
-                            <td className="p-1">
-                              <Input
-                                type="number"
-                                className="h-7 text-xs font-semibold"
-                                value={row.amount || ""}
-                                onChange={(e) => updatePaymentField(idx, "amount", Number(e.target.value))}
-                                placeholder="0.00"
-                              />
-                            </td>
-                            <td className="p-1 text-center font-bold text-slate-700">
-                              {Math.max(0, Math.abs(selectedInvoice.balance) - row.amount).toFixed(0)}
-                            </td>
-                            <td className="p-1">
-                              <Input
-                                type="text"
-                                className="h-7 text-xs text-center"
-                                value={row.date}
-                                onChange={(e) => updatePaymentField(idx, "date", e.target.value)}
-                              />
-                            </td>
-                            <td className="p-1">
-                              <Select value={row.bankName || "-Select-"} onValueChange={(val) => updatePaymentField(idx, "bankName", val)}>
-                                <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="-Select-">-Select-</SelectItem>
-                                  <SelectItem value="HDFC Bank">HDFC Bank</SelectItem>
-                                  <SelectItem value="ICICI Bank">ICICI Bank</SelectItem>
-                                  <SelectItem value="SBI Bank">SBI Bank</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </td>
-                            <td className="p-1">
-                              <Select value={row.beneficiaryName || "-Select-"} onValueChange={(val) => updatePaymentField(idx, "beneficiaryName", val)}>
-                                <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="-Select-">-Select-</SelectItem>
-                                  <SelectItem value="CMK Main Receipt">CMK Main Receipt</SelectItem>
-                                  <SelectItem value="CMK Branch Account">CMK Branch Account</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </td>
-                            <td className="p-1">
-                              <Input
-                                type="text"
-                                className="h-7 text-xs"
-                                value={row.refNo}
-                                onChange={(e) => updatePaymentField(idx, "refNo", e.target.value)}
-                                placeholder=""
-                              />
-                            </td>
-                            <td className="p-1">
-                              <Input
-                                type="text"
-                                className="h-7 text-xs"
-                                value={row.description}
-                                onChange={(e) => updatePaymentField(idx, "description", e.target.value)}
-                                placeholder=""
-                              />
-                            </td>
-                            <td className="p-1">
-                              <Input
-                                type="number"
-                                className="h-7 text-xs text-right"
-                                value={row.cardSwipingValue || ""}
-                                onChange={(e) => updatePaymentField(idx, "cardSwipingValue", Number(e.target.value))}
-                                placeholder="0"
-                              />
-                            </td>
-                            <td className="p-1 text-center">
-                              {paymentRows.length > 1 ? (
-                                <button onClick={() => removePaymentRow(idx)} className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50">
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              ) : (
-                                <span className="text-slate-300">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="flex justify-between items-center text-xs font-semibold bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    <span className="text-slate-500">Total Amount:</span>
-                    <span className="text-slate-800 text-sm">
-                      ₹{paymentRows.reduce((sum, r) => sum + Number(r.amount || 0), 0).toFixed(2)}
-                    </span>
-                  </div>
-
-                  {isRefund && (
-                    <div className="flex justify-end pt-3">
-                      <div className="w-1/2 space-y-1.5 text-right">
-                        <label className="text-xs font-bold text-slate-600 block text-left">Notes*</label>
-                        <textarea
-                          className="w-full h-20 text-xs border border-slate-200 rounded-lg p-2.5 bg-white text-left focus:ring-0 focus:outline-none"
-                          value={settlementNotes}
-                          onChange={(e) => setSettlementNotes(e.target.value)}
-                          placeholder="Enter notes here..."
-                          required
-                        />
-                      </div>
-                    </div>
-                  )}
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+
+                {isRefund && (
+                  <div className="space-y-1">
+                    <Label className="text-[10px] font-bold uppercase text-slate-500">Refund Reason / Remarks*</Label>
+                    <textarea
+                      value={settlementNotes}
+                      onChange={(e) => setSettlementNotes(e.target.value)}
+                      className="w-full h-16 text-xs p-2 border rounded-lg"
+                      placeholder="Reason for processing refund..."
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Modal Footer */}
-              <div className="flex items-center justify-end px-6 py-3 border-t border-slate-100 bg-slate-50 gap-2 flex-shrink-0">
-                <Button variant="outline" size="sm" onClick={() => setIsSettleModalOpen(false)}>
-                  Close
-                </Button>
-                <Button variant="success" size="sm" onClick={handleSaveSettlement} className="gap-1 font-bold">
-                  <ShieldCheck className="h-4 w-4" /> {isRefund ? "Save Refund" : "Save Receipt"}
-                </Button>
+              {/* Footer */}
+              <div className="flex items-center justify-between px-6 py-3 border-t bg-slate-50 flex-shrink-0">
+                <div className="font-bold text-slate-700">
+                  Total Settlement Amount: <span className="font-mono text-sm text-emerald-600">₹{paymentRows.reduce((sum, r) => sum + Number(r.amount || 0), 0).toFixed(2)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setIsSettleModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSaveSettlement} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1">
+                    <ShieldCheck className="w-4 h-4" /> Save Receipt
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         );
       })()}
 
-      {/* Printable Invoice Dialog Modal */}
+      {/* ─── MODAL 2: PRINTABLE HOSPITAL INVOICE / RECEIPT ─────────────────── */}
       {printInvoiceData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] p-4 animate-fade-in">
-          <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-slate-50 flex-shrink-0">
-              <span className="font-bold text-slate-800 text-sm">Print Invoice Preview</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-5 py-2.5 border-b bg-slate-50 flex-shrink-0">
+              <span className="font-bold text-slate-800 text-sm">Official Invoice & Settlement Receipt</span>
               <button onClick={() => setPrintInvoiceData(null)} className="p-1 rounded-md text-slate-400 hover:text-slate-600">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div id="printable-area" className="p-8 space-y-6 overflow-y-auto max-h-[70vh] bg-white text-slate-800 text-xs">
-              <div className="text-center border-b pb-4">
-                <h2 className="text-lg font-bold">CMK HEALTHCARE PVT. LTD.</h2>
-                <p className="text-slate-500">12, Main Street, Delhi, India</p>
-                <p className="text-slate-500">Phone: +91 9876543210</p>
+
+            <div className="p-8 space-y-6 overflow-y-auto bg-white text-slate-800 text-xs">
+              {/* Header Letterhead */}
+              <div className="text-center border-b pb-4 space-y-1">
+                <h2 className="text-xl font-black tracking-tight text-blue-900">CMK HEALTHCARE PVT. LTD.</h2>
+                <p className="text-slate-500 font-medium">12, Main Healthcare Boulevard, Institutional Area, Delhi - 110001</p>
+                <p className="text-slate-500 font-mono text-[11px]">GSTIN: 07AAAAA0000A1Z5 | Phone: +91 11 4567 8900</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+
+              {/* Bill & Patient Details */}
+              <div className="grid grid-cols-2 gap-4 border-b pb-4">
+                <div className="space-y-1">
+                  <p><strong className="text-slate-600">Patient:</strong> <span className="font-bold text-slate-900">{printInvoiceData.patientName}</span></p>
+                  <p><strong className="text-slate-600">UHID:</strong> <span className="font-mono">{printInvoiceData.uhid}</span></p>
+                  <p><strong className="text-slate-600">Consultant:</strong> {printInvoiceData.doctorName || "Dr. Abhishek Bansal"}</p>
+                </div>
+                <div className="text-right space-y-1">
+                  <p><strong className="text-slate-600">Invoice No:</strong> <span className="font-mono font-bold text-blue-700">{printInvoiceData.invoiceNo}</span></p>
+                  <p><strong className="text-slate-600">Date:</strong> {new Date(printInvoiceData.date).toLocaleDateString("en-GB")}</p>
+                  <p><strong className="text-slate-600">Payer Category:</strong> {printInvoiceData.company}</p>
+                </div>
+              </div>
+
+              {/* Service Line Items */}
+              <div className="space-y-2">
+                <h4 className="font-bold uppercase text-[10px] text-slate-500">Service Charges Breakdown</h4>
+                <table className="w-full text-left border-t border-b py-2">
+                  <thead>
+                    <tr className="border-b text-[10px] uppercase text-slate-500">
+                      <th className="py-2">Description</th>
+                      <th className="py-2 text-right">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium">
+                    {(() => {
+                      let items = [];
+                      try {
+                        if (printInvoiceData.itemsJson) items = JSON.parse(printInvoiceData.itemsJson);
+                      } catch {
+                        items = [];
+                      }
+                      if (items.length > 0) {
+                        return items.map((it: any, idx: number) => (
+                          <tr key={idx}>
+                            <td className="py-2">{it.name} (Qty: {it.qty || 1})</td>
+                            <td className="py-2 text-right font-mono">₹{((it.netAmt || it.rate || 0) * (it.qty || 1)).toFixed(2)}</td>
+                          </tr>
+                        ));
+                      }
+                      return (
+                        <tr>
+                          <td className="py-2">Hospital Healthcare & Consultation Charges ({printInvoiceData.type})</td>
+                          <td className="py-2 text-right font-mono">₹{printInvoiceData.netAmt.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })()}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Totals Summary */}
+              <div className="space-y-1.5 pt-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-600 font-medium">Gross Total:</span>
+                  <span className="font-mono font-bold">₹{printInvoiceData.netAmt.toFixed(2)}</span>
+                </div>
+                {printInvoiceData.adjusted > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Total Amount Paid / Settled:</span>
+                    <span className="font-mono font-bold">-₹{printInvoiceData.adjusted.toFixed(2)}</span>
+                  </div>
+                )}
+                {printInvoiceData.creditNote > 0 && (
+                  <div className="flex justify-between text-purple-600">
+                    <span>Credit Note Waiver:</span>
+                    <span className="font-mono font-bold">-₹{printInvoiceData.creditNote.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center text-sm font-black pt-2 border-t text-slate-900">
+                  <span>Balance Outstanding:</span>
+                  <span className={`font-mono ${printInvoiceData.balance <= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                    ₹{Math.abs(printInvoiceData.balance).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Signature Lines */}
+              <div className="flex justify-between items-end pt-12 text-[11px] text-slate-500">
                 <div>
-                  <p><strong>Patient Name:</strong> {printInvoiceData.patientName}</p>
-                  <p><strong>UHID:</strong> {printInvoiceData.uhid}</p>
-                  <p><strong>Encounter No:</strong> {printInvoiceData.encNo}</p>
+                  <div className="border-t border-slate-300 w-36 pt-1 text-center font-bold">Patient Signature</div>
                 </div>
-                <div className="text-right">
-                  <p><strong>Invoice No:</strong> {printInvoiceData.invoiceNo}</p>
-                  <p><strong>Date:</strong> {new Date(printInvoiceData.date).toLocaleDateString()}</p>
-                  <p><strong>Company:</strong> {printInvoiceData.company}</p>
+                <div>
+                  <div className="border-t border-slate-300 w-44 pt-1 text-center font-bold">Authorized Cashier</div>
                 </div>
-              </div>
-              <table className="w-full border-t border-b py-2 text-left">
-                <thead>
-                  <tr className="border-b">
-                    <th className="py-2">Description</th>
-                    <th className="py-2 text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="py-2">Hospital Service Charges ({printInvoiceData.type})</td>
-                    <td className="py-2 text-right">₹{printInvoiceData.netAmt.toFixed(2)}</td>
-                  </tr>
-                  {printInvoiceData.adjusted > 0 && (
-                    <tr>
-                      <td className="py-2 text-slate-500 font-semibold">Less: Amount Settled</td>
-                      <td className="py-2 text-right text-emerald-600">-₹{printInvoiceData.adjusted.toFixed(2)}</td>
-                    </tr>
-                  )}
-                  {printInvoiceData.creditNote > 0 && (
-                    <tr>
-                      <td className="py-2 text-slate-500 font-semibold">Less: Credit Note applied</td>
-                      <td className="py-2 text-right text-purple-600">-₹{printInvoiceData.creditNote.toFixed(2)}</td>
-                    </tr>
-                  )}
-                  {printInvoiceData.tdsAmt > 0 && (
-                    <tr>
-                      <td className="py-2 text-slate-500 font-semibold">Less: TDS Deductions</td>
-                      <td className="py-2 text-right text-blue-600">-₹{printInvoiceData.tdsAmt.toFixed(2)}</td>
-                    </tr>
-                  )}
-                  {printInvoiceData.refund > 0 && (
-                    <tr>
-                      <td className="py-2 text-slate-500 font-semibold">Add: Refunds processed</td>
-                      <td className="py-2 text-right text-amber-600">+₹{printInvoiceData.refund.toFixed(2)}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              <div className="flex justify-between items-center text-sm font-bold pt-2">
-                <span>Net Outstanding Balance:</span>
-                <span className={printInvoiceData.balance < 0 ? "text-amber-600" : "text-slate-800"}>
-                  ₹{printInvoiceData.balance.toFixed(2)}
-                </span>
               </div>
             </div>
+
             <div className="flex justify-end gap-2 p-4 border-t bg-slate-50">
               <Button variant="outline" size="sm" onClick={() => setPrintInvoiceData(null)}>
                 Close
               </Button>
-              <Button size="sm" className="gap-1 font-bold" onClick={() => window.print()}>
-                <Printer className="h-4 w-4" /> Print Receipt
+              <Button size="sm" className="gap-1 font-bold bg-blue-600 hover:bg-blue-700 text-white" onClick={() => window.print()}>
+                <Printer className="h-4 w-4" /> Print Document
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {isPatientSearchModalOpen && (() => {
-        const MODAL_PATIENTS = [
-          { uhid: "2711", name: "Mr. Haula Khan",     genderAge: "Male/65 Yr",   regDate: "12/08/2026 7:19PM",  company: "CASH", mobile: "9818456584", dob: "12/08/1961", address: "MANGOL PURI",           father: "S K Khan"    },
-          { uhid: "2710", name: "Mr. Raj Pal Yadav",  genderAge: "Male/70 Yr",   regDate: "10/08/2026 4:29PM",  company: "CASH", mobile: "8384858875", dob: "10/08/1956", address: "JAI ESAR",               father: "R P Yadav"   },
-          { uhid: "2709", name: "Mr. Jumrati",        genderAge: "Male/63 Yr",   regDate: "03/08/2026 3:05PM",  company: "CASH", mobile: "9960378464", dob: "03/08/1963", address: "MAYUR VIHAR PHASE -1",   father: "Jumrati Sr"  },
-          { uhid: "2708", name: "Mrs. Vandana",       genderAge: "Female/40 Yr", regDate: "31/07/2026 6:54PM",  company: "CASH", mobile: "8076185091", dob: "31/07/1986", address: "CR PARK",                father: "A K Sharma"  },
-          { uhid: "2707", name: "Ms. Shipra Shukla",  genderAge: "Female/54 Yr", regDate: "31/07/2026 6:30PM",  company: "CASH", mobile: "9988810517", dob: "31/07/1972", address: "T-74B MALVIYA NAGAR",    father: "S N Shukla"  },
-          { uhid: "2706", name: "Mrs. Aniti Masood",  genderAge: "Female/48 Yr", regDate: "22/07/2026 1:15PM",  company: "CASH", mobile: "9834780801", dob: "22/07/1978", address: "A113 HARIDAUS NADAR KI A ROAD A.M.U.", father: "" },
-          { uhid: "2705", name: "Mrs. Krishna Bala",  genderAge: "Female/48 Yr", regDate: "25/07/2026 6:56PM",  company: "CASH", mobile: "7838777894", dob: "25/07/1978", address: "GHAZIABAD",              father: ""            },
-          { uhid: "2704", name: "Mr. Naresh Jain",    genderAge: "Male/75 Yr",   regDate: "25/07/2026 2:01PM",  company: "CASH", mobile: "9310489390", dob: "25/07/1951", address: "SECTOR 85 GURGAON",      father: ""            },
-          { uhid: "2703", name: "Mrs. Anita Gupta",   genderAge: "Female/55 Yr", regDate: "22/07/2026 7:20PM",  company: "CASH", mobile: "9710137225", dob: "22/07/1971", address: "HAROBOND ENCLAVE CHATTARPUR", father: ""       },
-          { uhid: "2702", name: "Ms. Anita Singh",    genderAge: "Female/24 Yr", regDate: "21/07/2026 7:15PM",  company: "CASH", mobile: "8562872490", dob: "21/07/2002", address: "F-42 BLOCK F KALKAJI",   father: ""            },
-          { uhid: "222",  name: "Mr. Somesh Kumar",   genderAge: "Male/28 Yr",   regDate: "11/08/2026 4:30PM",  company: "CASH", mobile: "9695960777", dob: "11/08/1998", address: "DELHI SECTOR 4",         father: "Dinesh Kumar"},
-        ];
+      {/* ─── MODAL 3: PATIENT SEARCH MODAL ─────────────────────────────────── */}
+      {isPatientSearchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-xs overflow-y-auto p-4">
+          <div className="w-full max-w-5xl bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col my-4">
+            <div className="flex items-center justify-between px-5 py-3 border-b bg-[#cee6f8] rounded-t-xl flex-shrink-0">
+              <span className="font-bold text-slate-800 text-sm">Patient Census Lookup</span>
+              <Button size="sm" onClick={() => setIsPatientSearchModalOpen(false)} className="h-7 px-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">
+                Close
+              </Button>
+            </div>
 
-        const filtered = MODAL_PATIENTS.filter(p =>
-          !modalSearchTerm ||
-          p.uhid.includes(modalSearchTerm) ||
-          p.name.toLowerCase().includes(modalSearchTerm.toLowerCase()) ||
-          p.mobile.includes(modalSearchTerm)
-        );
-
-        return (
-          <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-[2px] overflow-y-auto animate-fade-in">
-            <div className="w-full max-w-7xl bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col my-4 mx-4">
-
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 bg-[#cee6f8] rounded-t-xl flex-shrink-0">
-                <span className="font-bold text-slate-800 text-sm">Patient Details</span>
-                <div className="flex items-center gap-1.5">
-                  <Button variant="outline" size="sm" className="h-7 px-3 bg-white text-slate-700 hover:bg-slate-50 border-slate-300 text-xs font-bold">
-                    Filter
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => setModalSearchTerm("")} className="h-7 px-3 bg-white text-slate-700 hover:bg-slate-50 border-slate-300 text-xs font-bold">
-                    Clear Filter
-                  </Button>
-                  <Button size="sm" onClick={() => setIsPatientSearchModalOpen(false)} className="h-7 px-3 bg-blue-600 hover:bg-blue-700 text-white border-blue-600 text-xs font-bold">
-                    Close
-                  </Button>
-                </div>
+            <div className="p-4 space-y-3 text-xs">
+              <div className="flex items-center gap-3">
+                <Input
+                  placeholder="Search by UHID, Patient Name, Mobile No, Address..."
+                  value={modalSearchTerm}
+                  onChange={(e) => setModalSearchTerm(e.target.value)}
+                  className="h-8 text-xs bg-white border-slate-300"
+                />
+                <Button size="sm" onClick={() => setModalSearchTerm("")} variant="outline" className="h-8 text-xs">
+                  Clear
+                </Button>
               </div>
 
-              <div className="p-4 space-y-3 text-xs">
-
-                {/* Row 1: Facility + Entry Site + Radio groups */}
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-700 w-14 flex-shrink-0">Facility</span>
-                    <Select defaultValue="CMK">
-                      <SelectTrigger className="h-7 text-xs w-44 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="CMK">CMK HEALTHCARE PVT. LTD.</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-700 w-16 flex-shrink-0">Entry Site</span>
-                    <Select defaultValue="All">
-                      <SelectTrigger className="h-7 text-xs w-28 bg-white border-slate-200"><SelectValue /></SelectTrigger>
-                      <SelectContent><SelectItem value="All">ALL</SelectItem></SelectContent>
-                    </Select>
-                  </div>
-                  <div className="flex items-center gap-4 font-semibold text-slate-700">
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="radio" name="modal-search-scope" defaultChecked className="h-3.5 w-3.5" />
-                      <span>Search on Criteria</span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="radio" name="modal-search-scope" className="h-3.5 w-3.5" />
-                      <span>Search All (Date Range)</span>
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-4 font-semibold text-slate-700">
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="radio" name="modal-filter" defaultChecked className="h-3.5 w-3.5" />
-                      <span>Registration</span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="radio" name="modal-filter" className="h-3.5 w-3.5" />
-                      <span>Encounter</span>
-                    </label>
-                    <label className="flex items-center gap-1 cursor-pointer">
-                      <input type="radio" name="modal-filter" className="h-3.5 w-3.5" />
-                      <span>Discharge</span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Row 2: Search fields – Row 1 of 2 */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-2">
-                  {[
-                    { label: "UHID",         isMain: true },
-                    { label: "IP No.",       isMain: false },
-                    { label: "Patient Name", isMain: false },
-                    { label: "Date of Birth",isMain: false },
-                    { label: "Phone",        isMain: false },
-                  ].map(({ label, isMain }) => (
-                    <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-slate-500 font-semibold text-[10px] uppercase tracking-wide">{label}</span>
-                      <Input
-                        className="h-7 text-xs bg-white border-slate-200"
-                        value={isMain ? modalSearchTerm : ""}
-                        onChange={isMain ? (e) => setModalSearchTerm(e.target.value) : undefined}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-2">
-                  {["Mobile #", "Bed No", "E-Mail Id", "Company", "Passport No"].map(label => (
-                    <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-slate-500 font-semibold text-[10px] uppercase tracking-wide">{label}</span>
-                      <Input className="h-7 text-xs bg-white border-slate-200" />
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-2">
-                  {["Identity No", "Old Reg No", "Mother Name", "Father Name", "Privilege Card"].map(label => (
-                    <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-slate-500 font-semibold text-[10px] uppercase tracking-wide">{label}</span>
-                      <Input className="h-7 text-xs bg-white border-slate-200" />
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-x-4 gap-y-2">
-                  <div className="flex flex-col gap-0.5 col-span-2">
-                    <span className="text-slate-500 font-semibold text-[10px] uppercase tracking-wide">Address</span>
-                    <Input className="h-7 text-xs bg-white border-slate-200" />
-                  </div>
-                </div>
-
-                {/* Patient Table */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-[#cee6f8]/40 border-b border-slate-200 font-bold text-slate-700">
-                      <tr>
-                        <th className="px-3 py-2 text-center w-14">Select</th>
-                        <th className="px-3 py-2">UHID</th>
-                        <th className="px-3 py-2">Patient Name</th>
-                        <th className="px-3 py-2">Gender/Age</th>
-                        <th className="px-3 py-2">Registration Date</th>
-                        <th className="px-3 py-2">Company</th>
-                        <th className="px-3 py-2">MobileNo</th>
-                        <th className="px-3 py-2">DOB</th>
-                        <th className="px-3 py-2 max-w-[160px]">PatientAddress</th>
-                        <th className="px-3 py-2">Father Name</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
-                      {filtered.map((p) => {
-                        const handleSelect = () => {
+              <div className="border rounded-lg overflow-hidden max-h-[55vh] overflow-y-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold sticky top-0">
+                    <tr>
+                      <th className="px-3 py-2 text-center w-14">Action</th>
+                      <th className="px-3 py-2">UHID</th>
+                      <th className="px-3 py-2">Patient Name</th>
+                      <th className="px-3 py-2">Gender/Age</th>
+                      <th className="px-3 py-2">Payer / Company</th>
+                      <th className="px-3 py-2">Mobile</th>
+                      <th className="px-3 py-2">Address</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {patients
+                      .filter(p => !modalSearchTerm || p.uhid.includes(modalSearchTerm) || p.patientName.toLowerCase().includes(modalSearchTerm.toLowerCase()) || p.mobileNo.includes(modalSearchTerm))
+                      .map((p) => {
+                        const selectThisPatient = () => {
                           if (activeTab === "OP Billing") {
                             setOpBillingUhid(p.uhid);
                           } else if (activeTab === "IP Billing") {
                             setIpBillingUhid(p.uhid);
+                          } else if (activeTab === "Create OP Visit") {
+                            setOpUhid(p.uhid);
+                            setOpPatientName(p.patientName);
+                            setOpDoctor(p.doctor || "Dr. Abhishek Bansal 2273");
+                            setOpPayerType(p.company.includes("Insurance") || p.company.includes("Star") ? "Insurance" : "Direct Patient");
+                            setOpPayer(p.company || "CASH");
+                            setOpSponsor(p.company || "CASH");
+                          } else if (activeTab === "OP Order") {
+                            setOrderUhid(p.uhid);
+                            setOrderDoctor(p.doctor || "Dr. Sameer Sen 3105");
+                          } else if (activeTab === "Advance Collection") {
+                            setAdvUhid(p.uhid);
+                          } else if (activeTab === "Credit Note") {
+                            setCnUhid(p.uhid);
+                            setCnInvoiceNo(`IPCA26/${p.uhid}`);
+                          } else if (activeTab === "Refund") {
+                            setRefUhid(p.uhid);
+                            setRefInvoiceNo(`OPCA26/${p.uhid}`);
+                          } else if (activeTab === "Intimation") {
+                            setIntUhid(p.uhid);
+                            if (p.company && !p.company.includes("CASH")) setIntTpa(p.company);
                           } else {
                             setInvoiceSearch(p.uhid);
                           }
+
                           setIsPatientSearchModalOpen(false);
-                          toast.success("Patient Selected", `${p.name} (UHID: ${p.uhid}) loaded successfully.`);
+                          toast.success("Patient Selected", `${p.patientName} (UHID: ${p.uhid}) loaded.`);
                         };
+
                         return (
-                          <tr
-                            key={p.uhid}
-                            onClick={handleSelect}
-                            className="hover:bg-blue-50 cursor-pointer group"
+                          <tr 
+                            key={p.uhid} 
+                            onClick={selectThisPatient}
+                            className="hover:bg-blue-50 cursor-pointer transition-colors group"
                           >
-                            <td className="px-3 py-2 text-center">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleSelect(); }}
-                                className="text-blue-600 font-bold hover:underline text-[11px]"
+                            <td className="px-3 py-2 text-center" onClick={(e) => { e.stopPropagation(); selectThisPatient(); }}>
+                              <Button
+                                size="xs"
+                                className="h-6 px-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] cursor-pointer"
+                                onClick={selectThisPatient}
                               >
                                 Select
-                              </button>
+                              </Button>
                             </td>
-                            <td className="px-3 py-2">
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleSelect(); }}
-                                className="font-mono font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                              >
-                                {p.uhid}
-                              </button>
-                            </td>
-                            <td className="px-3 py-2 font-bold text-slate-800 group-hover:text-blue-700">{p.name}</td>
+                            <td className="px-3 py-2 font-mono font-bold text-blue-600 group-hover:underline">{p.uhid}</td>
+                            <td className="px-3 py-2 font-bold text-slate-800">{p.patientName}</td>
                             <td className="px-3 py-2 text-slate-500">{p.genderAge}</td>
-                            <td className="px-3 py-2 text-slate-500">{p.regDate}</td>
-                            <td className="px-3 py-2">{p.company}</td>
-                            <td className="px-3 py-2 text-slate-500">{p.mobile}</td>
-                            <td className="px-3 py-2 text-slate-500">{p.dob}</td>
-                            <td className="px-3 py-2 truncate max-w-[160px]">{p.address}</td>
-                            <td className="px-3 py-2 text-slate-500">{p.father}</td>
+                            <td className="px-3 py-2 text-slate-600">{p.company}</td>
+                            <td className="px-3 py-2 font-mono text-slate-500">{p.mobileNo}</td>
+                            <td className="px-3 py-2 text-slate-500 truncate max-w-[150px]">{p.address}</td>
                           </tr>
                         );
                       })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Pagination */}
-                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 pt-1">
-                  <div className="flex items-center gap-1">
-                    <button className="w-6 h-6 rounded border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-400">‹‹</button>
-                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                      <button
-                        key={n}
-                        className={`w-6 h-6 rounded border flex items-center justify-center font-bold ${n === 1 ? "bg-blue-600 text-white border-blue-600" : "bg-white border-slate-200 hover:bg-slate-50 text-slate-600"}`}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                    <button className="w-6 h-6 rounded border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-400">››</button>
-                  </div>
-                  <span className="text-slate-400 italic">100 items in 10 pages</span>
-                </div>
-
-                {/* Patient Information footer */}
-                <div className="bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 grid grid-cols-3 gap-4">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide block mb-1">Name :</span>
-                    <span className="text-slate-700 font-bold text-xs"></span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide block mb-1">Address :</span>
-                    <span className="text-slate-700 text-xs"></span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wide block mb-1">Kin :</span>
-                    <span className="text-slate-700 text-xs"></span>
-                  </div>
-                </div>
-
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
-        );
-      })()}
+        </div>
+      )}
+
     </div>
   );
 }

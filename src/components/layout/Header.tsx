@@ -11,7 +11,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/registration/search": { title: "Registration", subtitle: "Patient Search" },
   "/reports": { title: "Reports", subtitle: "Analytics & Reports" },
   "/billing": { title: "Billing", subtitle: "Invoices & Payments" },
-  "/atd": { title: "ATD", subtitle: "Attendance & Duty" },
+  "/atd": { title: "ATD", subtitle: "Admission, Transfer & Discharge — Bed Status Matrix" },
   "/wards": { title: "Ward Management", subtitle: "Beds & Wards" },
   "/settings": { title: "Settings", subtitle: "Configuration & Management" },
 };
