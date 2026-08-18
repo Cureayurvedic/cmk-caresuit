@@ -232,6 +232,8 @@ export default function BillingPage() {
   const [patientSearchOn, setPatientSearchOn] = useState("Patient Name");
   const [patientTypeFilter, setPatientTypeFilter] = useState<string>("Admission");
   const [patientStatusFilter, setPatientStatusFilter] = useState("all");
+  const [patientPageSize, setPatientPageSize] = useState(10);
+  const [patientCurrentPage, setPatientCurrentPage] = useState(1);
 
   const [invoiceSearch, setInvoiceSearch] = useState("");
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("all");
@@ -301,15 +303,25 @@ export default function BillingPage() {
   const [opBillingVisitNo, setOpBillingVisitNo] = useState("1");
   const [opBillingYear, setOpBillingYear] = useState("26-27");
   const [opBillingType, setOpBillingType] = useState("Cash");
+  const [opBillingInvoiceNo, setOpBillingInvoiceNo] = useState("");
+  const [opBillingDate, setOpBillingDate] = useState(() => new Date().toISOString().slice(0, 16));
   const [opBillingPayerType, setOpBillingPayerType] = useState("Direct Patient");
   const [opBillingPayer, setOpBillingPayer] = useState("CASH");
   const [opBillingSponsor, setOpBillingSponsor] = useState("CASH");
-  const [opBillingNetwork, setOpBillingNetwork] = useState("Select");
+  const [opBillingNetwork, setOpBillingNetwork] = useState("");
+  const [opBillingPrescribingDoctor, setOpBillingPrescribingDoctor] = useState("D K DAS");
   const [opBillingDoctor, setOpBillingDoctor] = useState("Dr. Sameer Sen 3105");
   const [opBillingReferredType, setOpBillingReferredType] = useState("SELF");
   const [opBillingReferredName, setOpBillingReferredName] = useState("");
   const [opBillingSubTab, setOpBillingSubTab] = useState("Service");
   const [opBillingNarration, setOpBillingNarration] = useState("");
+  const [opBillingCoPayBy, setOpBillingCoPayBy] = useState("Patient");
+  const [opBillingReportingDateTime, setOpBillingReportingDateTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [opBillingPanNo, setOpBillingPanNo] = useState("");
+  const [opBillingApprovalRequired, setOpBillingApprovalRequired] = useState(false);
+  const [opBillingExcludedService, setOpBillingExcludedService] = useState(false);
+  const [opBillingRefundedService, setOpBillingRefundedService] = useState(false);
+  const [opBillingEmailResult, setOpBillingEmailResult] = useState(false);
   const [opBillingItems, setOpBillingItems] = useState<InvoiceItem[]>([
     { code: "CON-01", name: "OPD Consultation - Senior Specialist", dept: "General OPD", doctor: "Dr. Sameer Sen", rate: 500, qty: 1, discountPercent: 0, discountAmt: 0, taxPercent: 0, netAmt: 500 },
   ]);
@@ -323,7 +335,7 @@ export default function BillingPage() {
     refNo: string;
     description: string;
     cardSwipingValue: number;
-  }>>([{ mode: "Cash", amount: 500, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
+  }>>([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
 
   // ─── OP Order Form State ─────────────────────────────────────────────────────
   const [orderUhid, setOrderUhid] = useState("");
@@ -604,6 +616,23 @@ export default function BillingPage() {
       setOpDoctor(opVisitPatientInfo.doctor);
     }
   }, [opVisitPatientInfo]);
+
+  useEffect(() => {
+    if (opBillingPatientInfo) {
+      setOpBillingPayerType(opBillingPatientInfo.payerType);
+      setOpBillingPayer(opBillingPatientInfo.payer);
+      setOpBillingSponsor(opBillingPatientInfo.sponsor);
+      setOpBillingDoctor(opBillingPatientInfo.doctor || "Dr. Sameer Sen 3105");
+      if (opBillingPatientInfo.doctor) {
+        const parts = opBillingPatientInfo.doctor.split(" ");
+        if (parts.length > 1 && !isNaN(Number(parts[parts.length - 1]))) {
+          setOpBillingPrescribingDoctor(parts.slice(0, -1).join(" "));
+        } else {
+          setOpBillingPrescribingDoctor(opBillingPatientInfo.doctor);
+        }
+      }
+    }
+  }, [opBillingPatientInfo]);
 
   // Calculate OP Billing Totals
   const opGrossTotal = useMemo(() => {
@@ -1056,6 +1085,12 @@ export default function BillingPage() {
     return true;
   });
 
+  const patientTotalPages = Math.max(1, Math.ceil(filteredPatients.length / patientPageSize));
+  const paginatedPatients = filteredPatients.slice(
+    (patientCurrentPage - 1) * patientPageSize,
+    patientCurrentPage * patientPageSize
+  );
+
   // ─── Master Activity List Preset and Reset Handlers ─────────────────────────
   const handleDateRangePresetChange = (preset: string) => {
     setMalDateRangePreset(preset);
@@ -1438,23 +1473,23 @@ export default function BillingPage() {
             {/* Patients Table */}
             <div className="flex-1 overflow-auto bg-white">
               <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase text-[10px] font-bold sticky top-0 z-10">
+                <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white uppercase text-[10px] font-bold sticky top-0 z-10">
                   <tr>
-                    <th className="px-3 py-2.5">UHID</th>
-                    <th className="px-3 py-2.5">IP / Visit No</th>
-                    <th className="px-3 py-2.5">Patient Name</th>
-                    <th className="px-3 py-2.5">Gender / Age</th>
-                    <th className="px-3 py-2.5">Bed / Room</th>
-                    <th className="px-3 py-2.5">Category</th>
-                    <th className="px-3 py-2.5">Doctor</th>
-                    <th className="px-3 py-2.5">Status</th>
-                    <th className="px-3 py-2.5">Company / Payer</th>
-                    <th className="px-3 py-2.5">Mobile</th>
-                    <th className="px-3 py-2.5 text-center">Fast Actions</th>
+                    <th className="px-3 py-2.5 tracking-wider">UHID</th>
+                    <th className="px-3 py-2.5 tracking-wider">IP / Visit No</th>
+                    <th className="px-3 py-2.5 tracking-wider">Patient Name</th>
+                    <th className="px-3 py-2.5 tracking-wider">Gender / Age</th>
+                    <th className="px-3 py-2.5 tracking-wider">Bed / Room</th>
+                    <th className="px-3 py-2.5 tracking-wider">Category</th>
+                    <th className="px-3 py-2.5 tracking-wider">Doctor</th>
+                    <th className="px-3 py-2.5 tracking-wider">Status</th>
+                    <th className="px-3 py-2.5 tracking-wider">Company / Payer</th>
+                    <th className="px-3 py-2.5 tracking-wider">Mobile</th>
+                    <th className="px-3 py-2.5 text-center tracking-wider">Fast Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {filteredPatients.map((p) => (
+                  {paginatedPatients.map((p) => (
                     <tr key={p.uhid} className="hover:bg-blue-50/40 group">
                       <td className="px-3 py-2.5 font-mono font-bold text-blue-600">{p.uhid}</td>
                       <td className="px-3 py-2.5 font-mono text-slate-600">{p.ipNo}</td>
@@ -1526,6 +1561,111 @@ export default function BillingPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* ── Pagination Footer ─────────────────────────────────────── */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-slate-200 bg-slate-50 flex-shrink-0">
+              {/* Rows per page selector */}
+              <div className="flex items-center gap-2 text-xs text-slate-600 font-semibold">
+                <span>Rows per page:</span>
+                <select
+                  value={patientPageSize}
+                  onChange={(e) => {
+                    setPatientPageSize(Number(e.target.value));
+                    setPatientCurrentPage(1);
+                  }}
+                  className="h-7 px-2 text-xs border border-slate-200 rounded-md bg-white text-slate-700 font-bold cursor-pointer focus:outline-none focus:ring-1 focus:ring-teal-500"
+                >
+                  {[5, 10, 20, 50, 100].map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Right side: Page info + Pagination buttons */}
+              <div className="flex items-center gap-3">
+                {/* Showing text */}
+                <span className="text-xs text-slate-500 font-semibold">
+                  Showing{" "}
+                  <span className="font-bold text-slate-800">
+                    {filteredPatients.length === 0 ? 0 : (patientCurrentPage - 1) * patientPageSize + 1}
+                  </span>
+                  {" "}–{" "}
+                  <span className="font-bold text-slate-800">
+                    {Math.min(patientCurrentPage * patientPageSize, filteredPatients.length)}
+                  </span>
+                  {" "}of{" "}
+                  <span className="font-bold text-slate-800">{filteredPatients.length}</span>
+                  {" "}results
+                </span>
+
+                {/* Pagination buttons */}
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPatientCurrentPage(1)}
+                    disabled={patientCurrentPage === 1}
+                    className="h-7 w-7 flex items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold"
+                    title="First page"
+                  >
+                    «
+                  </button>
+                  <button
+                    onClick={() => setPatientCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={patientCurrentPage === 1}
+                    className="h-7 w-7 flex items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold"
+                    title="Previous page"
+                  >
+                    ‹
+                  </button>
+
+                  {Array.from({ length: patientTotalPages }, (_, i) => i + 1)
+                    .filter((page) =>
+                      page === 1 ||
+                      page === patientTotalPages ||
+                      Math.abs(page - patientCurrentPage) <= 1
+                    )
+                    .reduce((acc: (number | string)[], page, idx, arr) => {
+                      if (idx > 0 && (page as number) - (arr[idx - 1] as number) > 1) acc.push("…");
+                      acc.push(page);
+                      return acc;
+                    }, [])
+                    .map((item, idx) =>
+                      item === "…" ? (
+                        <span key={`ellipsis-${idx}`} className="h-7 w-7 flex items-center justify-center text-slate-400 text-xs">…</span>
+                      ) : (
+                        <button
+                          key={item}
+                          onClick={() => setPatientCurrentPage(item as number)}
+                          className={`h-7 w-7 flex items-center justify-center rounded-md border text-xs font-bold transition-colors ${
+                            patientCurrentPage === item
+                              ? "bg-teal-600 text-white border-teal-600 shadow-sm"
+                              : "border-slate-200 bg-white text-slate-600 hover:bg-teal-600 hover:text-white hover:border-teal-600"
+                          }`}
+                        >
+                          {item}
+                        </button>
+                      )
+                    )
+                  }
+
+                  <button
+                    onClick={() => setPatientCurrentPage((p) => Math.min(patientTotalPages, p + 1))}
+                    disabled={patientCurrentPage === patientTotalPages}
+                    className="h-7 w-7 flex items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold"
+                    title="Next page"
+                  >
+                    ›
+                  </button>
+                  <button
+                    onClick={() => setPatientCurrentPage(patientTotalPages)}
+                    disabled={patientCurrentPage === patientTotalPages}
+                    className="h-7 w-7 flex items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold"
+                    title="Last page"
+                  >
+                    »
+                  </button>
+                </div>
+              </div>
             </div>
           </Card>
         )}
@@ -1959,8 +2099,8 @@ export default function BillingPage() {
                             <td className="px-2.5 py-2 font-mono font-bold text-slate-800">{inv.invoiceNo}</td>
                             <td className="px-2.5 py-2 text-slate-500 font-mono">{new Date(inv.date).toLocaleDateString("en-GB")}</td>
                             <td className="px-2.5 py-2 text-right font-mono font-bold text-slate-900">₹{inv.netAmt.toFixed(2)}</td>
-                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">₹{inv.patientPayable ? inv.patientPayable.toFixed(2) : (inv.company.includes("Insurance") ? "0.00" : inv.netAmt.toFixed(2))}</td>
-                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">₹{inv.companyPayable ? inv.companyPayable.toFixed(2) : (inv.company.includes("Insurance") ? inv.netAmt.toFixed(2) : "0.00")}</td>
+                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">₹{(inv as any).patientPayable ? (inv as any).patientPayable.toFixed(2) : (inv.company.includes("Insurance") ? "0.00" : inv.netAmt.toFixed(2))}</td>
+                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">₹{(inv as any).companyPayable ? (inv as any).companyPayable.toFixed(2) : (inv.company.includes("Insurance") ? inv.netAmt.toFixed(2) : "0.00")}</td>
                             <td className="px-2.5 py-2 text-right font-mono text-emerald-600 font-semibold">₹{inv.adjusted.toFixed(2)}</td>
                             <td className="px-2.5 py-2 text-right font-mono text-amber-600 font-semibold">₹{inv.refund.toFixed(2)}</td>
                             <td className="px-2.5 py-2 text-right font-mono text-purple-600 font-semibold">₹{inv.creditNote.toFixed(2)}</td>
@@ -2621,195 +2761,255 @@ export default function BillingPage() {
         {activeTab === "OP Billing" && (
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             {/* Header bar */}
-            <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-slate-800">OP Invoice Generation</span>
-                <div className="flex items-center gap-1.5 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
-                  <button
-                    type="button"
-                    onClick={() => setIsPatientSearchModalOpen(true)}
-                    className="text-[11px] text-blue-700 hover:text-blue-900 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
-                    title="Click to select Patient from census"
-                  >
-                    <span>UHID:</span>
-                  </button>
-                  <Input 
-                    type="text" 
-                    value={opBillingUhid} 
-                    onChange={(e) => setOpBillingUhid(e.target.value)} 
-                    className="h-6 text-xs w-28 border-0 p-0 shadow-none font-mono font-bold" 
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-slate-800 whitespace-nowrap">OP Invoice</span>
+                {/* UHID field */}
+                <div className="flex items-center gap-1 bg-white rounded border border-slate-300 px-1.5 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <button type="button" onClick={() => setIsPatientSearchModalOpen(true)} className="text-[10px] text-blue-700 font-bold hover:underline">UHID</button>
+                  <Input
+                    type="text"
+                    value={opBillingUhid}
+                    onChange={(e) => setOpBillingUhid(e.target.value)}
+                    className="h-5 text-xs w-24 border-0 p-0 shadow-none font-mono font-bold"
                     placeholder="Enter UHID..."
                   />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-5 w-5 text-slate-400 hover:text-slate-600"
-                    onClick={() => setIsPatientSearchModalOpen(true)}
-                  >
+                  <Button variant="ghost" size="icon" className="h-4 w-4 text-slate-400" onClick={() => setIsPatientSearchModalOpen(true)}>
                     <Search className="h-3 w-3" />
                   </Button>
                 </div>
+                {/* Visit No */}
+                <div className="flex items-center gap-1">
+                  <span className="text-[10px] text-slate-600 font-bold">Visit No</span>
+                  <select
+                    value={opBillingVisitNo}
+                    onChange={(e) => setOpBillingVisitNo(e.target.value)}
+                    className="h-6 px-1 text-xs border border-slate-300 rounded bg-white font-mono"
+                  >
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                  </select>
+                </div>
               </div>
-
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     setOpBillingUhid("");
+                    setOpBillingVisitNo("1");
+                    setOpBillingInvoiceNo("");
+                    setOpBillingType("Cash");
+                    setOpBillingPayerType("Direct Patient");
+                    setOpBillingPayer("CASH");
+                    setOpBillingSponsor("CASH");
+                    setOpBillingNetwork("");
+                    setOpBillingNarration("");
+                    setOpBillingApprovalRequired(false);
+                    setOpBillingExcludedService(false);
+                    setOpBillingRefundedService(false);
                     setOpBillingItems([{ code: "CON-01", name: "OPD Consultation - Senior Specialist", dept: "General OPD", doctor: "Dr. Sameer Sen", rate: 500, qty: 1, discountPercent: 0, discountAmt: 0, taxPercent: 0, netAmt: 500 }]);
-                  }} 
-                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3"
+                    setOpBillingPaymentRows([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
+                  }}
+                  className="h-6 text-[11px] bg-white text-slate-700 border-slate-300 font-bold px-2"
                 >
                   New
                 </Button>
-                <Button 
+                <Button
                   onClick={() => handleSaveOpBilling(true)}
-                  size="sm" 
+                  size="sm"
                   variant="outline"
-                  className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3 gap-1"
+                  className="h-6 text-[11px] bg-white text-slate-700 border-slate-300 font-bold px-2 gap-1"
                 >
-                  <Printer className="w-3.5 h-3.5" /> Save & Print
+                  <Printer className="w-3 h-3" /> Print
                 </Button>
-                <Button 
+                <Button
                   onClick={() => handleSaveOpBilling(false)}
-                  size="sm" 
-                  className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4"
+                  size="sm"
+                  className="h-6 text-[11px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-3"
                 >
-                  Save Invoice
+                  Save
                 </Button>
               </div>
             </div>
 
-            {/* 4 Demographics & Payer Columns */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 bg-slate-50 border-b border-slate-200 text-xs flex-shrink-0">
-              {/* Patient Demographics */}
-              <div className="border border-slate-200 rounded-xl p-3 bg-white flex items-center gap-3 shadow-2xs">
-                <div className="w-14 h-14 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center flex-shrink-0">
-                  <User className="w-7 h-7" />
+            {/* 4-Column Details — matching reference layout */}
+            <div className="grid grid-cols-4 border-b border-slate-200 bg-white flex-shrink-0 text-[11px]">
+
+              {/* Col 1: Patient Details (photo placeholder) */}
+              <div className="border-r border-slate-200 p-2 flex items-center gap-2">
+                <div className="w-16 h-16 rounded bg-slate-100 border border-slate-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {opBillingPatientInfo ? (
+                    <User className="w-8 h-8 text-slate-400" />
+                  ) : (
+                    <User className="w-8 h-8 text-slate-300" />
+                  )}
                 </div>
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0">
                   {opBillingPatientInfo ? (
                     <>
-                      <div className="font-extrabold text-slate-800 text-xs truncate">{opBillingPatientInfo.name}</div>
-                      <div className="text-[10px] text-slate-500 font-semibold">{opBillingPatientInfo.genderAge}</div>
-                      <div className="text-[10px] text-blue-600 font-bold truncate">{opBillingPatientInfo.address}</div>
+                      <div className="font-extrabold text-slate-800 truncate">{opBillingPatientInfo.name}</div>
+                      <div className="text-[10px] text-slate-500">{opBillingPatientInfo.genderAge}</div>
+                      <div className="text-[10px] text-blue-600 truncate">{opBillingPatientInfo.address}</div>
                     </>
                   ) : (
-                    <div className="text-slate-400 italic text-[11px]">Enter UHID above</div>
+                    <div className="text-slate-400 italic text-[10px]">Select patient via UHID</div>
                   )}
                 </div>
               </div>
 
-              {/* Invoice Config */}
-              <div className="border border-slate-200 rounded-xl p-3 bg-white space-y-1.5 shadow-2xs">
-                <div className="font-bold text-slate-700 text-[10px] uppercase border-b pb-1">Bill Details</div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Bill Type:</span>
-                  <Select value={opBillingType} onValueChange={setOpBillingType}>
-                    <SelectTrigger className="h-5 w-24 text-[10px] bg-white"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Cash">Cash</SelectItem>
-                      <SelectItem value="Credit">Credit</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Col 2: Invoice Details */}
+              <div className="border-r border-slate-200 p-2 space-y-1">
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1">Invoice Details</div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0">Year</span>
+                  <select value={opBillingYear} onChange={(e) => setOpBillingYear(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                    <option value="26-27">26-27</option>
+                    <option value="25-26">25-26</option>
+                  </select>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Financial Year:</span>
-                  <span className="font-mono text-slate-700 font-bold">{opBillingYear}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0">Type</span>
+                  <select value={opBillingType} onChange={(e) => setOpBillingType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                    <option value="Cash">Cash</option>
+                    <option value="Credit">Credit</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0 text-blue-600 font-bold">Invoice#</span>
+                  <Input value={opBillingInvoiceNo} onChange={(e) => setOpBillingInvoiceNo(e.target.value)}
+                    placeholder="Auto" className="flex-1 h-5 text-[10px] px-1" />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0">Date</span>
+                  <Input type="datetime-local" value={opBillingDate} onChange={(e) => setOpBillingDate(e.target.value)}
+                    className="flex-1 h-5 text-[10px] px-1" />
                 </div>
               </div>
 
-              {/* Payer Details */}
-              <div className="border border-slate-200 rounded-xl p-3 bg-white space-y-1.5 shadow-2xs">
-                <div className="font-bold text-slate-700 text-[10px] uppercase border-b pb-1">Payer Details</div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Payer Type:</span>
-                  <span className="font-bold text-slate-700">{opBillingPayerType}</span>
+              {/* Col 3: Payer Details */}
+              <div className="border-r border-slate-200 p-2 space-y-1">
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1 flex justify-between">
+                  <span>Payer Details</span>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Payer/Sponsor:</span>
-                  <span className="font-bold text-blue-700 truncate">{opBillingPayer}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0">Type *</span>
+                  <select value={opBillingPayerType} onChange={(e) => setOpBillingPayerType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                    <option>Direct Patient</option>
+                    <option>Company</option>
+                    <option>Insurance</option>
+                    <option>TPA</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0">Payer *</span>
+                  <select value={opBillingPayer} onChange={(e) => setOpBillingPayer(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                    <option>CASH</option>
+                    <option>Star Health Insurance</option>
+                    <option>HDFC ERGO Health</option>
+                    <option>Niva Bupa</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0">Sponsor *</span>
+                  <select value={opBillingSponsor} onChange={(e) => setOpBillingSponsor(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                    <option>CASH</option>
+                    <option>Star Health</option>
+                    <option>HDFC ERGO</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0">Network</span>
+                  <Input value={opBillingNetwork} onChange={(e) => setOpBillingNetwork(e.target.value)}
+                    placeholder="Network" className="flex-1 h-5 text-[10px] px-1" />
                 </div>
               </div>
 
-              {/* Doctor Details */}
-              <div className="border border-slate-200 rounded-xl p-3 bg-white space-y-1.5 shadow-2xs">
-                <div className="font-bold text-slate-700 text-[10px] uppercase border-b pb-1">Attending Doctor</div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Consultant:</span>
-                  <Select value={opBillingDoctor} onValueChange={setOpBillingDoctor}>
-                    <SelectTrigger className="h-5 w-32 text-[10px] bg-white"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Dr. Sameer Sen 3105">Dr. Sameer Sen</SelectItem>
-                      <SelectItem value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal</SelectItem>
-                      <SelectItem value="Dr. D K DAS 2268">Dr. D K DAS</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {/* Col 4: Other Details */}
+              <div className="p-2 space-y-1">
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1">Other Details</div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-24 shrink-0">Prescribing Doctor *</span>
+                  <Input value={opBillingPrescribingDoctor} onChange={(e) => setOpBillingPrescribingDoctor(e.target.value)}
+                    className="flex-1 h-5 text-[10px] px-1" />
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Referred:</span>
-                  <span className="font-bold text-slate-700">SELF</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-24 shrink-0">Referred Type</span>
+                  <select value={opBillingReferredType} onChange={(e) => setOpBillingReferredType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                    <option>SELF</option>
+                    <option>Doctor</option>
+                    <option>Hospital</option>
+                    <option>Corporate</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-24 shrink-0">Referred by Name</span>
+                  <select value={opBillingReferredName} onChange={(e) => setOpBillingReferredName(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                    <option value="">Select</option>
+                    <option>Dr. Ramesh Kumar</option>
+                    <option>Dr. Priya Sharma</option>
+                  </select>
                 </div>
               </div>
             </div>
 
             {/* Sub-tab navigation */}
-            <div className="flex items-center justify-between px-4 py-1.5 border-b border-slate-200 bg-white flex-shrink-0">
-              <div className="flex items-center gap-1">
-                {["Service", "Payment", "Adjustment", "Outstanding"].map((st) => (
+            <div className="flex items-center justify-between px-3 py-1 border-b border-slate-200 bg-white flex-shrink-0">
+              <div className="flex items-center">
+                {["Service", "Payment", "Adjustment", "Outstanding", "Checklist", "Patient Diagnosis Entry"].map((st) => (
                   <button
                     key={st}
                     onClick={() => setOpBillingSubTab(st)}
-                    className={`h-7 px-3 text-xs font-bold rounded-md transition-colors ${
+                    className={`h-7 px-2.5 text-[11px] font-bold border-b-2 transition-colors ${
                       opBillingSubTab === st
-                        ? "bg-blue-600 text-white font-bold"
-                        : "text-slate-600 hover:bg-slate-100"
+                        ? "border-blue-600 text-blue-700 bg-blue-50"
+                        : "border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-50"
                     }`}
                   >
                     {st}
                   </button>
                 ))}
               </div>
-
-              <div className="flex items-center gap-2">
-                <Select onValueChange={(val) => {
-                  const s = SERVICE_CATALOG.find(c => c.code === val);
-                  if (s) handleAddOpItem(s);
-                }}>
-                  <SelectTrigger className="h-7 text-xs bg-slate-50 w-52 font-bold text-blue-700 border-blue-200">
-                    <SelectValue placeholder="+ Quick Add Service Item" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SERVICE_CATALOG.map(s => (
-                      <SelectItem key={s.code} value={s.code}>
-                        {s.name} (₹{s.rate})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 text-[10px] font-bold px-2 bg-teal-50 text-teal-700 border-teal-300 hover:bg-teal-100"
+                onClick={() => {
+                  const s = SERVICE_CATALOG[0];
+                  handleAddOpItem(s);
+                }}
+              >
+                Get Consultation Visit
+              </Button>
             </div>
 
             {/* Sub-tab Content */}
-            <div className="flex-1 overflow-auto bg-white p-4">
+            <div className="flex-1 overflow-auto bg-white">
               {opBillingSubTab === "Service" && (
-                <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
-                  <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase text-[9px]">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold uppercase text-[10px] sticky top-0 z-10">
                     <tr>
-                      <th className="px-3 py-2">Code</th>
-                      <th className="px-3 py-2">Service Description</th>
-                      <th className="px-3 py-2">Dept</th>
-                      <th className="px-3 py-2 text-right">Rate (₹)</th>
-                      <th className="px-3 py-2 text-center">Qty</th>
-                      <th className="px-3 py-2 text-right">Discount %</th>
-                      <th className="px-3 py-2 text-right">Net Amount (₹)</th>
+                      <th className="px-3 py-2 tracking-wider">Code</th>
+                      <th className="px-3 py-2 tracking-wider">Service Description</th>
+                      <th className="px-3 py-2 tracking-wider">Dept</th>
+                      <th className="px-3 py-2 text-right tracking-wider">Rate (₹)</th>
+                      <th className="px-3 py-2 text-center tracking-wider">Qty</th>
+                      <th className="px-3 py-2 text-right tracking-wider">Disc %</th>
+                      <th className="px-3 py-2 text-right tracking-wider">Net Amt (₹)</th>
                       <th className="px-3 py-2 text-center w-10"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                     {opBillingItems.map((it, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50/50">
+                      <tr key={idx} className="hover:bg-teal-50/20">
                         <td className="px-3 py-2 font-mono font-bold text-blue-600">{it.code}</td>
                         <td className="px-3 py-2 font-bold text-slate-800">{it.name}</td>
                         <td className="px-3 py-2 text-slate-500">{it.dept}</td>
@@ -2852,92 +3052,222 @@ export default function BillingPage() {
               )}
 
               {opBillingSubTab === "Payment" && (
-                <div className="space-y-4">
-                  <div className="text-xs font-bold text-slate-700">Payment Collection & Split Breakdown</div>
-                  <table className="w-full text-xs text-left border border-slate-200 rounded-lg overflow-hidden">
-                    <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
-                      <tr>
-                        <th className="px-3 py-2">Mode</th>
-                        <th className="px-3 py-2 text-right">Amount (₹)</th>
-                        <th className="px-3 py-2">Bank</th>
-                        <th className="px-3 py-2">Reference No</th>
-                        <th className="px-3 py-2">Remarks</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-medium">
-                      {opBillingPaymentRows.map((r, idx) => (
-                        <tr key={idx}>
-                          <td className="px-3 py-2">
-                            <Select 
-                              value={r.mode} 
-                              onValueChange={(val) => {
-                                const updated = [...opBillingPaymentRows];
-                                updated[idx].mode = val;
-                                setOpBillingPaymentRows(updated);
-                              }}
-                            >
-                              <SelectTrigger className="h-6 w-28 text-xs bg-white"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Cash">Cash</SelectItem>
-                                <SelectItem value="Card">Card</SelectItem>
-                                <SelectItem value="UPI">UPI</SelectItem>
-                                <SelectItem value="Cheque">Cheque</SelectItem>
-                                <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="px-3 py-2 text-right">
-                            <Input
-                              type="number"
-                              value={r.amount}
-                              onChange={(e) => {
-                                const updated = [...opBillingPaymentRows];
-                                updated[idx].amount = Number(e.target.value);
-                                setOpBillingPaymentRows(updated);
-                              }}
-                              className="h-6 w-28 text-xs text-right bg-white font-mono font-bold"
-                            />
-                          </td>
-                          <td className="px-3 py-2">
-                            <Input
-                              placeholder="Bank name..."
-                              value={r.bankName}
-                              onChange={(e) => {
-                                const updated = [...opBillingPaymentRows];
-                                updated[idx].bankName = e.target.value;
-                                setOpBillingPaymentRows(updated);
-                              }}
-                              className="h-6 text-xs bg-white"
-                            />
-                          </td>
-                          <td className="px-3 py-2">
-                            <Input
-                              placeholder="Transaction / Ref#"
-                              value={r.refNo}
-                              onChange={(e) => {
-                                const updated = [...opBillingPaymentRows];
-                                updated[idx].refNo = e.target.value;
-                                setOpBillingPaymentRows(updated);
-                              }}
-                              className="h-6 text-xs bg-white font-mono"
-                            />
-                          </td>
-                          <td className="px-3 py-2">
-                            <Input
-                              placeholder="Notes..."
-                              value={r.description}
-                              onChange={(e) => {
-                                const updated = [...opBillingPaymentRows];
-                                updated[idx].description = e.target.value;
-                                setOpBillingPaymentRows(updated);
-                              }}
-                              className="h-6 text-xs bg-white"
-                            />
-                          </td>
+                <div className="p-3 space-y-3">
+                  {/* Payment Table */}
+                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-[11px] text-left">
+                      <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold uppercase text-[10px]">
+                        <tr>
+                          <th className="px-2 py-2 tracking-wider">Mode</th>
+                          <th className="px-2 py-2 text-right tracking-wider">Amount</th>
+                          <th className="px-2 py-2 text-right tracking-wider">Balance</th>
+                          <th className="px-2 py-2 tracking-wider">Date (dd/MM/YYYY)</th>
+                          <th className="px-2 py-2 tracking-wider">Bank Name</th>
+                          <th className="px-2 py-2 tracking-wider">Beneficiary Name</th>
+                          <th className="px-2 py-2 tracking-wider">Reference No</th>
+                          <th className="px-2 py-2 tracking-wider">Desc/Card Holder Name</th>
+                          <th className="px-2 py-2 text-right tracking-wider">Card Swiping Value</th>
+                          <th className="px-2 py-2 w-8"></th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {opBillingPaymentRows.map((r, idx) => (
+                          <tr key={idx} className="hover:bg-teal-50/20">
+                            <td className="px-2 py-1.5">
+                              <select
+                                value={r.mode}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].mode = e.target.value;
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
+                              >
+                                <option>Cash</option>
+                                <option>Card</option>
+                                <option>UPI</option>
+                                <option>Cheque</option>
+                                <option>Bank Transfer</option>
+                              </select>
+                            </td>
+                            <td className="px-2 py-1.5 text-right">
+                              <Input
+                                type="number"
+                                value={r.amount}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].amount = Number(e.target.value);
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                className="h-6 w-20 text-[11px] text-right font-mono font-bold"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right">
+                              <Input
+                                type="number"
+                                value={r.balance}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].balance = Number(e.target.value);
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                className="h-6 w-16 text-[11px] text-right font-mono"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <Input
+                                value={r.date}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].date = e.target.value;
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                className="h-6 w-28 text-[11px] font-mono"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <select
+                                value={r.bankName}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].bankName = e.target.value;
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
+                              >
+                                <option value="">-Select-</option>
+                                <option>SBI</option>
+                                <option>HDFC</option>
+                                <option>ICICI</option>
+                                <option>Axis</option>
+                              </select>
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <select
+                                value={r.beneficiaryName}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].beneficiaryName = e.target.value;
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
+                              >
+                                <option value="">-Select-</option>
+                                <option>Self</option>
+                                <option>Relative</option>
+                                <option>Corporate</option>
+                              </select>
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <Input
+                                value={r.refNo}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].refNo = e.target.value;
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                placeholder="Ref#"
+                                className="h-6 w-24 text-[11px] font-mono"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <Input
+                                value={r.description}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].description = e.target.value;
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                placeholder="Description..."
+                                className="h-6 w-32 text-[11px]"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right">
+                              <Input
+                                type="number"
+                                value={r.cardSwipingValue}
+                                onChange={(e) => {
+                                  const u = [...opBillingPaymentRows];
+                                  u[idx].cardSwipingValue = Number(e.target.value);
+                                  setOpBillingPaymentRows(u);
+                                }}
+                                className="h-6 w-16 text-[11px] text-right font-mono"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <button
+                                onClick={() => setOpBillingPaymentRows(opBillingPaymentRows.filter((_, i) => i !== idx))}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Add Row */}
+                  <button
+                    onClick={() => setOpBillingPaymentRows([...opBillingPaymentRows, { mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }])}
+                    className="text-[11px] text-blue-600 font-bold hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add Row
+                  </button>
+
+                  {/* Co-Payment Paid By */}
+                  <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-600 pt-1">
+                    <span className="whitespace-nowrap">Co-Payment Paid by</span>
+                    {["Patient", "Company"].map((opt) => (
+                      <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="opCoPay"
+                          value={opt}
+                          checked={opBillingCoPayBy === opt}
+                          onChange={() => setOpBillingCoPayBy(opt)}
+                          className="accent-teal-600"
+                        />
+                        {opt}
+                      </label>
+                    ))}
+                    <select className="h-6 text-[11px] border border-slate-200 rounded bg-white px-1 ml-2">
+                      <option>CASH</option>
+                      <option>Star Health</option>
+                      <option>HDFC ERGO</option>
+                    </select>
+                  </div>
+
+                  {/* Consultant Change Remarks */}
+                  <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
+                    <span className="whitespace-nowrap">Consultant Change Remarks</span>
+                    <Input placeholder="Enter remarks..." className="flex-1 h-6 text-[11px]" />
+                  </div>
+                </div>
+              )}
+
+              {opBillingSubTab === "Checklist" && (
+                <div className="p-4 text-xs text-slate-500 italic">Checklist items will appear here once configured.</div>
+              )}
+
+              {opBillingSubTab === "Patient Diagnosis Entry" && (
+                <div className="p-4 space-y-3">
+                  <div className="text-xs font-bold text-slate-700">Patient Diagnosis Entry</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600">Primary Diagnosis (ICD-10)</label>
+                      <Input placeholder="Enter diagnosis code or description..." className="text-xs h-8" />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-600">Secondary Diagnosis</label>
+                      <Input placeholder="Secondary diagnosis..." className="text-xs h-8" />
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <label className="text-[11px] font-semibold text-slate-600">Clinical Notes</label>
+                      <textarea placeholder="Clinical findings and notes..." className="w-full h-20 text-xs p-2 border border-slate-200 rounded-lg resize-none" />
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -2949,8 +3279,8 @@ export default function BillingPage() {
                       <span>Available Deposit for UHID {opBillingUhid || "—"}:</span>
                       <span className="font-mono text-base">₹3,000.00</span>
                     </div>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={() => {
                         setOpBillingPaymentRows([{ mode: "Cash", amount: Math.min(3000, opNetPayable), balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "ADJUST-DEP", description: "Adjusted from Advance Deposit", cardSwipingValue: 0 }]);
                         toast.success("Deposit Adjusted", "Applied ₹3,000 advance credit to bill.");
@@ -2973,43 +3303,119 @@ export default function BillingPage() {
               )}
             </div>
 
-            {/* Bottom calculation summary bar */}
-            <div className="p-4 border-t border-slate-200 bg-[#e3f2fd]/50 grid grid-cols-1 md:grid-cols-3 gap-4 flex-shrink-0 text-xs font-semibold">
-              <div className="space-y-1.5">
-                <span className="text-[10px] text-slate-500 font-bold uppercase">Billing Narration / Remarks</span>
-                <textarea
-                  value={opBillingNarration}
-                  onChange={(e) => setOpBillingNarration(e.target.value)}
-                  placeholder="Enter diagnosis / billing remarks..."
-                  className="w-full h-14 text-xs p-2 bg-white border border-slate-200 rounded-lg resize-none"
-                />
+            {/* Bottom Summary Bar — matching reference layout */}
+            <div className="border-t border-slate-200 bg-white flex-shrink-0 text-[11px]">
+              {/* Row 1: Treatment/Advance info */}
+              <div className="flex items-center gap-6 px-3 py-1 border-b border-slate-100 bg-slate-50 text-slate-600 font-semibold">
+                <span>Treatment / Available Limit : <span className="font-mono text-slate-800">-0.00 / 0.00</span></span>
+                <span>Advance / Outstanding : <span className="font-mono text-slate-800">-0.00 / 0.00</span></span>
               </div>
 
-              <div className="space-y-1.5 bg-white p-3 rounded-lg border">
-                <div className="flex justify-between text-slate-600">
-                  <span>Gross Total:</span>
-                  <span className="font-mono font-bold">₹{opGrossTotal.toFixed(2)}</span>
+              {/* Row 2: Narration + Approval Buttons + Financial Summary */}
+              <div className="grid grid-cols-3 gap-0 border-b border-slate-200">
+                {/* Left: Narration */}
+                <div className="border-r border-slate-200 p-2 space-y-1">
+                  <div className="text-[10px] font-bold text-slate-500 uppercase">Narration</div>
+                  <textarea
+                    value={opBillingNarration}
+                    onChange={(e) => setOpBillingNarration(e.target.value)}
+                    placeholder="Enter diagnosis / billing remarks..."
+                    className="w-full h-12 text-[11px] p-1.5 bg-white border border-slate-200 rounded resize-none"
+                  />
+                  {/* Approval Buttons */}
+                  <div className="flex items-center gap-1 pt-0.5">
+                    <button
+                      onClick={() => setOpBillingApprovalRequired(!opBillingApprovalRequired)}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded border ${
+                        opBillingApprovalRequired ? "bg-red-500 text-white border-red-500" : "bg-red-50 text-red-700 border-red-300"
+                      }`}
+                    >
+                      Approval Required
+                    </button>
+                    <button
+                      onClick={() => setOpBillingExcludedService(!opBillingExcludedService)}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded border ${
+                        opBillingExcludedService ? "bg-amber-500 text-white border-amber-500" : "bg-amber-50 text-amber-700 border-amber-300"
+                      }`}
+                    >
+                      Excluded Service
+                    </button>
+                    <button
+                      onClick={() => setOpBillingRefundedService(!opBillingRefundedService)}
+                      className={`px-2 py-0.5 text-[10px] font-bold rounded border ${
+                        opBillingRefundedService ? "bg-teal-500 text-white border-teal-500" : "bg-teal-50 text-teal-700 border-teal-300"
+                      }`}
+                    >
+                      Refunded Service
+                    </button>
+                  </div>
+                  {/* Reporting DateTime + PAN */}
+                  <div className="flex items-center gap-2 pt-0.5">
+                    <span className="text-slate-500 whitespace-nowrap">Reporting Date/Time</span>
+                    <Input type="datetime-local" value={opBillingReportingDateTime}
+                      onChange={(e) => setOpBillingReportingDateTime(e.target.value)}
+                      className="flex-1 h-5 text-[10px] px-1" />
+                    <span className="text-slate-500">PAN No.</span>
+                    <Input value={opBillingPanNo} onChange={(e) => setOpBillingPanNo(e.target.value)}
+                      placeholder="PAN" className="w-24 h-5 text-[10px] px-1" />
+                  </div>
+                  {/* Email result */}
+                  <label className="flex items-center gap-1.5 text-[10px] text-slate-600 font-semibold cursor-pointer">
+                    <input type="checkbox" checked={opBillingEmailResult}
+                      onChange={(e) => setOpBillingEmailResult(e.target.checked)}
+                      className="accent-teal-600" />
+                    E-mail Result
+                  </label>
                 </div>
-                <div className="flex justify-between text-purple-600">
-                  <span>Total Discount:</span>
-                  <span className="font-mono font-bold">-₹{opDiscountTotal.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-slate-900 border-t pt-1">
-                  <span>Net Payable:</span>
-                  <span className="font-mono text-sm text-blue-700">₹{opNetPayable.toFixed(2)}</span>
-                </div>
-              </div>
 
-              <div className="space-y-1.5 bg-white p-3 rounded-lg border">
-                <div className="flex justify-between text-emerald-600 font-bold">
-                  <span>Paid / Received:</span>
-                  <span className="font-mono">₹{opTotalPaid.toFixed(2)}</span>
+                {/* Middle: Gross / Discount / Net */}
+                <div className="border-r border-slate-200 p-2 space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500 w-24 shrink-0">Currency</span>
+                    <select className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                      <option>INR</option><option>USD</option>
+                    </select>
+                  </div>
+                  {[
+                    { label: "Received", value: "0.00" },
+                    { label: "Deductible Amt", value: "0.00" },
+                    { label: "Rate", value: "1.00" },
+                    { label: "ConsAmt", value: "0.00" },
+                    { label: "Charge", value: "0.00" },
+                    { label: "Advance", value: "0.00" },
+                    { label: "Discount", value: "0.00" },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between text-slate-600">
+                      <span>{label}</span>
+                      <span className="font-mono text-slate-800">{value}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex justify-between font-bold text-slate-900 border-t pt-1">
-                  <span>Net Balance:</span>
-                  <span className={`font-mono text-sm ${opBalance > 0 ? "text-red-600" : "text-emerald-600"}`}>
-                    ₹{opBalance.toFixed(2)}
-                  </span>
+
+                {/* Right: Net / Paid / Balance */}
+                <div className="p-2 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Net Amt</span>
+                    <span className="font-mono font-bold text-slate-900">₹{opNetPayable.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-600">
+                    <span>Gross Total</span>
+                    <span className="font-mono">₹{opGrossTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-purple-600">
+                    <span>Discount</span>
+                    <span className="font-mono">-₹{opDiscountTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-emerald-600 font-bold">
+                    <span>Received</span>
+                    <span className="font-mono">₹{opTotalPaid.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-slate-100 pt-1 flex items-center justify-between font-bold">
+                    <span>Balance</span>
+                    <span className={`font-mono text-sm ${opBalance > 0 ? "text-red-600" : "text-emerald-600"}`}>
+                      ₹{opBalance.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

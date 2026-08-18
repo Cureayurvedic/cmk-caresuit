@@ -31,7 +31,8 @@ import {
   MapPin,
   Mail,
   UserCheck,
-  Maximize2
+  Maximize2,
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -52,9 +53,13 @@ import {
   initiateBedDischarge,
   completeBedDischarge,
   updateBedStatus,
+  createBed,
+  deleteBed,
   BedItem,
   BedCounts
 } from "@/api/atdApi";
+import { getPatients, PatientData } from "@/api/patientApi";
+import { getBedCategories, type BedCategoryData } from "@/api/bedCategoryApi";
 import { useNavigate } from "react-router-dom";
 
 // ─── BED STATUS METRIC BADGE DEFINITIONS ─────────────────────────────────────
@@ -68,142 +73,6 @@ const STATUS_CONFIGS = [
   { key: "Still On Bed/Discharge Approval", label: "Still On Bed/Discharge Approval", bgClass: "bg-[#c9302c] hover:bg-[#ac2925] text-white", borderClass: "border-[#ac2925]" },
 ];
 
-const WARD_CATEGORIES = ["DELUXE", "GENERAL", "ICU", "SINGLE PRIVATE", "TWIN SHARING"] as const;
-
-// Initial Census Patients for Lookup with Realistic Registration Details & Avatars
-const CENSUS_PATIENTS = [
-  {
-    uhid: "UHID-2026-00001-2863",
-    patientName: "Utkarsh Ladla",
-    gender: "Male",
-    age: 21,
-    dob: "2005-08-12",
-    mobile: "4354353453",
-    email: "utkarsh.ladla@gmail.com",
-    address: "B-12, Sector 62, Institutional Area",
-    city: "New Delhi",
-    state: "Delhi",
-    pincode: "110092",
-    payer: "CASH / CASH",
-    payerType: "Direct Patient",
-    doctor: "Dr. Abhishek Bansal 2273",
-    admittingTeam: "General Medicine Team A",
-    aadhaar: "4354 3534 5312",
-    bloodGroup: "O+",
-    diet: "Vegetarian",
-    attendantName: "Sanjay Ladla",
-    attendantRelation: "Father",
-    emergencyPhone: "9876543210",
-    remarks: "Patient presented with fever and mild abdominal discomfort.",
-    bookingRemarks: "Admit under General Medicine Unit",
-    photoUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    uhid: "UHID-2026-00002-3183",
-    patientName: "Dr. Sameer Sen",
-    gender: "Male",
-    age: 34,
-    dob: "1992-03-15",
-    mobile: "8899889988",
-    email: "dr.sameer@hospital.org",
-    address: "Room 102, Green Park Main",
-    city: "New Delhi",
-    state: "Delhi",
-    pincode: "110016",
-    payer: "Star Health Insurance",
-    payerType: "TPA / Insurance",
-    doctor: "Dr. Sameer Sen 3105",
-    admittingTeam: "Surgical Unit 1",
-    aadhaar: "8899 8899 8812",
-    bloodGroup: "A+",
-    diet: "High Protein",
-    attendantName: "Pooja Sen",
-    attendantRelation: "Spouse",
-    emergencyPhone: "8899889988",
-    remarks: "Post-consultation surgical admission requested.",
-    bookingRemarks: "Cashless TPA pre-authorization submitted",
-    photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    uhid: "UHID-2026-00003-4921",
-    patientName: "Rajesh Sharma",
-    gender: "Male",
-    age: 45,
-    dob: "1981-04-18",
-    mobile: "9811223344",
-    email: "rajesh.sharma@yahoo.com",
-    address: "Flat 402, Block B, Preet Vihar",
-    city: "New Delhi",
-    state: "Delhi",
-    pincode: "110092",
-    payer: "HDFC ERGO",
-    payerType: "TPA / Insurance",
-    doctor: "Dr. Abhishek Bansal 2273",
-    admittingTeam: "General Medicine Team A",
-    aadhaar: "9811 2233 4455",
-    bloodGroup: "B+",
-    diet: "Vegetarian",
-    attendantName: "Pooja Sharma",
-    attendantRelation: "Spouse",
-    emergencyPhone: "9811223344",
-    remarks: "Chronic hypertension monitoring and medication titration.",
-    bookingRemarks: "Corporate cashless desk approval pending",
-    photoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    uhid: "UHID-2026-00004-5812",
-    patientName: "Sunita Verma",
-    gender: "Female",
-    age: 38,
-    dob: "1988-11-22",
-    mobile: "9871122334",
-    email: "sunita.verma@outlook.com",
-    address: "Sector 15, Vasundhara",
-    city: "Ghaziabad",
-    state: "Uttar Pradesh",
-    pincode: "201012",
-    payer: "CASH / CASH",
-    payerType: "Direct Patient",
-    doctor: "Dr. Sania Mirza 2231",
-    admittingTeam: "Pediatrics Care",
-    aadhaar: "9871 1223 3490",
-    bloodGroup: "AB+",
-    diet: "Diabetic Friendly",
-    attendantName: "Ramesh Verma",
-    attendantRelation: "Spouse",
-    emergencyPhone: "9871122334",
-    remarks: "Elective observation and routine labs requested.",
-    bookingRemarks: "Direct billing with cash deposit",
-    photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80",
-  },
-  {
-    uhid: "UHID-2026-00005-7210",
-    patientName: "Amitabh Mehra",
-    gender: "Male",
-    age: 52,
-    dob: "1974-06-05",
-    mobile: "9988776655",
-    email: "amitabh.mehra@gmail.com",
-    address: "C-45, South Extension Part 2",
-    city: "New Delhi",
-    state: "Delhi",
-    pincode: "110049",
-    payer: "Max Bupa",
-    payerType: "TPA / Insurance",
-    doctor: "Dr. Abhishek Bansal 2273",
-    admittingTeam: "General Medicine Team A",
-    aadhaar: "9988 7766 5521",
-    bloodGroup: "O-",
-    diet: "Low Sodium / Cardiac",
-    attendantName: "Kavita Mehra",
-    attendantRelation: "Spouse",
-    emergencyPhone: "9988776655",
-    remarks: "Post-op observation and cardiology monitoring.",
-    bookingRemarks: "Priority care room allocation",
-    photoUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
-  },
-];
-
 export default function AtdPage() {
   const navigate = useNavigate();
 
@@ -213,6 +82,7 @@ export default function AtdPage() {
   const [patientSearch, setPatientSearch] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [beds, setBeds] = useState<BedItem[]>([]);
+  const [wardCategories, setWardCategories] = useState<BedCategoryData[]>([]);
   const [counts, setCounts] = useState<BedCounts>({
     vacant: 27,
     occupied: 2,
@@ -236,9 +106,49 @@ export default function AtdPage() {
   const [isHousekeepingModalOpen, setIsHousekeepingModalOpen] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // ─── Add Bed Modal State ───────────────────────────────────────────────────
+  const [isAddBedModalOpen, setIsAddBedModalOpen] = useState(false);
+  const [addBedMode, setAddBedMode] = useState<"single" | "bulk">("single");
+  const [newBedForm, setNewBedForm] = useState({
+    bedNo: "",
+    category: "GENERAL",
+    ward: "Ground Floor - General Ward",
+    tariffRate: 1200,
+    status: "Vacant",
+    bulkCount: 5,
+    prefix: "GEN-",
+    startNumber: 11,
+  });
+  const [isAddingBed, setIsAddingBed] = useState(false);
+
   // ─── Patient Lookup Modal State (When clicking UHID) ─────────────────────────
   const [isPatientLookupOpen, setIsPatientLookupOpen] = useState(false);
   const [lookupSearchTerm, setLookupSearchTerm] = useState("");
+  const [censusPatients, setCensusPatients] = useState<PatientData[]>([]);
+  const [isCensusLoading, setIsCensusLoading] = useState(false);
+
+  // ─── Fetch Census Patients dynamically from Backend API ───────────────────────
+  const fetchCensusPatients = useCallback(async (search: string = "") => {
+    setIsCensusLoading(true);
+    try {
+      const data = await getPatients({ search, limit: 50 });
+      setCensusPatients(data.patients || []);
+    } catch (err) {
+      console.error("Failed to load census patients from API:", err);
+      setCensusPatients([]);
+    } finally {
+      setIsCensusLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isPatientLookupOpen) {
+      const timer = setTimeout(() => {
+        fetchCensusPatients(lookupSearchTerm);
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [isPatientLookupOpen, lookupSearchTerm, fetchCensusPatients]);
 
   // ─── Bottom Tab in Admission Modal ───────────────────────────────────────────
   const [admissionBottomTab, setAdmissionBottomTab] = useState<"kin" | "outstanding" | "address" | "custom">("kin");
@@ -340,6 +250,9 @@ export default function AtdPage() {
       });
       setBeds(data.beds);
       setCounts(data.counts);
+
+      const cats = await getBedCategories();
+      setWardCategories(cats);
     } catch (err) {
       console.error("Failed to load ATD beds:", err);
     } finally {
@@ -353,13 +266,12 @@ export default function AtdPage() {
 
   // Group beds by Category
   const groupedBeds = useMemo(() => {
-    const groups: { [key: string]: BedItem[] } = {
-      DELUXE: [],
-      GENERAL: [],
-      ICU: [],
-      "SINGLE PRIVATE": [],
-      "TWIN SHARING": [],
-    };
+    const groups: { [key: string]: BedItem[] } = {};
+    
+    // Initialize groups based on dynamic categories
+    wardCategories.forEach((cat) => {
+      groups[cat.name] = [];
+    });
 
     beds.forEach((bed) => {
       if (groups[bed.category]) {
@@ -370,7 +282,7 @@ export default function AtdPage() {
     });
 
     return groups;
-  }, [beds]);
+  }, [beds, wardCategories]);
 
   // List of all vacant beds for transfer dropdown
   const vacantBeds = useMemo(() => {
@@ -388,8 +300,17 @@ export default function AtdPage() {
   const handleBedClick = (bed: BedItem, e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     const rect = e.currentTarget.getBoundingClientRect();
+    const numItems = (bed.status === "Vacant" || bed.status === "House Keeping") ? 3 : 2;
+    const menuHeight = (numItems * 30) + 10; // Dynamic height based on number of options
+    let top = rect.bottom + window.scrollY + 4;
+    
+    // If it goes off the bottom of the screen, flip it above the button
+    if (rect.bottom + menuHeight > window.innerHeight) {
+      top = rect.top + window.scrollY - menuHeight - 4;
+    }
+
     setMenuPosition({
-      top: rect.bottom + window.scrollY + 4,
+      top,
       left: Math.max(10, rect.left + window.scrollX - 20),
     });
     setContextMenuBed(bed);
@@ -423,37 +344,49 @@ export default function AtdPage() {
     setIsAdmitModalOpen(true);
   };
 
-  // ─── Select Patient from Census Lookup (Full Details & Photo) ────────────────
-  const handleSelectPatientFromLookup = (patient: typeof CENSUS_PATIENTS[0]) => {
+  // ─── Select Patient from Census Lookup (Full Details & Photo from API) ───────
+  const handleSelectPatientFromLookup = (patient: PatientData) => {
+    const dobFormatted = patient.dob
+      ? new Date(patient.dob).toISOString().split("T")[0]
+      : "1990-05-15";
+    const fullName = patient.fullName || `${patient.firstName || ""} ${patient.lastName || ""}`.trim();
+    const address = patient.address || "";
+    const city = patient.districtCity || "New Delhi";
+    const state = patient.state || "Delhi";
+    const pinCode = patient.pinCode || "";
+    const payer = patient.payer || (patient.payerType === "insurance" ? "Star Health Insurance" : "CASH / CASH");
+    const payerType = patient.payerType === "insurance" ? "TPA / Insurance" : "Direct Patient";
+    const doctor = patient.referredBy || "Dr. Abhishek Bansal 2273";
+
     setAdmitForm((prev) => ({
       ...prev,
       photoUrl: patient.photoUrl || "",
-      uhid: patient.uhid,
-      kinName: patient.patientName,
-      kinMobile: patient.mobile,
+      uhid: patient.uhid || prev.uhid,
+      kinName: fullName,
+      kinMobile: patient.mobile || prev.kinMobile,
       kinEmail: patient.email || "",
-      kinGender: patient.gender,
-      kinDob: patient.dob || "1990-05-15",
-      kinRelationship: patient.attendantRelation || "Spouse",
-      kinAddress: patient.address,
-      kinDistrictCity: patient.city,
-      kinState: patient.state,
-      kinPinCode: patient.pincode,
-      permAddress: patient.address,
-      permCity: patient.city,
-      permState: patient.state,
-      permPincode: patient.pincode,
-      payer: patient.payer,
-      payerType: patient.payerType || (patient.payer.includes("Insurance") || patient.payer.includes("Star") ? "TPA / Insurance" : "Direct Patient"),
-      admittingTeam: patient.admittingTeam || prev.admittingTeam,
-      treatingConsultant: patient.doctor || prev.treatingConsultant,
-      admittingDoctor: patient.doctor || prev.admittingDoctor,
+      kinGender: patient.gender || "Male",
+      kinDob: dobFormatted,
+      kinRelationship: patient.emergencyRelationship || patient.guardianRelation || "Spouse",
+      kinAddress: address,
+      kinDistrictCity: city,
+      kinState: state,
+      kinPinCode: pinCode,
+      permAddress: address,
+      permCity: city,
+      permState: state,
+      permPincode: pinCode,
+      payer: payer,
+      payerType: payerType,
+      admittingTeam: "General Medicine Team A",
+      treatingConsultant: doctor,
+      admittingDoctor: doctor,
       idProofType: "Aadhaar Card",
-      idProofNo: patient.aadhaar || "9876 5432 1098",
-      bloodGroup: patient.bloodGroup || "B+",
-      dietPref: patient.diet || "Vegetarian",
+      idProofNo: patient.aadhaarCard || "9876 5432 1098",
+      bloodGroup: "B+",
+      dietPref: "Vegetarian",
       kinRemarks: patient.remarks || "",
-      kinBookingRemarks: patient.bookingRemarks || "",
+      kinBookingRemarks: patient.registrationType || "Standard Admission",
     }));
     setIsPatientLookupOpen(false);
   };
@@ -575,126 +508,48 @@ export default function AtdPage() {
     }
   };
 
-  // ─── Mark Housekeeping Complete ──────────────────────────────────────────────
-  const handleCompleteHousekeeping = async () => {
-    if (!selectedBed) return;
+  // ─── Add Bed Form Submit ───────────────────────────────────────────────────
+  const handleAddBedSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsAddingBed(true);
     try {
-      await updateBedStatus(selectedBed.bedNo, "Vacant");
-      setIsHousekeepingModalOpen(false);
+      if (addBedMode === "single") {
+        if (!newBedForm.bedNo.trim()) {
+          alert("Please enter a valid Bed Number (e.g. GEN-11 or DLX-06)");
+          setIsAddingBed(false);
+          return;
+        }
+        await createBed({
+          bedNo: newBedForm.bedNo.trim(),
+          category: newBedForm.category,
+          ward: newBedForm.ward,
+          tariffRate: Number(newBedForm.tariffRate) || 2000,
+          status: newBedForm.status,
+        });
+      } else {
+        await createBed({
+          category: newBedForm.category,
+          ward: newBedForm.ward,
+          tariffRate: Number(newBedForm.tariffRate) || 2000,
+          status: newBedForm.status,
+          bulkCount: Number(newBedForm.bulkCount) || 5,
+          prefix: newBedForm.prefix || "GEN-",
+          startNumber: Number(newBedForm.startNumber) || 1,
+        });
+      }
+      setIsAddBedModalOpen(false);
       fetchBeds();
     } catch (err: any) {
-      alert(err.message || "Failed to update bed status");
+      alert(err.message || "Failed to add bed(s)");
+    } finally {
+      setIsAddingBed(false);
     }
   };
 
   return (
-    <div className="flex h-[calc(100vh-56px)] bg-slate-100 overflow-hidden font-sans text-slate-800">
-      
-      {/* ─── LEFT ATD SIDEBAR (MATCHING SCREENSHOT) ─────────────────────────── */}
-      <div className="w-56 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0 text-slate-300 select-none">
-        {/* Sidebar Title */}
-        <div className="p-3 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-blue-400" />
-            <span className="font-extrabold text-xs text-white uppercase tracking-wider">ATD Center</span>
-          </div>
-          <Badge variant="outline" className="bg-blue-900/40 text-blue-300 border-blue-700/50 text-[10px] h-5 font-mono">
-            v50.24
-          </Badge>
-        </div>
-
-        {/* Tree Menu */}
-        <div className="flex-1 p-2 space-y-1 overflow-y-auto">
-          <div className="px-2.5 py-1.5 rounded-md text-xs font-bold bg-blue-950/60 text-blue-300 flex items-center gap-2">
-            <span className="font-mono text-slate-400 font-black">−</span>
-            <Building2 className="h-3.5 w-3.5 text-blue-400" />
-            <span>ATD</span>
-          </div>
-
-          <div className="pl-4 ml-2 border-l border-slate-800 space-y-0.5 mt-0.5">
-            <button
-              onClick={() => {
-                setSelectedCategory("All");
-                setSelectedStatus("All");
-                setPatientSearch("");
-              }}
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded text-left text-xs font-bold bg-blue-600 text-white shadow-xs"
-            >
-              <span>— Bed Status</span>
-              <ChevronRight className="h-3 w-3 text-white" />
-            </button>
-            <button
-              onClick={() => navigate("/reports")}
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded text-left text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-colors"
-            >
-              <span>• Admission Report</span>
-            </button>
-            <button
-              onClick={() => navigate("/reports")}
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded text-left text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-colors"
-            >
-              <span>• Discharge Report</span>
-            </button>
-            <button
-              onClick={() => navigate("/reports")}
-              className="w-full flex items-center justify-between px-2 py-1.5 rounded text-left text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition-colors"
-            >
-              <span>• Bed Occupancy</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom Module Switcher */}
-        <div className="p-2 border-t border-slate-800 bg-slate-950/70 space-y-1">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-2 py-1">
-            System Modules
-          </div>
-          <div className="grid grid-cols-2 gap-1 text-[11px] font-bold">
-            <button
-              onClick={() => navigate("/reports")}
-              className="px-2 py-1.5 rounded bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-center transition-colors truncate"
-            >
-              Reports
-            </button>
-            <button
-              onClick={() => navigate("/billing")}
-              className="px-2 py-1.5 rounded bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-center transition-colors truncate"
-            >
-              Billing
-            </button>
-            <button
-              className="px-2 py-1.5 rounded bg-blue-600 text-white text-center shadow-xs transition-colors truncate"
-            >
-              ATD
-            </button>
-            <button
-              onClick={() => navigate("/registration/demographics")}
-              className="px-2 py-1.5 rounded bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-center transition-colors truncate"
-            >
-              Registration
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-[calc(100vh-56px)] bg-slate-100 overflow-hidden font-sans text-slate-800">
       {/* ─── MAIN ATD BED MATRIX VIEW ───────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
-        
-        {/* Top Session Banner (Matching Screenshot) */}
-        <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-900 text-white px-4 py-2 flex items-center justify-between text-xs border-b border-blue-950 shadow-2xs flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <span className="font-extrabold text-blue-200 tracking-wide">CMK CareSuite Inpatient Bed Matrix</span>
-            <span className="text-slate-300 text-[11px]">
-              Welcome! <strong className="text-white">Dr. Admin</strong> — CMK HEALTHCARE PVT. LTD. (17/08/2026 17:43)
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-[11px] text-blue-200 font-mono">
-            <span>IP: 49.36.179.105</span>
-            <span>Server: DBSERVER-01</span>
-            <span className="bg-blue-950/60 px-2 py-0.5 rounded text-emerald-400 font-bold">ONLINE</span>
-          </div>
-        </div>
-
         {/* Top Controls & Filter Bar (Matching Screenshot) */}
         <div className="p-3 bg-white border-b border-slate-200 shadow-2xs flex-shrink-0">
           <div className="flex items-center justify-between mb-2.5">
@@ -727,6 +582,32 @@ export default function AtdPage() {
                 <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const targetCatName = selectedCategory !== "All" ? selectedCategory : wardCategories[0]?.name || "GENERAL";
+                  const targetCat = wardCategories.find(c => c.name === targetCatName);
+                  
+                  const defaultPrefix = targetCat?.prefix || "BED-";
+                  const existingCount = beds.filter(b => b.category === targetCatName).length;
+                  
+                  setNewBedForm({
+                    bedNo: `${defaultPrefix}${String(existingCount + 1).padStart(2, "0")}`,
+                    category: targetCatName,
+                    ward: targetCat?.ward || "General Ward",
+                    tariffRate: targetCat?.tariffRate || 2000,
+                    status: "Vacant",
+                    bulkCount: 5,
+                    prefix: defaultPrefix,
+                    startNumber: existingCount + 1,
+                  });
+                  setIsAddBedModalOpen(true);
+                }}
+                className="h-7 text-xs font-black gap-1.5 bg-blue-600 hover:bg-blue-700 text-white shadow-xs ml-1 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Bed
+              </Button>
             </div>
           </div>
 
@@ -742,9 +623,9 @@ export default function AtdPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="All">All Categories</SelectItem>
-                  {WARD_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
+                  {wardCategories.map((cat) => (
+                    <SelectItem key={cat.name} value={cat.name}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -921,6 +802,252 @@ export default function AtdPage() {
               <span>Clean Bed</span>
             </button>
           )}
+
+          {contextMenuBed.status === "Vacant" && (
+            <button
+              onClick={async () => {
+                if (confirm(`Are you sure you want to remove bed ${contextMenuBed.bedNo}?`)) {
+                  try {
+                    await deleteBed(contextMenuBed.bedNo);
+                    setContextMenuBed(null);
+                    fetchBeds();
+                  } catch (err: any) {
+                    alert(err.message || "Failed to remove bed");
+                  }
+                }
+              }}
+              className="w-full px-3 py-1.5 text-left hover:bg-rose-50 text-rose-700 flex items-center gap-2 cursor-pointer border-t border-slate-100"
+            >
+              <Trash2 className="h-3.5 w-3.5 text-rose-600" />
+              <span>Delete Bed</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ─── ADD / CONFIGURE HOSPITAL BEDS MODAL ───────────────────────── */}
+      {isAddBedModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-150 text-xs">
+            {/* Modal Header */}
+            <div className="px-4 py-3 bg-gradient-to-r from-blue-700 to-indigo-700 text-white flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2">
+                <BedDouble className="h-5 w-5 text-blue-200" />
+                <div>
+                  <h3 className="font-black text-sm">Add & Configure Hospital Beds</h3>
+                  <p className="text-[11px] text-blue-100 font-medium">Add single bed or generate multiple beds for ATD matrix</p>
+                </div>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsAddBedModalOpen(false)}
+                className="h-7 w-7 p-0 text-blue-100 hover:text-white hover:bg-white/10 rounded-full cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            <div className="px-4 pt-3 pb-1 bg-slate-50 border-b border-slate-200 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setAddBedMode("single")}
+                className={`flex-1 py-1.5 px-3 rounded text-xs font-bold transition-all cursor-pointer ${
+                  addBedMode === "single"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                }`}
+              >
+                Single Bed
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddBedMode("bulk")}
+                className={`flex-1 py-1.5 px-3 rounded text-xs font-bold transition-all cursor-pointer ${
+                  addBedMode === "bulk"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                }`}
+              >
+                Quick Multi-Bed Generator
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleAddBedSubmit} className="p-4 space-y-3.5">
+              {/* Category Selector */}
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Bed Category *</Label>
+                <Select
+                  value={newBedForm.category}
+                  onValueChange={(cat) => {
+                    const pref = cat === "DELUXE" ? "DLX-" : cat === "ICU" ? "ICU-" : cat === "SINGLE PRIVATE" ? "PRIVATE-" : cat === "TWIN SHARING" ? "TWIN-S-" : "GEN-";
+                    const count = beds.filter(b => b.category === cat).length;
+                    setNewBedForm({
+                      ...newBedForm,
+                      category: cat,
+                      prefix: pref,
+                      startNumber: count + 1,
+                      bedNo: `${pref}${String(count + 1).padStart(2, "0")}`,
+                      ward: cat === "DELUXE" ? "Floor 2 - Deluxe Wing" : cat === "ICU" ? "Floor 1 - Critical Care Unit" : cat === "SINGLE PRIVATE" ? "Floor 3 - Private Wing" : cat === "TWIN SHARING" ? "Floor 2 - Twin Sharing" : "Ground Floor - General Ward",
+                      tariffRate: cat === "DELUXE" ? 3500 : cat === "ICU" ? 6500 : cat === "SINGLE PRIVATE" ? 4500 : cat === "TWIN SHARING" ? 2500 : 1200,
+                    });
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs bg-white border-slate-300">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {wardCategories.map((cat) => (
+                      <SelectItem key={cat.name} value={cat.name}>{cat.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {addBedMode === "single" ? (
+                /* Single Bed Inputs */
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Bed Number / Code *</Label>
+                    <Input
+                      required
+                      value={newBedForm.bedNo}
+                      onChange={(e) => setNewBedForm({ ...newBedForm, bedNo: e.target.value })}
+                      placeholder="e.g. GEN-11 or DLX-06"
+                      className="h-8 text-xs font-mono font-bold uppercase"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Daily Tariff Rate (₹)</Label>
+                    <Input
+                      type="number"
+                      value={newBedForm.tariffRate}
+                      onChange={(e) => setNewBedForm({ ...newBedForm, tariffRate: Number(e.target.value) })}
+                      placeholder="e.g. 1200"
+                      className="h-8 text-xs font-mono"
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Bulk Multi-Bed Generator Inputs */
+                <div className="space-y-3 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                  <div className="grid grid-cols-3 gap-2.5">
+                    <div>
+                      <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Prefix Code</Label>
+                      <Input
+                        value={newBedForm.prefix}
+                        onChange={(e) => setNewBedForm({ ...newBedForm, prefix: e.target.value })}
+                        placeholder="e.g. GEN-"
+                        className="h-8 text-xs font-mono font-bold uppercase"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Start Number</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={newBedForm.startNumber}
+                        onChange={(e) => setNewBedForm({ ...newBedForm, startNumber: Number(e.target.value) })}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Number of Beds</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="50"
+                        value={newBedForm.bulkCount}
+                        onChange={(e) => setNewBedForm({ ...newBedForm, bulkCount: Number(e.target.value) })}
+                        className="h-8 text-xs font-mono font-bold text-blue-700"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Daily Tariff / Bed (₹)</Label>
+                      <Input
+                        type="number"
+                        value={newBedForm.tariffRate}
+                        onChange={(e) => setNewBedForm({ ...newBedForm, tariffRate: Number(e.target.value) })}
+                        className="h-8 text-xs font-mono"
+                      />
+                    </div>
+                    <div className="flex flex-col justify-end">
+                      <div className="bg-white p-2 rounded border border-blue-200 text-[11px] text-blue-900 font-medium">
+                        Will generate: <strong className="font-mono text-blue-700">{newBedForm.prefix}{String(newBedForm.startNumber).padStart(2, "0")}</strong> to <strong className="font-mono text-blue-700">{newBedForm.prefix}{String(newBedForm.startNumber + newBedForm.bulkCount - 1).padStart(2, "0")}</strong> ({newBedForm.bulkCount} beds)
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Ward / Location */}
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Ward / Floor Wing</Label>
+                <Input
+                  value={newBedForm.ward}
+                  onChange={(e) => setNewBedForm({ ...newBedForm, ward: e.target.value })}
+                  placeholder="e.g. Ground Floor - General Ward"
+                  className="h-8 text-xs"
+                />
+              </div>
+
+              {/* Initial Status */}
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700 mb-1 block">Initial Status</Label>
+                <Select
+                  value={newBedForm.status}
+                  onValueChange={(st: any) => setNewBedForm({ ...newBedForm, status: st })}
+                >
+                  <SelectTrigger className="h-8 text-xs bg-white border-slate-300">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Vacant">Vacant (Available)</SelectItem>
+                    <SelectItem value="House Keeping">House Keeping (Cleaning)</SelectItem>
+                    <SelectItem value="Under Repair">Under Repair / Maintenance</SelectItem>
+                    <SelectItem value="Blocked">Blocked / Reserved</SelectItem>
+                    <SelectItem value="Retain">Retain</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="pt-2 border-t border-slate-200 flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddBedModalOpen(false)}
+                  className="h-8 text-xs cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isAddingBed}
+                  size="sm"
+                  className="h-8 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white gap-1.5 shadow-xs cursor-pointer"
+                >
+                  {isAddingBed ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3.5 w-3.5" />
+                      {addBedMode === "single" ? "Add Hospital Bed" : `Generate ${newBedForm.bulkCount} Beds`}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
@@ -1212,13 +1339,18 @@ export default function AtdPage() {
 
                     <div className="flex items-center gap-2">
                       <span className="w-28 text-[11px] font-bold text-slate-600 whitespace-nowrap">Bed No:</span>
-                      <input
-                        type="text"
-                        placeholder="Bed No"
+                      <select
                         value={admitForm.bedNo}
                         onChange={(e) => setAdmitForm({ ...admitForm, bedNo: e.target.value })}
-                        className="h-7 flex-1 text-xs px-2 border border-slate-300 rounded bg-slate-100 font-mono font-black text-slate-900"
-                      />
+                        className="h-7 flex-1 text-xs px-1.5 border border-slate-300 rounded bg-slate-100 font-mono font-black text-slate-900"
+                      >
+                        <option value="">-- Select Bed --</option>
+                        {beds.map((bed) => (
+                          <option key={bed.bedNo} value={bed.bedNo}>
+                            {bed.bedNo} {bed.status !== "Vacant" ? `(${bed.status})` : ""}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -1700,30 +1832,24 @@ export default function AtdPage() {
 
       {/* ─── PATIENT CENSUS LOOKUP MODAL (TRIGGERED BY UHID CLICK) ─────────── */}
       {isPatientLookupOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-[95vw] max-w-6xl h-[88vh] flex flex-col overflow-hidden border border-slate-300 animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-2 sm:p-3">
+          <div className="bg-white rounded-xl shadow-2xl w-[98vw] max-w-[1780px] h-[92vh] flex flex-col overflow-hidden border border-slate-300 animate-in fade-in zoom-in-95 duration-150">
             
             {/* Modal Header */}
-            <div className="px-5 py-3.5 bg-[#cee6f8] border-b border-[#bce8f1] flex items-center justify-between flex-shrink-0">
+            <div className="px-6 py-4 bg-[#cee6f8] border-b border-[#bce8f1] flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
-                <div className="p-1.5 bg-blue-600 text-white rounded-lg shadow-xs">
+                <div className="p-2 bg-blue-600 text-white rounded-lg shadow-xs">
                   <Users className="h-5 w-5" />
                 </div>
                 <div>
-                  <h2 className="font-extrabold text-sm text-slate-900">Select Patient for Inpatient Admission</h2>
-                  <p className="text-[11px] text-slate-600 font-medium">Search across hospital patient registry & select to auto-populate admission form</p>
+                  <h2 className="font-black text-base text-slate-900">Select Patient for Inpatient Admission</h2>
+                  <p className="text-xs text-slate-600 font-medium">Search across hospital patient registry & select to auto-populate admission form</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
-                <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-bold px-2.5 py-0.5">
-                  {CENSUS_PATIENTS.filter(
-                    (p) =>
-                      !lookupSearchTerm ||
-                      p.uhid.toLowerCase().includes(lookupSearchTerm.toLowerCase()) ||
-                      p.patientName.toLowerCase().includes(lookupSearchTerm.toLowerCase()) ||
-                      p.mobile.includes(lookupSearchTerm)
-                  ).length} Patients Found
+                <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-xs font-bold px-3 py-1">
+                  {isCensusLoading ? "Searching..." : `${censusPatients.length} Patients Found`}
                 </Badge>
                 <Button
                   size="sm"
@@ -1737,7 +1863,7 @@ export default function AtdPage() {
             </div>
 
             {/* Search & Filter Bar */}
-            <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+            <div className="p-4 bg-slate-50 border-b border-slate-200 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="relative flex-1">
                   <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-400" />
@@ -1763,83 +1889,94 @@ export default function AtdPage() {
                   size="sm"
                   variant="outline"
                   onClick={() => setLookupSearchTerm("")}
-                  className="h-9 px-4 text-xs font-bold bg-white text-slate-700 hover:bg-slate-100"
+                  className="h-9 px-4 text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 shadow-2xs"
                 >
                   Clear Filter
                 </Button>
               </div>
             </div>
 
-            {/* Patient Table (Spacious Full Width) */}
+            {/* Patient Table (Ultra Spacious Full Width, Live API Data) */}
             <div className="flex-1 overflow-y-auto p-0">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-black tracking-wider sticky top-0 border-b border-slate-200 z-10 shadow-2xs">
-                  <tr>
-                    <th className="px-4 py-3 text-center w-24">Action</th>
-                    <th className="px-4 py-3">UHID</th>
-                    <th className="px-4 py-3">Patient Full Name</th>
-                    <th className="px-4 py-3">Gender / Age</th>
-                    <th className="px-4 py-3">Mobile No</th>
-                    <th className="px-4 py-3">Payer / Insurance</th>
-                    <th className="px-4 py-3">Attending Doctor</th>
-                    <th className="px-4 py-3">Residential Address</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                  {CENSUS_PATIENTS.filter(
-                    (p) =>
-                      !lookupSearchTerm ||
-                      p.uhid.toLowerCase().includes(lookupSearchTerm.toLowerCase()) ||
-                      p.patientName.toLowerCase().includes(lookupSearchTerm.toLowerCase()) ||
-                      p.mobile.includes(lookupSearchTerm) ||
-                      p.address.toLowerCase().includes(lookupSearchTerm.toLowerCase())
-                  ).map((p) => (
-                    <tr
-                      key={p.uhid}
-                      onClick={() => handleSelectPatientFromLookup(p)}
-                      className="hover:bg-blue-50/80 cursor-pointer transition-colors group"
-                    >
-                      <td className="px-4 py-3 text-center">
-                        <Button
-                          size="sm"
-                          className="h-7 px-3 text-[11px] font-black bg-blue-600 hover:bg-blue-700 text-white shadow-2xs group-hover:scale-105 transition-transform"
-                        >
-                          Select
-                        </Button>
-                      </td>
-                      <td className="px-4 py-3 font-mono font-black text-blue-700 text-xs">{p.uhid}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          {p.photoUrl ? (
-                            <img
-                              src={p.photoUrl}
-                              alt={p.patientName}
-                              className="w-8 h-8 rounded-full object-cover border border-blue-200 shadow-2xs flex-shrink-0"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs flex-shrink-0">
-                              {p.patientName.charAt(0)}
-                            </div>
-                          )}
-                          <div>
-                            <span className="font-bold text-slate-900 text-xs block leading-tight">{p.patientName}</span>
-                            <span className="text-[10px] text-slate-500 font-mono">{p.email || p.mobile}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 font-medium">{p.gender} / {p.age} Yr</td>
-                      <td className="px-4 py-3 font-mono text-slate-800 font-semibold">{p.mobile}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-300 font-semibold text-[11px]">
-                          {p.payer}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-slate-700 font-medium">{p.doctor}</td>
-                      <td className="px-4 py-3 text-slate-500 truncate max-w-sm">{p.address}, {p.city}</td>
+              {isCensusLoading ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-3 text-slate-500">
+                  <RefreshCw className="h-6 w-6 animate-spin text-blue-600" />
+                  <span className="text-xs font-bold">Fetching patients from hospital database...</span>
+                </div>
+              ) : censusPatients.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-2 text-slate-500">
+                  <Users className="h-10 w-10 text-slate-300" />
+                  <span className="text-sm font-bold text-slate-700">No matching patient records found</span>
+                  <span className="text-xs text-slate-400">Try refining your search term or register a new patient in Registration desk.</span>
+                </div>
+              ) : (
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead className="bg-slate-100 text-slate-700 uppercase text-[10px] font-black tracking-wider sticky top-0 border-b border-slate-200 z-10 shadow-2xs">
+                    <tr>
+                      <th className="px-5 py-3.5 text-center w-24 whitespace-nowrap">Action</th>
+                      <th className="px-5 py-3.5 whitespace-nowrap min-w-[190px]">UHID</th>
+                      <th className="px-5 py-3.5 min-w-[240px]">Patient Full Name</th>
+                      <th className="px-5 py-3.5 whitespace-nowrap min-w-[130px]">Gender / Age</th>
+                      <th className="px-5 py-3.5 whitespace-nowrap min-w-[130px]">Mobile No</th>
+                      <th className="px-5 py-3.5 whitespace-nowrap min-w-[160px]">Payer / Insurance</th>
+                      <th className="px-5 py-3.5 min-w-[180px]">Attending Doctor</th>
+                      <th className="px-5 py-3.5 min-w-[280px]">Residential Address</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {censusPatients.map((p) => {
+                      const patientName = p.fullName || `${p.firstName || ""} ${p.lastName || ""}`.trim() || "Patient";
+                      return (
+                        <tr
+                          key={p.id || p.uhid}
+                          onClick={() => handleSelectPatientFromLookup(p)}
+                          className="hover:bg-blue-50/80 cursor-pointer transition-colors group"
+                        >
+                          <td className="px-5 py-3.5 text-center whitespace-nowrap">
+                            <Button
+                              size="sm"
+                              className="h-7 px-4 text-[11px] font-black bg-blue-600 hover:bg-blue-700 text-white shadow-2xs group-hover:scale-105 transition-transform"
+                            >
+                              Select
+                            </Button>
+                          </td>
+                          <td className="px-5 py-3.5 font-mono font-black text-blue-700 text-xs whitespace-nowrap">{p.uhid}</td>
+                          <td className="px-5 py-3.5">
+                            <div className="flex items-center gap-3">
+                              {p.photoUrl ? (
+                                <img
+                                  src={p.photoUrl}
+                                  alt={patientName}
+                                  className="w-9 h-9 rounded-full object-cover border border-blue-200 shadow-2xs flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs flex-shrink-0">
+                                  {patientName.charAt(0)}
+                                </div>
+                              )}
+                              <div>
+                                <span className="font-bold text-slate-900 text-xs block leading-tight">{patientName}</span>
+                                <span className="text-[10px] text-slate-500 font-mono">{p.email || p.mobile}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 text-slate-600 font-medium whitespace-nowrap">{p.gender} / {p.age || "—"} Yr</td>
+                          <td className="px-5 py-3.5 font-mono text-slate-800 font-semibold whitespace-nowrap">{p.mobile}</td>
+                          <td className="px-5 py-3.5 whitespace-nowrap">
+                            <Badge variant="outline" className="bg-slate-50 text-slate-700 border-slate-300 font-semibold text-[11px]">
+                              {p.payer || "CASH / CASH"}
+                            </Badge>
+                          </td>
+                          <td className="px-5 py-3.5 text-slate-700 font-medium">{p.referredBy || "Dr. Abhishek Bansal 2273"}</td>
+                          <td className="px-5 py-3.5 text-slate-500">
+                            {p.address}{p.districtCity ? `, ${p.districtCity}` : ""}{p.state ? `, ${p.state}` : ""}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* Modal Footer */}

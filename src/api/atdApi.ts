@@ -155,3 +155,34 @@ export async function updateBedStatus(bedNo: string, status: string, notes?: str
   if (!res.ok) throw new Error(result.message || "Failed to update bed status");
   return result.data;
 }
+
+export interface CreateBedPayload {
+  bedNo?: string;
+  category: string;
+  ward?: string;
+  tariffRate?: number;
+  status?: string;
+  bulkCount?: number;
+  prefix?: string;
+  startNumber?: number;
+}
+
+export async function createBed(payload: CreateBedPayload): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/atd/beds`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message || "Failed to create bed");
+  return result.data;
+}
+
+export async function deleteBed(bedNo: string): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/atd/beds/${encodeURIComponent(bedNo)}`, {
+    method: "DELETE",
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.message || "Failed to delete bed");
+  return result.data;
+}

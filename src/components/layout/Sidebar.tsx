@@ -73,20 +73,12 @@ export default function Sidebar() {
       }}
     >
       {/* Logo */}
-      <div className={cn("flex items-center border-b border-white/10 h-14", isCollapsed ? "justify-center px-0" : "px-4 gap-3")}>
+      <div className={cn("flex items-center border-b border-white/10 transition-all duration-300", isCollapsed ? "justify-center px-0 h-14" : "px-3 gap-3 h-20")}>
         {!isCollapsed && (
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-primary shadow-lg">
-            <Heart className="h-4 w-4 text-white fill-white" />
-          </div>
-        )}
-        {!isCollapsed && (
-          <div className="min-w-0 flex-1 overflow-hidden transition-all duration-300">
-            <p className="text-white font-bold text-sm tracking-wide leading-none truncate">
-              CMK
-            </p>
-            <p className="text-blue-300 text-[10px] font-medium tracking-widest uppercase mt-0.5 truncate">
-              CareSuite
-            </p>
+          <div className="flex-1 flex items-center justify-center h-full py-3">
+            <div className="w-full h-full flex items-center justify-center px-1 overflow-hidden">
+              <img src="/cmk_caresuit_logo.png" alt="CMK CareSuite" className="w-full h-full object-contain scale-[1.15]" />
+            </div>
           </div>
         )}
         <Button variant="ghost" size="icon" onClick={toggleSidebar} className="h-8 w-8 text-white/70 hover:text-white hover:bg-white/10 flex-shrink-0">

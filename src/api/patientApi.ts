@@ -25,6 +25,7 @@ export interface PatientData {
   pinCode?: string;
   altPhone?: string;
   email?: string;
+  photoUrl?: string | null;
   emergencyName?: string;
   emergencyRelationship?: string;
   emergencyContact?: string;
@@ -56,6 +57,15 @@ export interface PatientQueryParams {
   search?: string;
   page?: number;
   limit?: number;
+  uhid?: string;
+  patientName?: string;
+  dob?: string;
+  mobile?: string;
+  phone?: string;
+  email?: string;
+  company?: string;
+  identityNo?: string;
+  address?: string;
 }
 
 export async function createPatient(data: PatientData) {
@@ -79,6 +89,15 @@ export async function getPatients(params?: PatientQueryParams) {
   if (params?.search) query.append("search", params.search);
   if (params?.page) query.append("page", String(params.page));
   if (params?.limit) query.append("limit", String(params.limit));
+  if (params?.uhid) query.append("uhid", params.uhid);
+  if (params?.patientName) query.append("patientName", params.patientName);
+  if (params?.dob) query.append("dob", params.dob);
+  if (params?.mobile) query.append("mobile", params.mobile);
+  if (params?.phone) query.append("phone", params.phone);
+  if (params?.email) query.append("email", params.email);
+  if (params?.company) query.append("company", params.company);
+  if (params?.identityNo) query.append("identityNo", params.identityNo);
+  if (params?.address) query.append("address", params.address);
 
   const response = await fetch(`${API_BASE_URL}/patients?${query.toString()}`);
   const result = await response.json();

@@ -13,9 +13,13 @@ import { Country, State, City } from "country-state-city";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createPatient, getPatientById, updatePatient } from "@/api/patientApi";
+import { createPatient, getPatientById, updatePatient, getPatients, PatientData } from "@/api/patientApi";
 import ImportPatientsModal from "../components/ImportPatientsModal";
 import { useToast } from "@/components/ui/toast-notification";
+import { useReactToPrint } from "react-to-print";
+import { RegistrationLabelPrint } from "../components/RegistrationLabelPrint";
+import { RegistrationCardPrint } from "../components/RegistrationCardPrint";
+import { PatientRegistrationDetailsPrint } from "../components/PatientRegistrationDetailsPrint";
 import {
   Select,
   SelectContent,
@@ -505,12 +509,74 @@ export default function RegistrationPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const editId = searchParams.get("edit");
+  const [showPrintCard, setShowPrintCard] = useState(false);
+
+  // ─── PATIENT SEARCH MODAL STATE ─────────────────────────────────────────────
+  const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] = useState(false);
+  const [modalFilters, setModalFilters] = useState({
+    uhid: "",
+    patientName: "",
+    mobile: "",
+    dob: "",
+    email: "",
+    company: "",
+    identityNo: "",
+    address: "",
+    phone: ""
+  });
+  const [modalPatients, setModalPatients] = useState<PatientData[]>([]);
+  const [isModalLoading, setIsModalLoading] = useState(false);
+
+  const fetchModalPatients = useCallback(async () => {
+    setIsModalLoading(true);
+    try {
+      // Clear out empty string filters
+      const activeFilters = Object.fromEntries(
+        Object.entries(modalFilters).filter(([_, v]) => v.trim() !== "")
+      );
+      const data = await getPatients({ ...activeFilters, limit: 50 });
+      setModalPatients(data.patients || []);
+    } catch (err) {
+      console.error(err);
+      setModalPatients([]);
+    } finally {
+      setIsModalLoading(false);
+    }
+  }, [modalFilters]);
+
+  useEffect(() => {
+    if (isPatientSearchModalOpen) {
+      const timer = setTimeout(() => {
+        fetchModalPatients();
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [isPatientSearchModalOpen, modalFilters, fetchModalPatients]);
   const [isEditing, setIsEditing] = useState(false);
   const toast = useToast();
   const today = format(new Date(), "yyyy-MM-dd");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("other-info");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const printLabelRef = useRef<HTMLDivElement>(null);
+  const handlePrintLabel = useReactToPrint({
+    contentRef: printLabelRef,
+    documentTitle: "RegistrationLable"
+  });
+
+  const printCardRef = useRef<HTMLDivElement>(null);
+  const handlePrintCard = useReactToPrint({
+    contentRef: printCardRef,
+    documentTitle: "RegistrationCard"
+  });
+
+  const printDetailsRef = useRef<HTMLDivElement>(null);
+  const handlePrintDetails = useReactToPrint({
+    contentRef: printDetailsRef,
+    documentTitle: "PatientRegistrationDetails"
+  });
+
   const [dynamicProviders, setDynamicProviders] = useState<string[]>(PROVIDERS);
   const [dynamicLeadSources, setDynamicLeadSources] = useState<string[]>(LEAD_SOURCES);
   const [dynamicReligions, setDynamicReligions] = useState<string[]>(RELIGIONS);
@@ -640,6 +706,12 @@ export default function RegistrationPage() {
           let formattedRegDate = today;
           if (patient.regDate) {
             formattedRegDate = format(new Date(patient.regDate), "yyyy-MM-dd");
+          }
+
+          if (patient.photoUrl) {
+            setPhotoPreview(patient.photoUrl);
+          } else {
+            setPhotoPreview(null);
           }
 
           reset({
@@ -801,6 +873,7 @@ export default function RegistrationPage() {
 
       const payload: any = {
         ...data,
+        photoUrl: photoPreview || null,
         aadhaarCard: sanitizeNumber(data.aadhaarCard),
         mobile: sanitizeNumber(data.mobile),
         altPhone: sanitizeNumber(data.altPhone),
@@ -829,6 +902,7 @@ export default function RegistrationPage() {
       }
 
       // Reset form fields to clean state for both update and save
+      setPhotoPreview(null);
       reset({
         registrationType: "New Registration",
         uhid: "",
@@ -950,7 +1024,12 @@ export default function RegistrationPage() {
 
         {/* UHID */}
         <div className="flex items-center gap-2">
-          <Label className="text-xs text-slate-500 font-semibold">UHN</Label>
+          <Label 
+            className="text-xs text-blue-600 font-bold underline cursor-pointer"
+            onClick={() => setIsPatientSearchModalOpen(true)}
+          >
+            UHID
+          </Label>
           <Input
             {...register("uhid")}
             placeholder="Auto-generated"
@@ -967,16 +1046,7 @@ export default function RegistrationPage() {
         )}
 
         {/* Action Buttons */}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-          onClick={() => setIsImportModalOpen(true)}
-        >
-          <FileSpreadsheet className="h-3.5 w-3.5" />
-          Import Data
-        </Button>
+
         <Button
           type="button"
           variant="outline"
@@ -1030,6 +1100,13 @@ export default function RegistrationPage() {
           variant="outline"
           size="sm"
           className="h-8 text-xs gap-1.5"
+          onClick={() => {
+            if (!editId) {
+              toast.error("Please Select Patient !");
+              return;
+            }
+            handlePrintLabel();
+          }}
         >
           <Printer className="h-3.5 w-3.5" />
           Print
@@ -1039,6 +1116,13 @@ export default function RegistrationPage() {
           variant="outline"
           size="sm"
           className="h-8 text-xs gap-1.5"
+          onClick={() => {
+            if (!editId) {
+              toast.error("Please Select Patient !");
+              return;
+            }
+            handlePrintCard();
+          }}
         >
           <Printer className="h-3.5 w-3.5" />
           Print Card
@@ -1048,6 +1132,13 @@ export default function RegistrationPage() {
           variant="outline"
           size="sm"
           className="h-8 text-xs gap-1.5"
+          onClick={() => {
+            if (!editId) {
+              toast.error("Please Select Patient !");
+              return;
+            }
+            handlePrintDetails();
+          }}
         >
           <FileText className="h-3.5 w-3.5" />
           Patient/Reg Details
@@ -1982,10 +2073,236 @@ export default function RegistrationPage() {
       <ImportPatientsModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
-        onSuccess={() => {
-          setSaveSuccess("Bulk patient data imported successfully!");
-        }}
       />
+
+      {/* ─── PATIENT SEARCH MODAL ─────────────────────────────────────────── */}
+      {isPatientSearchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-xs p-4 pt-10">
+          <div className="w-full max-w-[75vw] bg-white rounded-xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-[#cee6f8] rounded-t-xl shrink-0">
+              <span className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <FileText className="h-4 w-4 text-green-700" />
+                Patient Details
+              </span>
+              <Button size="sm" onClick={() => setIsPatientSearchModalOpen(false)} className="h-6 px-3 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold rounded">
+                Close
+              </Button>
+            </div>
+
+            <div className="p-3 shrink-0 border-b bg-white text-xs">
+              {/* Top Filters Row */}
+              <div className="flex items-center gap-4 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold text-slate-700">Facility</span>
+                  <Select defaultValue="CMK">
+                    <SelectTrigger className="h-6 w-64 text-[11px] bg-white border-slate-300">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CMK">CMK HEALTHCARE PVT. LTD.</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-semibold text-slate-700">Entry Site</span>
+                  <Select defaultValue="ALL">
+                    <SelectTrigger className="h-6 w-32 text-[11px] bg-white border-slate-300">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">-- ALL --</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex-1" />
+                <Button size="sm" variant="outline" className="h-6 px-4 text-[11px] font-bold border-slate-300" onClick={fetchModalPatients}>Filter</Button>
+                <Button size="sm" variant="outline" className="h-6 px-4 text-[11px] font-bold border-slate-300" onClick={() => setModalFilters({ uhid: "", patientName: "", mobile: "", dob: "", email: "", company: "", identityNo: "", address: "", phone: "" })}>Clear Filter</Button>
+              </div>
+
+              {/* Radio Group Row */}
+              <div className="flex items-center gap-8 mb-3">
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="searchType" defaultChecked className="accent-blue-600 w-3 h-3" />
+                    <span className="text-[11px] font-semibold">Search on Criteria</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="searchType" className="accent-blue-600 w-3 h-3" />
+                    <span className="text-[11px] font-semibold">Search All (Date Range)</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="recordType" defaultChecked className="accent-blue-600 w-3 h-3" />
+                    <span className="text-[11px] font-semibold">Registration</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="recordType" className="accent-blue-600 w-3 h-3" />
+                    <span className="text-[11px] font-semibold">Encounter</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="recordType" className="accent-blue-600 w-3 h-3" />
+                    <span className="text-[11px] font-semibold">Discharge</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Grid of Inputs */}
+              <div className="grid grid-cols-4 gap-x-6 gap-y-1.5">
+                {[
+                  { label: "UHID", key: "uhid", placeholder: "" },
+                  { label: "IP No.", placeholder: "" },
+                  { label: "Patient Name", key: "patientName", placeholder: "" },
+                  { label: "Date of Birth", key: "dob", placeholder: "YYYY-MM-DD" },
+                  { label: "Phone", key: "phone", placeholder: "" },
+                  { label: "Mobile #", key: "mobile", placeholder: "" },
+                  { label: "Bed No", placeholder: "" },
+                  { label: "E-Mail Id", key: "email", placeholder: "" },
+                  { label: "Company", key: "company", placeholder: "" },
+                  { label: "Passport No", placeholder: "" },
+                  { label: "Identity No", key: "identityNo", placeholder: "Aadhaar/PAN" },
+                  { label: "Old Reg No", placeholder: "" },
+                  { label: "Mother Name", placeholder: "" },
+                  { label: "Father Name", placeholder: "" },
+                  { label: "Privilege Card", placeholder: "" },
+                  { label: "Address", key: "address", placeholder: "" },
+                ].map((field, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-24 text-[10px] text-slate-700 font-medium">{field.label}</span>
+                    <Input 
+                      className="h-6 flex-1 text-[11px] px-1.5 border-slate-300 rounded-sm" 
+                      value={field.key ? modalFilters[field.key as keyof typeof modalFilters] : ""} 
+                      onChange={(e) => {
+                        if (field.key) {
+                          setModalFilters(prev => ({ ...prev, [field.key as keyof typeof modalFilters]: e.target.value }));
+                        }
+                      }}
+                      placeholder={field.placeholder}
+                      disabled={!field.key}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-white">
+              <table className="w-full text-left text-[10px] whitespace-nowrap">
+                <thead className="bg-[#cee6f8] border-b border-blue-200 text-slate-800 font-semibold sticky top-0">
+                  <tr>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-center w-12">Select</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">UHID</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Patient Name</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Gender/Age</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Registration Date</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Company</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">MobileNo</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">DOB</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">PatientAddress</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Old Reg No</th>
+                    <th className="px-2 py-1.5 text-blue-800">Father Name</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {isModalLoading ? (
+                    <tr>
+                      <td colSpan={11} className="py-8 text-center text-slate-400">
+                        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                        Searching...
+                      </td>
+                    </tr>
+                  ) : modalPatients.length === 0 ? (
+                    <tr>
+                      <td colSpan={11} className="py-8 text-center text-slate-400">
+                        No patients found matching your search.
+                      </td>
+                    </tr>
+                  ) : (
+                    modalPatients.map((p) => (
+                      <tr key={p.id} className="hover:bg-blue-50 transition-colors">
+                        <td className="px-2 py-1.5 border-r border-slate-100 text-center">
+                          <button 
+                            className="text-blue-600 hover:text-blue-800 hover:underline font-semibold"
+                            onClick={() => {
+                              setIsPatientSearchModalOpen(false);
+                              navigate(`/registration/demographics?edit=${p.id}`);
+                            }}
+                          >
+                            Select
+                          </button>
+                        </td>
+                        <td className="px-2 py-1.5 border-r border-slate-100 font-mono text-slate-700">{p.uhid}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100 font-semibold">{p.firstName} {p.lastName}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100">{p.gender}/{p.age ? `${p.age} Yrs` : "-"}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100">{p.regDate ? format(new Date(p.regDate), "dd/MM/yyyy h:mm a") : "-"}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100">{p.payer || "CASH"}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100">{p.mobile}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100">{p.dob ? format(new Date(p.dob), "dd/MM/yyyy") : "-"}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100 truncate max-w-[150px]">{p.address}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100">-</td>
+                        <td className="px-2 py-1.5">-</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Printable Component - Label */}
+      <div className="hidden">
+        <RegistrationLabelPrint 
+          ref={printLabelRef} 
+          patient={{
+            name: watch("firstName") ? `${watch("firstName")} ${watch("lastName") || ""}`.trim() : "",
+            uhid: watch("uhid") || "",
+            dob: watch("dob")
+          }} 
+        />
+      </div>
+
+      {/* Hidden Printable Component - Card */}
+      <div className="hidden">
+        <RegistrationCardPrint 
+          ref={printCardRef} 
+          patient={{
+            name: watch("firstName") ? `${watch("firstName")} ${watch("lastName") || ""}`.trim() : "",
+            uhid: watch("uhid") || "",
+            age: watch("age"),
+            gender: watch("gender"),
+            contact: watch("mobile")
+          }} 
+        />
+      </div>
+
+      {/* Hidden Printable Component - Reg Details */}
+      <div className="hidden">
+        <PatientRegistrationDetailsPrint 
+          ref={printDetailsRef} 
+          patient={{
+            uhid: watch("uhid") || "",
+            regDate: watch("regDate") || new Date().toISOString(),
+            name: watch("firstName") ? `${watch("title") || ""} ${watch("firstName")} ${watch("lastName") || ""}`.trim() : "",
+            guardianName: watch("guardianName") || "",
+            genderAge: `${watch("gender") || ""} / ${watch("age") ? `${watch("age")} Y` : ""}`.trim(),
+            maritalStatus: watch("maritalStatus") || "",
+            religion: watch("religion") || "",
+            aadhaarCard: watch("aadhaarCard") || "",
+            nationality: watch("nationality") || "",
+            passportNo: watch("passportNo") || "",
+            address: watch("address") || "",
+            cityStateZip: `${watch("districtCity") || ""} - ${watch("pinCode") || ""}`.trim(),
+            mobile: watch("mobile") || "",
+            altPhone: watch("altPhone") || "",
+            emergencyName: watch("emergencyName") || "",
+            emergencyContact: watch("emergencyContact") || "",
+            sponsor: watch("sponsor") || watch("payer") || "",
+            referringDoctor: watch("provider") || ""
+          }} 
+        />
+      </div>
+
     </div>
   );
 }
