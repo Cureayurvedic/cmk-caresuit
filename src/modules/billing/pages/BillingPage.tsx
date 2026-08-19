@@ -1345,7 +1345,7 @@ export default function BillingPage() {
           { id: "Advance Collection", label: "Advance Collection", icon: Wallet },
           { id: "Credit Note", label: "Credit Note", icon: CreditCard },
           { id: "Intimation", label: "Intimation", icon: ShieldCheck },
-          { id: "UnBilled Orders", label: "UnBilled Orders", icon: FileCheck, count: unbilledOrders.length },
+          { id: "UnBilled Orders", label: "Unbilled Orders", icon: FileCheck, count: unbilledOrders.length },
         ].map((tab) => {
           const Icon = tab.icon;
           const isSelected = activeTab === tab.id;
@@ -1418,7 +1418,7 @@ export default function BillingPage() {
                     <SelectContent>
                       <SelectItem value="all">Select All</SelectItem>
                       <SelectItem value="Open">Open</SelectItem>
-                      <SelectItem value="Marked For Discharged">Marked For Discharged</SelectItem>
+                      <SelectItem value="Marked For Discharged">Marked for Discharge</SelectItem>
                       <SelectItem value="Sent For Billing">Sent For Billing</SelectItem>
                       <SelectItem value="Pharmacy Clearance">Pharmacy Clearance</SelectItem>
                       <SelectItem value="File Received">File Received</SelectItem>
@@ -1464,7 +1464,7 @@ export default function BillingPage() {
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    {t}
+                    {t === "Discharge But Not Bill" ? "Discharged - Bill Pending" : t === "Discharge" ? "Discharged" : t}
                   </button>
                 ))}
               </div>
@@ -1491,7 +1491,7 @@ export default function BillingPage() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {paginatedPatients.map((p) => (
                     <tr key={p.uhid} className="hover:bg-blue-50/40 group">
-                      <td className="px-3 py-2.5 font-mono font-bold text-blue-600">{p.uhid}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-blue-600 whitespace-nowrap" title={p.uhid}>{p.uhid}</td>
                       <td className="px-3 py-2.5 font-mono text-slate-600">{p.ipNo}</td>
                       <td className="px-3 py-2.5 font-bold text-slate-800">
                         {p.patientName}
@@ -1910,7 +1910,7 @@ export default function BillingPage() {
                     <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300 font-bold text-blue-900"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All Invoices">All Invoices</SelectItem>
-                      <SelectItem value="UnSettled">UnSettled / Pending</SelectItem>
+                      <SelectItem value="UnSettled">Unsettled / Pending</SelectItem>
                       <SelectItem value="Settled">Settled</SelectItem>
                       <SelectItem value="Refundable">Refundable</SelectItem>
                       <SelectItem value="Cancelled">Cancelled</SelectItem>
@@ -1988,7 +1988,7 @@ export default function BillingPage() {
                         <th className="px-2.5 py-2">Company</th>
                         <th className="px-2.5 py-2">UHID</th>
                         <th className="px-2.5 py-2">Patient</th>
-                        <th className="px-2.5 py-2">Enc#</th>
+                        <th className="px-2.5 py-2">Enc. #</th>
                         <th className="px-2.5 py-2 text-center">Type</th>
                         <th className="px-2.5 py-2">Invoice#</th>
                         <th className="px-2.5 py-2">Date</th>
@@ -1997,7 +1997,7 @@ export default function BillingPage() {
                         <th className="px-2.5 py-2 text-right">Payer</th>
                         <th className="px-2.5 py-2 text-right">Adjusted</th>
                         <th className="px-2.5 py-2 text-right">Refund</th>
-                        <th className="px-2.5 py-2 text-right">Cr.Note</th>
+                        <th className="px-2.5 py-2 text-right">Cr. Note</th>
                         <th className="px-2.5 py-2 text-right">Balance</th>
                         <th className="px-2.5 py-2 text-center">Status</th>
                         <th className="px-2.5 py-2 text-center">Cancel / Actions</th>
@@ -2077,10 +2077,11 @@ export default function BillingPage() {
                               />
                             </td>
                             <td className="px-2.5 py-2 text-[10px] font-bold text-slate-600">{inv.company}</td>
-                            <td className="px-2.5 py-2 font-mono text-blue-600 font-bold">
+                            <td className="px-2.5 py-2 font-mono text-blue-600 font-bold whitespace-nowrap">
                               <button
                                 type="button"
                                 className="hover:underline cursor-pointer"
+                                title={inv.uhid}
                                 onClick={() => {
                                   setOpBillingUhid(inv.uhid);
                                   setActiveTab("OP Billing");
@@ -3065,7 +3066,7 @@ export default function BillingPage() {
                           <th className="px-2 py-2 tracking-wider">Bank Name</th>
                           <th className="px-2 py-2 tracking-wider">Beneficiary Name</th>
                           <th className="px-2 py-2 tracking-wider">Reference No</th>
-                          <th className="px-2 py-2 tracking-wider">Desc/Card Holder Name</th>
+                          <th className="px-2 py-2 tracking-wider">Card Holder / Description</th>
                           <th className="px-2 py-2 text-right tracking-wider">Card Swiping Value</th>
                           <th className="px-2 py-2 w-8"></th>
                         </tr>

@@ -1,4 +1,4 @@
-import { Bell, Search, RefreshCw, HelpCircle, Settings } from "lucide-react";
+import { Search, RefreshCw, HelpCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -70,12 +70,7 @@ export default function Header() {
         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700">
           <RefreshCw className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700 relative">
-          <Bell className="h-4 w-4" />
-          <Badge className="absolute -top-0.5 -right-0.5 h-4 w-4 p-0 flex items-center justify-center text-[9px]">
-            3
-          </Badge>
-        </Button>
+
         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700">
           <HelpCircle className="h-4 w-4" />
         </Button>

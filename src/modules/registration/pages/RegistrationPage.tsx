@@ -2195,9 +2195,9 @@ export default function RegistrationPage() {
                     <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Gender/Age</th>
                     <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Registration Date</th>
                     <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Company</th>
-                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">MobileNo</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Mobile No.</th>
                     <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">DOB</th>
-                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">PatientAddress</th>
+                    <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Patient Address</th>
                     <th className="px-2 py-1.5 border-r border-blue-200 text-blue-800">Old Reg No</th>
                     <th className="px-2 py-1.5 text-blue-800">Father Name</th>
                   </tr>
@@ -2230,7 +2230,7 @@ export default function RegistrationPage() {
                             Select
                           </button>
                         </td>
-                        <td className="px-2 py-1.5 border-r border-slate-100 font-mono text-slate-700">{p.uhid}</td>
+                        <td className="px-2 py-1.5 border-r border-slate-100 font-mono text-slate-700 whitespace-nowrap" title={p.uhid}>{p.uhid}</td>
                         <td className="px-2 py-1.5 border-r border-slate-100 font-semibold">{p.firstName} {p.lastName}</td>
                         <td className="px-2 py-1.5 border-r border-slate-100">{p.gender}/{p.age ? `${p.age} Yrs` : "-"}</td>
                         <td className="px-2 py-1.5 border-r border-slate-100">{p.regDate ? format(new Date(p.regDate), "dd/MM/yyyy h:mm a") : "-"}</td>

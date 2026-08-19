@@ -193,7 +193,7 @@ export default function PatientSearchPage() {
                         setSelectedPatient(patient);
                       }}
                     >
-                      <td className="px-4 py-3 font-medium font-mono text-[10px] text-primary">{patient.uhid}</td>
+                      <td className="px-4 py-3 font-medium font-mono text-[10px] text-primary whitespace-nowrap" title={patient.uhid}>{patient.uhid}</td>
                       <td className="px-4 py-3 font-semibold text-slate-700">
                         {patient.title} {patient.fullName || `${patient.firstName} ${patient.lastName || ""}`}
                       </td>

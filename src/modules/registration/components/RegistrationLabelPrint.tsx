@@ -25,11 +25,11 @@ export const RegistrationLabelPrint = forwardRef<HTMLDivElement, Props>(
             <span className="truncate">: {patient.name}</span>
           </div>
           <div className="flex text-[13px] font-extrabold leading-tight tracking-tight">
-            <span className="w-14 shrink-0">PatID</span>
+            <span className="w-14 shrink-0">Pat. ID</span>
             <span className="break-words" style={{ wordBreak: 'break-word' }}>: {patient.uhid}</span>
           </div>
           <div className="flex text-[13px] font-extrabold leading-tight tracking-tight">
-            <span className="w-14 shrink-0">D.O.B</span>
+            <span className="w-14 shrink-0">D.O.B.</span>
             <span>: {formattedDob}</span>
           </div>
         </div>

@@ -1068,7 +1068,7 @@ export default function AtdPage() {
                 
                 {/* ─── CLICKABLE U-HID SEARCH BOX (REQUIREMENT 1) ───────────── */}
                 <div className="flex items-center gap-1">
-                  <span className="text-white text-[11px] font-bold">U-HID:</span>
+                  <span className="text-white text-[11px] font-bold">UHID:</span>
                   <div
                     onClick={() => setIsPatientLookupOpen(true)}
                     className="h-6 w-44 bg-white hover:bg-blue-50 text-slate-900 px-2 text-xs font-mono font-black rounded border border-emerald-300 flex items-center justify-between cursor-pointer shadow-2xs group transition-colors"
@@ -1210,7 +1210,7 @@ export default function AtdPage() {
                       >
                         <option value="General Medicine Team A">General Medicine Team A</option>
                         <option value="Surgical Unit 1">Surgical Unit 1</option>
-                        <option value="Pediatrics Care">Pediatrics Care</option>
+                        <option value="Paediatrics">Paediatrics</option>
                       </select>
                     </div>
 
@@ -1661,9 +1661,9 @@ export default function AtdPage() {
                           onChange={(e) => setAdmitForm({ ...admitForm, kinDistrictCity: e.target.value })}
                           className="h-7 flex-1 text-xs px-1.5 border border-slate-300 rounded bg-white"
                         >
-                          <option value="NEW DELHI">NEW DELHI</option>
-                          <option value="NOIDA">NOIDA</option>
-                          <option value="GURUGRAM">GURUGRAM</option>
+                          <option value="NEW DELHI">New Delhi</option>
+                          <option value="NOIDA">Noida</option>
+                          <option value="GURUGRAM">Gurugram</option>
                         </select>
                       </div>
 
