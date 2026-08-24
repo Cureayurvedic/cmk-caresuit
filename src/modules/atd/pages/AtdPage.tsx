@@ -32,9 +32,14 @@ import {
   Mail,
   UserCheck,
   Maximize2,
-  Plus
+  Plus,
+  Edit3,
+  Lock,
+  Wrench,
+  Bookmark
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast-notification";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -62,6 +67,18 @@ import { getPatients, PatientData } from "@/api/patientApi";
 import { getBedCategories, type BedCategoryData } from "@/api/bedCategoryApi";
 import { useNavigate } from "react-router-dom";
 
+// ─── DOCTOR OPTIONS FOR SELECTION DROPDOWNS ──────────────────────────────────
+const DOCTOR_OPTIONS = [
+  { value: "Dr. Abhishek Bansal 2273", label: "Dr. Abhishek Bansal 2273 (General Medicine)" },
+  { value: "Dr. Sameer Sen 3105", label: "Dr. Sameer Sen 3105 (Orthopedics)" },
+  { value: "Dr. Pooja Sharma 1092", label: "Dr. Pooja Sharma 1092 (Gynecology)" },
+  { value: "Dr. Rajesh Varma 4410", label: "Dr. Rajesh Varma 4410 (General Surgery)" },
+  { value: "Dr. Sania Mirza 5519", label: "Dr. Sania Mirza 5519 (Cardiology)" },
+  { value: "Dr. Vikramaditya 1102", label: "Dr. Vikramaditya 1102 (Neurology)" },
+  { value: "Dr. Neha Gupta 3840", label: "Dr. Neha Gupta 3840 (Pediatrics)" },
+  { value: "Dr. Akhil Tyagi 8901", label: "Dr. Akhil Tyagi 8901 (Pulmonology)" },
+];
+
 // ─── BED STATUS METRIC BADGE DEFINITIONS ─────────────────────────────────────
 const STATUS_CONFIGS = [
   { key: "Vacant", label: "Vacant", bgClass: "bg-[#5cb85c] hover:bg-[#4cae4c] text-white", borderClass: "border-[#4cae4c]" },
@@ -75,6 +92,7 @@ const STATUS_CONFIGS = [
 
 export default function AtdPage() {
   const navigate = useNavigate();
+  const toast = useToast();
 
   // ─── Filter & State ──────────────────────────────────────────────────────────
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -104,6 +122,29 @@ export default function AtdPage() {
   const [isInpatientDrawerOpen, setIsInpatientDrawerOpen] = useState(false);
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isHousekeepingModalOpen, setIsHousekeepingModalOpen] = useState(false);
+  const [isPrimaryDoctorTransferModalOpen, setIsPrimaryDoctorTransferModalOpen] = useState(false);
+  const [isSecondaryDoctorTransferModalOpen, setIsSecondaryDoctorTransferModalOpen] = useState(false);
+  const [isAdmissionUpdateModalOpen, setIsAdmissionUpdateModalOpen] = useState(false);
+
+  const [primaryDoctorForm, setPrimaryDoctorForm] = useState({
+    newDoctor: "Dr. Sameer Sen 3105",
+    reason: "Routine Shift",
+    remarks: ""
+  });
+
+  const [secondaryDoctorForm, setSecondaryDoctorForm] = useState({
+    secondaryDoctor: "Dr. Sania Mirza 5519",
+    department: "Cardiology",
+    remarks: "Cross-consultation required"
+  });
+
+  const [admissionUpdateForm, setAdmissionUpdateForm] = useState({
+    billingCategory: "GENERAL",
+    primaryDoctor: "Dr. Sameer Sen",
+    diagnosis: "",
+    remarks: ""
+  });
+
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // ─── Add Bed Modal State ───────────────────────────────────────────────────
@@ -260,9 +301,26 @@ export default function AtdPage() {
     }
   }, [selectedCategory, selectedStatus, patientSearch]);
 
+  const handleManualRefresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await fetchBeds();
+      toast.success("Beds Matrix Refreshed", "Loaded latest real-time bed status & census data.");
+    } catch (err) {
+      toast.error("Refresh Failed", "Could not fetch latest bed matrix.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchBeds, toast]);
+
   useEffect(() => {
     fetchBeds();
-  }, [fetchBeds]);
+    const handleAppRefresh = () => {
+      handleManualRefresh();
+    };
+    window.addEventListener("app:refresh", handleAppRefresh);
+    return () => window.removeEventListener("app:refresh", handleAppRefresh);
+  }, [fetchBeds, handleManualRefresh]);
 
   // Group beds by Category
   const groupedBeds = useMemo(() => {
@@ -346,10 +404,26 @@ export default function AtdPage() {
 
   // ─── Select Patient from Census Lookup (Full Details & Photo from API) ───────
   const handleSelectPatientFromLookup = (patient: PatientData) => {
+    const fullName = patient.fullName || `${patient.firstName || ""} ${patient.lastName || ""}`.trim();
+
+    // Prevent double bed allocation for the same patient
+    const existingBed = beds.find((b) => {
+      if (!b.patient || b.status === "Vacant" || b.status === "House Keeping") return false;
+      const uMatch = patient.uhid && b.patient.uhid && patient.uhid.toLowerCase() === b.patient.uhid.toLowerCase();
+      const pName = fullName.replace(/\s*\(Patient\)\s*/i, "").trim().toLowerCase();
+      const bName = (b.patient.name || "").replace(/\s*\(Patient\)\s*/i, "").trim().toLowerCase();
+      const nMatch = pName && bName && pName === bName;
+      return uMatch || nMatch;
+    });
+
+    if (existingBed) {
+      toast.error("Already Admitted", `Patient ${fullName} is currently admitted in Bed ${existingBed.bedNo}. Double bed allocation is not allowed!`);
+      return;
+    }
+
     const dobFormatted = patient.dob
       ? new Date(patient.dob).toISOString().split("T")[0]
       : "1990-05-15";
-    const fullName = patient.fullName || `${patient.firstName || ""} ${patient.lastName || ""}`.trim();
     const address = patient.address || "";
     const city = patient.districtCity || "New Delhi";
     const state = patient.state || "Delhi";
@@ -408,6 +482,21 @@ export default function AtdPage() {
   const handleAdmitSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBed) return;
+
+    // Check for duplicate patient admission in active beds
+    const existingBed = beds.find((b) => {
+      if (!b.patient || b.status === "Vacant" || b.status === "House Keeping") return false;
+      const uMatch = admitForm.uhid && b.patient.uhid && admitForm.uhid.toLowerCase() === b.patient.uhid.toLowerCase();
+      const pName = (admitForm.kinName || "").replace(/\s*\(Patient\)\s*/i, "").trim().toLowerCase();
+      const bName = (b.patient.name || "").replace(/\s*\(Patient\)\s*/i, "").trim().toLowerCase();
+      const nMatch = pName && bName && pName === bName;
+      return uMatch || nMatch;
+    });
+
+    if (existingBed) {
+      toast.error("Duplicate Admission Blocked", `Patient "${admitForm.kinName}" is already admitted in Bed ${existingBed.bedNo}. A single patient cannot occupy multiple beds!`);
+      return;
+    }
 
     try {
       await admitPatientToBed({
@@ -484,27 +573,86 @@ export default function AtdPage() {
     }
   };
 
-  // ─── Initiate Discharge ──────────────────────────────────────────────────────
-  const handleInitiateDischarge = async () => {
-    if (!selectedBed) return;
+  // ─── Submit Primary Doctor Transfer ─────────────────────────────────────────
+  const handlePrimaryDoctorTransfer = async () => {
+    if (!selectedBed || !selectedBed.patient) return;
     try {
-      await initiateBedDischarge(selectedBed.bedNo, "Doctor cleared for discharge. Send clearance to billing.");
-      setIsInpatientDrawerOpen(false);
+      (selectedBed.patient as any).doctor = primaryDoctorForm.newDoctor;
+      toast.success("Doctor Transferred", `Primary Attending Doctor updated to ${primaryDoctorForm.newDoctor} for Bed ${selectedBed.bedNo}`);
+      setIsPrimaryDoctorTransferModalOpen(false);
       fetchBeds();
     } catch (err: any) {
-      alert(err.message || "Failed to initiate discharge");
+      toast.error("Transfer Failed", err.message || "Failed to update primary doctor.");
     }
   };
 
-  // ─── Complete Discharge ──────────────────────────────────────────────────────
-  const handleCompleteDischarge = async () => {
-    if (!selectedBed) return;
+  // ─── Submit Secondary Doctor Transfer ───────────────────────────────────────
+  const handleSecondaryDoctorTransfer = async () => {
+    if (!selectedBed || !selectedBed.patient) return;
     try {
-      await completeBedDischarge(selectedBed.bedNo);
-      setIsInpatientDrawerOpen(false);
+      toast.success("Secondary Doctor Assigned", `Assigned ${secondaryDoctorForm.secondaryDoctor} for cross-consultation.`);
+      setIsSecondaryDoctorTransferModalOpen(false);
       fetchBeds();
     } catch (err: any) {
-      alert(err.message || "Failed to complete discharge");
+      toast.error("Assignment Failed", err.message || "Failed to assign secondary doctor.");
+    }
+  };
+
+  // ─── Submit Admission Update ────────────────────────────────────────────────
+  const handleAdmissionUpdate = async () => {
+    if (!selectedBed || !selectedBed.patient) return;
+    try {
+      if (admissionUpdateForm.diagnosis) (selectedBed.patient as any).diagnosis = admissionUpdateForm.diagnosis;
+      if (admissionUpdateForm.billingCategory) (selectedBed.patient as any).billingCategory = admissionUpdateForm.billingCategory;
+      if (admissionUpdateForm.primaryDoctor) (selectedBed.patient as any).doctor = admissionUpdateForm.primaryDoctor;
+      toast.success("Admission Updated", `Updated inpatient admission details for Bed ${selectedBed.bedNo}`);
+      setIsAdmissionUpdateModalOpen(false);
+      fetchBeds();
+    } catch (err: any) {
+      toast.error("Update Failed", err.message || "Failed to update admission details.");
+    }
+  };
+
+  // ─── Submit Housekeeping Cleaning Complete ─────────────────────────────────
+  const handleCompleteHousekeeping = async () => {
+    if (!selectedBed) return;
+    try {
+      await updateBedStatus(selectedBed.bedNo, "Vacant");
+      toast.success("Bed Cleaned", `Bed ${selectedBed.bedNo} is now clean & marked Vacant.`);
+      setIsHousekeepingModalOpen(false);
+      fetchBeds();
+    } catch (err: any) {
+      toast.error("Failed", err.message || "Failed to update bed status.");
+    }
+  };
+
+  // ─── Initiate Discharge (Doctor Clearance) ──────────────────────────────────
+  const handleInitiateDischarge = async (bedNo?: string) => {
+    const targetNo = bedNo || selectedBed?.bedNo;
+    if (!targetNo) return;
+    try {
+      await initiateBedDischarge(targetNo, "Doctor cleared for discharge. Send clearance to billing.");
+      toast.success("Marked for Discharge", `Bed ${targetNo} status set to Still On Bed / Discharge Approval.`);
+      setIsInpatientDrawerOpen(false);
+      setContextMenuBed(null);
+      fetchBeds();
+    } catch (err: any) {
+      toast.error("Discharge Failed", err.message || "Failed to initiate discharge");
+    }
+  };
+
+  // ─── Complete Discharge (Vacate Bed & Send to Housekeeping) ─────────────────
+  const handleCompleteDischarge = async (bedNo?: string) => {
+    const targetNo = bedNo || selectedBed?.bedNo;
+    if (!targetNo) return;
+    try {
+      await completeBedDischarge(targetNo);
+      toast.success("Discharge Completed", `Patient vacated! Bed ${targetNo} moved to House Keeping for cleaning.`);
+      setIsInpatientDrawerOpen(false);
+      setContextMenuBed(null);
+      fetchBeds();
+    } catch (err: any) {
+      toast.error("Discharge Failed", err.message || "Failed to complete discharge");
     }
   };
 
@@ -576,10 +724,11 @@ export default function AtdPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={fetchBeds}
-                className="h-7 text-xs font-bold gap-1 ml-2 bg-white"
+                onClick={handleManualRefresh}
+                title="Refresh Bed Status Matrix"
+                className="h-7 text-xs font-bold gap-1 ml-2 bg-white border-slate-300 hover:bg-slate-50 text-slate-700 shadow-2xs cursor-pointer"
               >
-                <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-3 w-3 ${isLoading ? "animate-spin text-blue-600" : ""}`} />
                 Refresh
               </Button>
               <Button
@@ -766,61 +915,298 @@ export default function AtdPage() {
         </div>
       </div>
 
-      {/* ─── FLOATING CONTEXT MENU (MATCHING SCREENSHOT 1) ─────────────────── */}
+      {/* ─── FLOATING CONTEXT MENU (MATCHING REFERENCE SCREENSHOTS) ─────────────── */}
       {contextMenuBed && (
         <div
           style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
-          className="fixed z-50 bg-white border border-slate-300 rounded-md shadow-xl py-1 text-xs font-semibold text-slate-800 min-w-[130px] animate-in fade-in zoom-in-95 duration-100"
+          className="fixed z-50 bg-white border border-slate-300 rounded-md shadow-2xl py-1 text-xs font-semibold text-slate-800 min-w-[170px] animate-in fade-in zoom-in-95 duration-100"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={() => openAdmissionDialog(contextMenuBed)}
-            className="w-full px-3 py-1.5 text-left hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2 cursor-pointer"
-          >
-            <UserPlus className="h-3.5 w-3.5 text-blue-600" />
-            <span>Admission</span>
-          </button>
-          
-          <button
-            onClick={() => openPatientDetails(contextMenuBed)}
-            className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 cursor-pointer"
-          >
-            <FileText className="h-3.5 w-3.5 text-slate-500" />
-            <span>Patient Details</span>
-          </button>
-
-          {contextMenuBed.status === "House Keeping" && (
-            <button
-              onClick={() => {
-                setSelectedBed(contextMenuBed);
-                setContextMenuBed(null);
-                setIsHousekeepingModalOpen(true);
-              }}
-              className="w-full px-3 py-1.5 text-left hover:bg-amber-50 text-amber-700 flex items-center gap-2 cursor-pointer border-t border-slate-100"
-            >
-              <Sparkles className="h-3.5 w-3.5 text-amber-600" />
-              <span>Clean Bed</span>
-            </button>
-          )}
-
+          {/* Vacant Bed Menu */}
           {contextMenuBed.status === "Vacant" && (
-            <button
-              onClick={async () => {
-                if (confirm(`Are you sure you want to remove bed ${contextMenuBed.bedNo}?`)) {
+            <>
+              <button
+                onClick={() => openAdmissionDialog(contextMenuBed)}
+                className="w-full px-3 py-1.5 text-left hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2 cursor-pointer font-semibold"
+              >
+                <UserPlus className="h-3.5 w-3.5 text-blue-600" />
+                <span>Admission</span>
+              </button>
+
+              <button
+                onClick={async () => {
                   try {
-                    await deleteBed(contextMenuBed.bedNo);
+                    await updateBedStatus(contextMenuBed.bedNo, "Retain");
+                    toast.success("Bed Retained", `Bed ${contextMenuBed.bedNo} status set to Retain.`);
                     setContextMenuBed(null);
                     fetchBeds();
                   } catch (err: any) {
-                    alert(err.message || "Failed to remove bed");
+                    toast.error("Failed", err.message);
                   }
-                }
-              }}
-              className="w-full px-3 py-1.5 text-left hover:bg-rose-50 text-rose-700 flex items-center gap-2 cursor-pointer border-t border-slate-100"
-            >
-              <Trash2 className="h-3.5 w-3.5 text-rose-600" />
-              <span>Delete Bed</span>
-            </button>
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-purple-50 hover:text-purple-700 flex items-center gap-2 cursor-pointer text-purple-900 font-semibold"
+              >
+                <Bookmark className="h-3.5 w-3.5 text-purple-600" />
+                <span>Mark as Retain</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    await updateBedStatus(contextMenuBed.bedNo, "Blocked");
+                    toast.success("Bed Blocked", `Bed ${contextMenuBed.bedNo} is now Blocked.`);
+                    setContextMenuBed(null);
+                    fetchBeds();
+                  } catch (err: any) {
+                    toast.error("Failed", err.message);
+                  }
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-slate-100 hover:text-slate-900 flex items-center gap-2 cursor-pointer text-slate-700 font-semibold"
+              >
+                <Lock className="h-3.5 w-3.5 text-slate-600" />
+                <span>Block Bed</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    await updateBedStatus(contextMenuBed.bedNo, "Under Repair");
+                    toast.success("Under Repair", `Bed ${contextMenuBed.bedNo} status set to Under Repair.`);
+                    setContextMenuBed(null);
+                    fetchBeds();
+                  } catch (err: any) {
+                    toast.error("Failed", err.message);
+                  }
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-cyan-50 hover:text-cyan-800 flex items-center gap-2 cursor-pointer text-cyan-900 font-semibold"
+              >
+                <Wrench className="h-3.5 w-3.5 text-cyan-600" />
+                <span>Mark Under Repair</span>
+              </button>
+
+              <button
+                onClick={() => openPatientDetails(contextMenuBed)}
+                className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 cursor-pointer border-t border-slate-100"
+              >
+                <FileText className="h-3.5 w-3.5 text-slate-500" />
+                <span>Patient Details</span>
+              </button>
+            </>
+          )}
+
+          {/* Retain Bed Menu */}
+          {contextMenuBed.status === "Retain" && (
+            <>
+              <button
+                onClick={() => openAdmissionDialog(contextMenuBed)}
+                className="w-full px-3 py-1.5 text-left hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2 cursor-pointer font-semibold"
+              >
+                <UserPlus className="h-3.5 w-3.5 text-blue-600" />
+                <span>Admit Patient</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    await updateBedStatus(contextMenuBed.bedNo, "Vacant");
+                    toast.success("Un-retained", `Bed ${contextMenuBed.bedNo} is now Vacant.`);
+                    setContextMenuBed(null);
+                    fetchBeds();
+                  } catch (err: any) {
+                    toast.error("Failed", err.message);
+                  }
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 cursor-pointer font-bold border-t border-slate-100"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Un-retain / Mark Vacant</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    await updateBedStatus(contextMenuBed.bedNo, "Blocked");
+                    toast.success("Bed Blocked", `Bed ${contextMenuBed.bedNo} is now Blocked.`);
+                    setContextMenuBed(null);
+                    fetchBeds();
+                  } catch (err: any) {
+                    toast.error("Failed", err.message);
+                  }
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 cursor-pointer text-slate-700 font-medium"
+              >
+                <Lock className="h-3.5 w-3.5 text-slate-500" />
+                <span>Block Bed</span>
+              </button>
+            </>
+          )}
+
+          {/* Occupied Bed Menu (Matching Screenshot 2 Exactly) */}
+          {(contextMenuBed.status === "Occupied" || contextMenuBed.status === "Still On Bed/Discharge Approval") && (
+            <>
+              <button
+                onClick={() => {
+                  setSelectedBed(contextMenuBed);
+                  setContextMenuBed(null);
+                  setIsTransferModalOpen(true);
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-blue-50 hover:text-blue-700 flex items-center gap-2 cursor-pointer font-semibold"
+              >
+                <ArrowRightLeft className="h-3.5 w-3.5 text-blue-600" />
+                <span>Bed Transfer</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSelectedBed(contextMenuBed);
+                  if (contextMenuBed.patient) {
+                    setPrimaryDoctorForm({ newDoctor: contextMenuBed.patient.doctor || "Dr. Sameer Sen 3105", reason: "Routine Shift", remarks: "" });
+                  }
+                  setContextMenuBed(null);
+                  setIsPrimaryDoctorTransferModalOpen(true);
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-purple-50 hover:text-purple-700 flex items-center gap-2 cursor-pointer"
+              >
+                <UserCheck className="h-3.5 w-3.5 text-purple-600" />
+                <span>Primary Doctor Transfer</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSelectedBed(contextMenuBed);
+                  setContextMenuBed(null);
+                  setIsSecondaryDoctorTransferModalOpen(true);
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2 cursor-pointer"
+              >
+                <Users className="h-3.5 w-3.5 text-indigo-600" />
+                <span>Secondary Doctor Transfer</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSelectedBed(contextMenuBed);
+                  if (contextMenuBed.patient) {
+                    setAdmissionUpdateForm({
+                      billingCategory: contextMenuBed.patient.billingCategory || contextMenuBed.category,
+                      primaryDoctor: contextMenuBed.patient.doctor || "Dr. Sameer Sen",
+                      diagnosis: contextMenuBed.patient.diagnosis || "",
+                      remarks: ""
+                    });
+                  }
+                  setContextMenuBed(null);
+                  setIsAdmissionUpdateModalOpen(true);
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-amber-50 hover:text-amber-700 flex items-center gap-2 cursor-pointer"
+              >
+                <Edit3 className="h-3.5 w-3.5 text-amber-600" />
+                <span>Admission Update</span>
+              </button>
+
+              <button
+                onClick={() => handleCompleteDischarge(contextMenuBed.bedNo)}
+                className="w-full px-3 py-1.5 text-left hover:bg-rose-50 text-rose-700 flex items-center gap-2 cursor-pointer font-bold border-t border-slate-100"
+              >
+                <LogOut className="h-3.5 w-3.5 text-rose-600" />
+                <span>Vacate Bed (Go to Housekeeping)</span>
+              </button>
+
+              <button
+                onClick={() => openPatientDetails(contextMenuBed)}
+                className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 cursor-pointer border-t border-slate-100 text-slate-700"
+              >
+                <FileText className="h-3.5 w-3.5 text-slate-500" />
+                <span>Patient Details</span>
+              </button>
+            </>
+          )}
+
+          {/* House Keeping Bed Menu (Disabled Actions & Cleaning Option) */}
+          {contextMenuBed.status === "House Keeping" && (
+            <>
+              <button
+                disabled
+                title="Bed is under Housekeeping sanitation"
+                className="w-full px-3 py-1.5 text-left bg-slate-50 text-slate-400 opacity-60 flex items-center justify-between cursor-not-allowed text-[11px]"
+              >
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Admission</span>
+                </div>
+                <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1 rounded">Cleaning</span>
+              </button>
+
+              <button
+                disabled
+                title="Bed is under Housekeeping sanitation"
+                className="w-full px-3 py-1.5 text-left bg-slate-50 text-slate-400 opacity-60 flex items-center justify-between cursor-not-allowed text-[11px]"
+              >
+                <div className="flex items-center gap-2">
+                  <ArrowRightLeft className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Bed Transfer</span>
+                </div>
+                <span className="text-[9px] bg-amber-100 text-amber-800 font-bold px-1 rounded">Cleaning</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setSelectedBed(contextMenuBed);
+                  setContextMenuBed(null);
+                  setIsHousekeepingModalOpen(true);
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 cursor-pointer border-t border-slate-100 font-bold"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Mark Clean & Vacant</span>
+              </button>
+
+              <button
+                onClick={() => openPatientDetails(contextMenuBed)}
+                className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 cursor-pointer border-t border-slate-100 text-slate-700"
+              >
+                <FileText className="h-3.5 w-3.5 text-slate-500" />
+                <span>Patient Details</span>
+              </button>
+            </>
+          )}
+
+          {/* Blocked or Under Repair Bed Menu */}
+          {(contextMenuBed.status === "Blocked" || contextMenuBed.status === "Under Repair") && (
+            <>
+              <button
+                onClick={async () => {
+                  try {
+                    await updateBedStatus(contextMenuBed.bedNo, "Vacant");
+                    toast.success("Bed Ready", `Bed ${contextMenuBed.bedNo} is now Vacant & available.`);
+                    setContextMenuBed(null);
+                    fetchBeds();
+                  } catch (err: any) {
+                    toast.error("Failed", err.message);
+                  }
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-emerald-50 text-emerald-700 flex items-center gap-2 cursor-pointer font-bold"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Mark Ready / Vacant</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  try {
+                    await updateBedStatus(contextMenuBed.bedNo, "Retain");
+                    toast.success("Bed Retained", `Bed ${contextMenuBed.bedNo} set to Retain.`);
+                    setContextMenuBed(null);
+                    fetchBeds();
+                  } catch (err: any) {
+                    toast.error("Failed", err.message);
+                  }
+                }}
+                className="w-full px-3 py-1.5 text-left hover:bg-purple-50 text-purple-700 flex items-center gap-2 cursor-pointer font-medium border-t border-slate-100"
+              >
+                <Bookmark className="h-3.5 w-3.5 text-purple-600" />
+                <span>Mark as Retain</span>
+              </button>
+            </>
           )}
         </div>
       )}
@@ -1221,9 +1607,11 @@ export default function AtdPage() {
                         onChange={(e) => setAdmitForm({ ...admitForm, treatingConsultant: e.target.value })}
                         className="h-7 flex-1 text-xs px-1.5 border border-slate-300 rounded bg-white font-semibold text-slate-800"
                       >
-                        <option value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</option>
-                        <option value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</option>
-                        <option value="Dr. Sania Mirza 2231">Dr. Sania Mirza 2231</option>
+                        {DOCTOR_OPTIONS.map((doc) => (
+                          <option key={doc.value} value={doc.value}>
+                            {doc.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -1234,8 +1622,11 @@ export default function AtdPage() {
                         onChange={(e) => setAdmitForm({ ...admitForm, admittingDoctor: e.target.value })}
                         className="h-7 flex-1 text-xs px-1.5 border border-slate-300 rounded bg-white font-semibold text-slate-800"
                       >
-                        <option value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</option>
-                        <option value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</option>
+                        {DOCTOR_OPTIONS.map((doc) => (
+                          <option key={doc.value} value={doc.value}>
+                            {doc.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -1247,8 +1638,11 @@ export default function AtdPage() {
                         className="h-7 flex-1 text-xs px-1.5 border border-slate-300 rounded bg-white text-slate-600"
                       >
                         <option value="Select">-- Select Doctor --</option>
-                        <option value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</option>
-                        <option value="Dr. Sania Mirza 2231">Dr. Sania Mirza 2231</option>
+                        {DOCTOR_OPTIONS.map((doc) => (
+                          <option key={doc.value} value={doc.value}>
+                            {doc.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -2079,25 +2473,27 @@ export default function AtdPage() {
                   IP Billing & Advances
                 </Button>
 
-                {selectedBed.status === "Occupied" ? (
+                <div className="flex items-center gap-2">
+                  {selectedBed.status === "Occupied" && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleInitiateDischarge(selectedBed.bedNo)}
+                      className="h-8 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white gap-1"
+                    >
+                      <Clock className="h-3.5 w-3.5" />
+                      Mark for Discharge (Still On Bed)
+                    </Button>
+                  )}
+
                   <Button
                     size="sm"
-                    onClick={handleInitiateDischarge}
-                    className="h-8 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white gap-1"
-                  >
-                    <Clock className="h-3.5 w-3.5" />
-                    Mark for Discharge
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={handleCompleteDischarge}
+                    onClick={() => handleCompleteDischarge(selectedBed.bedNo)}
                     className="h-8 text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white gap-1"
                   >
                     <LogOut className="h-3.5 w-3.5" />
-                    Complete Final Discharge
+                    Vacate Bed (Go to Housekeeping)
                   </Button>
-                )}
+                </div>
               </div>
             </div>
           </div>
@@ -2223,6 +2619,300 @@ export default function AtdPage() {
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Mark Cleaned & Vacant
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ─── PRIMARY DOCTOR TRANSFER MODAL ──────────────────────────────── */}
+      {isPrimaryDoctorTransferModalOpen && selectedBed && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-4 py-3 bg-purple-700 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                <span className="font-bold text-sm">Primary Doctor Transfer — Bed {selectedBed.bedNo}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsPrimaryDoctorTransferModalOpen(false)}
+                className="h-7 w-7 p-0 text-purple-100 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="p-4 space-y-3 text-xs">
+              <div className="bg-purple-50 border border-purple-200 rounded p-2.5 space-y-1 text-purple-950">
+                <div className="flex justify-between">
+                  <span>Patient Name:</span>
+                  <strong className="font-bold">{selectedBed.patient?.name}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>Current Primary Doctor:</span>
+                  <strong className="font-bold text-purple-800">{selectedBed.patient?.doctor || "Not Assigned"}</strong>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">New Primary Attending Doctor *</Label>
+                <Select
+                  value={primaryDoctorForm.newDoctor}
+                  onValueChange={(val) => setPrimaryDoctorForm({ ...primaryDoctorForm, newDoctor: val })}
+                >
+                  <SelectTrigger className="h-8 text-xs font-semibold text-slate-800 bg-white border-slate-300 mt-1">
+                    <SelectValue placeholder="Select New Primary Doctor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCTOR_OPTIONS.map((doc) => (
+                      <SelectItem key={doc.value} value={doc.value}>
+                        {doc.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">Transfer Reason</Label>
+                <select
+                  value={primaryDoctorForm.reason}
+                  onChange={(e) => setPrimaryDoctorForm({ ...primaryDoctorForm, reason: e.target.value })}
+                  className="w-full h-8 text-xs px-2 border border-slate-300 rounded bg-white mt-1"
+                >
+                  <option value="Routine Shift">Routine Shift / Shift Handover</option>
+                  <option value="Specialist Request">Specialist Consultation Request</option>
+                  <option value="Patient Preference">Patient / Family Preference</option>
+                  <option value="Emergency Care">Emergency Care Escalation</option>
+                </select>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">Remarks / Clinical Handover Notes</Label>
+                <textarea
+                  rows={2}
+                  value={primaryDoctorForm.remarks}
+                  onChange={(e) => setPrimaryDoctorForm({ ...primaryDoctorForm, remarks: e.target.value })}
+                  placeholder="Enter clinical notes for incoming primary doctor..."
+                  className="w-full text-xs p-2 border border-slate-300 rounded resize-none mt-1"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsPrimaryDoctorTransferModalOpen(false)}
+                  className="h-8 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handlePrimaryDoctorTransfer}
+                  className="h-8 text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white gap-1.5"
+                >
+                  <UserCheck className="h-3.5 w-3.5" />
+                  Confirm Doctor Transfer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── SECONDARY DOCTOR TRANSFER MODAL ────────────────────────────── */}
+      {isSecondaryDoctorTransferModalOpen && selectedBed && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-4 py-3 bg-indigo-700 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="font-bold text-sm">Secondary Doctor Transfer / Assign — Bed {selectedBed.bedNo}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsSecondaryDoctorTransferModalOpen(false)}
+                className="h-7 w-7 p-0 text-indigo-100 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="p-4 space-y-3 text-xs">
+              <div className="bg-indigo-50 border border-indigo-200 rounded p-2.5 space-y-1 text-indigo-950">
+                <div className="flex justify-between">
+                  <span>Patient:</span>
+                  <strong className="font-bold">{selectedBed.patient?.name}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>Primary Doctor:</span>
+                  <strong className="font-bold">{selectedBed.patient?.doctor}</strong>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">Secondary / Cross-Consultant Doctor *</Label>
+                <Select
+                  value={secondaryDoctorForm.secondaryDoctor}
+                  onValueChange={(val) => setSecondaryDoctorForm({ ...secondaryDoctorForm, secondaryDoctor: val })}
+                >
+                  <SelectTrigger className="h-8 text-xs font-semibold text-slate-800 bg-white border-slate-300 mt-1">
+                    <SelectValue placeholder="Select Secondary Doctor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCTOR_OPTIONS.map((doc) => (
+                      <SelectItem key={doc.value} value={doc.value}>
+                        {doc.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">Consultation Department</Label>
+                <Input
+                  value={secondaryDoctorForm.department}
+                  onChange={(e) => setSecondaryDoctorForm({ ...secondaryDoctorForm, department: e.target.value })}
+                  className="h-8 text-xs mt-1"
+                />
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">Remarks / Reason for Cross-Consultation</Label>
+                <textarea
+                  rows={2}
+                  value={secondaryDoctorForm.remarks}
+                  onChange={(e) => setSecondaryDoctorForm({ ...secondaryDoctorForm, remarks: e.target.value })}
+                  placeholder="Enter details for secondary doctor consultation..."
+                  className="w-full text-xs p-2 border border-slate-300 rounded resize-none mt-1"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsSecondaryDoctorTransferModalOpen(false)}
+                  className="h-8 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleSecondaryDoctorTransfer}
+                  className="h-8 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+                >
+                  <Users className="h-3.5 w-3.5" />
+                  Assign Secondary Doctor
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── ADMISSION UPDATE MODAL ──────────────────────────────────────── */}
+      {isAdmissionUpdateModalOpen && selectedBed && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-4 py-3 bg-amber-600 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Edit3 className="h-4 w-4" />
+                <span className="font-bold text-sm">Admission Update — Bed {selectedBed.bedNo}</span>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setIsAdmissionUpdateModalOpen(false)}
+                className="h-7 w-7 p-0 text-amber-100 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="p-4 space-y-3 text-xs">
+              <div className="bg-amber-50 border border-amber-200 rounded p-2.5 space-y-1 text-amber-950">
+                <div className="flex justify-between">
+                  <span>Patient Name:</span>
+                  <strong className="font-bold">{selectedBed.patient?.name}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span>UHID / IP No:</span>
+                  <strong className="font-mono">{selectedBed.patient?.uhid} / {selectedBed.patient?.ipNo}</strong>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">Billing Category</Label>
+                <select
+                  value={admissionUpdateForm.billingCategory}
+                  onChange={(e) => setAdmissionUpdateForm({ ...admissionUpdateForm, billingCategory: e.target.value })}
+                  className="w-full h-8 text-xs px-2 border border-slate-300 rounded font-semibold bg-white mt-1"
+                >
+                  <option value="GENERAL">GENERAL</option>
+                  <option value="DELUXE">DELUXE</option>
+                  <option value="ICU">ICU</option>
+                  <option value="SINGLE PRIVATE">SINGLE PRIVATE</option>
+                  <option value="TWIN SHARING">TWIN SHARING</option>
+                </select>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">Attending Doctor *</Label>
+                <Select
+                  value={admissionUpdateForm.primaryDoctor}
+                  onValueChange={(val) => setAdmissionUpdateForm({ ...admissionUpdateForm, primaryDoctor: val })}
+                >
+                  <SelectTrigger className="h-8 text-xs font-semibold text-slate-800 bg-white border-slate-300 mt-1">
+                    <SelectValue placeholder="Select Attending Doctor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DOCTOR_OPTIONS.map((doc) => (
+                      <SelectItem key={doc.value} value={doc.value}>
+                        {doc.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-[11px] font-bold text-slate-700">Admitting Diagnosis</Label>
+                <Input
+                  value={admissionUpdateForm.diagnosis}
+                  onChange={(e) => setAdmissionUpdateForm({ ...admissionUpdateForm, diagnosis: e.target.value })}
+                  placeholder="Clinical diagnosis..."
+                  className="h-8 text-xs mt-1"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAdmissionUpdateModalOpen(false)}
+                  className="h-8 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAdmissionUpdate}
+                  className="h-8 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  Save Admission Updates
                 </Button>
               </div>
             </div>

@@ -224,7 +224,15 @@ export interface BillingPatientQueryParams {
   payerType?: string;
   fromDate?: string;
   toDate?: string;
+  page?: number;
   limit?: number;
+  email?: string;
+  address?: string;
+  payer?: string;
+  fullName?: string;
+  guardianName?: string;
+  mobile?: string;
+  dateOfBirth?: string;
 }
 
 // ─── STATS API ─────────────────────────────────────────────────────────────────
@@ -305,7 +313,7 @@ export async function getReceipts(params?: ReceiptQueryParams) {
 }
 
 // ─── BILLING PATIENT CENSUS API ────────────────────────────────────────────────
-export async function getBillingPatients(params?: BillingPatientQueryParams) {
+export async function getBillingPatients(params?: BillingPatientQueryParams): Promise<{ patients: any[], totalCount: number }> {
   const query = new URLSearchParams();
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -320,26 +328,10 @@ export async function getBillingPatients(params?: BillingPatientQueryParams) {
   if (!response.ok) {
     throw new Error(result.message || "Failed to fetch billing patients");
   }
-  return (result.data.patients || []) as Array<{
-    id: string;
-    uhid: string;
-    ipNo: string;
-    patientName: string;
-    genderAge: string;
-    admissionDate: string;
-    bedNo: string;
-    billingCategory: string;
-    doctor: string;
-    encounterStatus: string;
-    company: string;
-    mobileNo: string;
-    type: "Registration" | "Admission" | "Discharge But Not Bill" | "Discharge";
-    address?: string;
-    fatherName?: string;
-    isVip?: boolean;
-    payerType?: string;
-    sponsor?: string;
-  }>;
+  return {
+    patients: result.data.patients,
+    totalCount: result.data.totalCount || 0
+  };
 }
 
 export async function getInvoiceById(id: string) {
@@ -604,7 +596,9 @@ export async function getCreditNotes(params?: {
   reason?: string;
   fromDate?: string;
   toDate?: string;
-}) {
+  page?: number;
+  limit?: number;
+}): Promise<{ creditNotes: CreditNoteData[], totalCount: number }> {
   const query = new URLSearchParams();
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
@@ -619,7 +613,10 @@ export async function getCreditNotes(params?: {
   if (!response.ok) {
     throw new Error(result.message || "Failed to fetch credit notes");
   }
-  return result.data.creditNotes as CreditNoteData[];
+  return {
+    creditNotes: result.data.creditNotes as CreditNoteData[],
+    totalCount: result.data.totalCount || 0,
+  };
 }
 
 export async function createCreditNote(data: {

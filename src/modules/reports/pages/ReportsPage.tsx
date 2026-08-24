@@ -268,20 +268,30 @@ export default function ReportsPage() {
       revenueData.data.forEach((row) => {
         csvContent += `"${row.name}",${row.billCount},${row.grossAmt},${row.discountAmt},${row.netAmt},${row.collectedAmt},${row.outstandingAmt}\r\n`;
       });
-    } else if (collectionsData) {
+    } else if (collectionsData && (selectedReportId === "Cash Collection" || selectedReportId === "Credit Collection" || selectedReportId === "Advance Collection Reports")) {
       csvContent += "Payment Mode / Category,Transactions,Total Amount,Cash,Card,UPI,Other\r\n";
       collectionsData.data.forEach((row) => {
         csvContent += `"${row.name}",${row.count},${row.amount},${row.cashAmt},${row.cardAmt},${row.upiAmt},${row.otherAmt}\r\n`;
       });
-    } else if (billRegisterData) {
+    } else if (billRegisterData && (selectedReportId === "Bill Register" || selectedReportId === "Bill Cancelled" || selectedReportId === "OP Visit" || selectedReportId === "InvestigationWise Census" || selectedReportId === "Discharge Without Billing")) {
       csvContent += "Invoice No,Date,UHID,Patient Name,Type,Company,Gross,Discount,Net,Balance,Status\r\n";
       billRegisterData.invoices.forEach((inv) => {
         csvContent += `"${inv.invoiceNo}","${inv.date}","${inv.uhid}","${inv.patientName}","${inv.type}","${inv.company}",${inv.grossAmt},${inv.discountAmt},${inv.netAmt},${inv.balance},"${inv.status}"\r\n`;
       });
-    } else if (atdCensusData) {
+    } else if (atdCensusData && (selectedReportId === "Admission Report" || selectedReportId === "Admission Form" || selectedReportId === "Patient Transfer" || selectedReportId === "Admitted List As On Date" || selectedReportId === "Discharge Report" || selectedReportId === "Bed Occupancy Details" || selectedReportId === "Registration List" || selectedReportId === "Registration Report")) {
       csvContent += "UHID,IP No,Patient Name,Gender/Age,Bed No,Doctor,Status,Company,Date\r\n";
       atdCensusData.patients.forEach((p) => {
         csvContent += `"${p.uhid}","${p.ipNo}","${p.name}","${p.genderAge}","${p.bedNo}","${p.doctor}","${p.status}","${p.company}","${p.regDate}"\r\n`;
+      });
+    } else if (refundsCreditData && selectedReportId === "Credit Note Report") {
+      csvContent += "Credit Note No,Date,UHID,Patient Name,Invoice No,Reason,Authorized By,Amount\r\n";
+      refundsCreditData.creditNotes.forEach((c) => {
+        csvContent += `"${c.creditNoteNo}","${new Date(c.createdAt).toLocaleDateString("en-GB")}","${c.uhid}","${c.patientName}","${c.invoiceNo}","${c.reason}","${c.authorizedBy}",${c.amount}\r\n`;
+      });
+    } else if (refundsCreditData && selectedReportId === "Refund") {
+      csvContent += "Refund No,Date,UHID,Patient Name,Invoice No,Mode,Ref No,Reason,Authorized By,Status,Amount\r\n";
+      refundsCreditData.refunds.forEach((r) => {
+        csvContent += `"${r.refundNo}","${new Date(r.createdAt).toLocaleDateString("en-GB")}","${r.uhid}","${r.patientName}","${r.invoiceNo || "-"}","${r.mode}","${r.refNo || "-"}","${r.reason}","${r.authorizedBy}","${r.status}",${r.amount}\r\n`;
       });
     }
 
@@ -960,6 +970,106 @@ export default function ReportsPage() {
                   </table>
                 )}
 
+                {/* ─── 6. CREDIT NOTE REPORT TABLE ────────────────────────────── */}
+                {selectedReportId === "Credit Note Report" && refundsCreditData && (
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10 border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-2.5">Credit Note No</th>
+                        <th className="px-3 py-2.5">Date</th>
+                        <th className="px-3 py-2.5">UHID</th>
+                        <th className="px-3 py-2.5">Patient Name</th>
+                        <th className="px-3 py-2.5">Invoice No</th>
+                        <th className="px-3 py-2.5">Reason</th>
+                        <th className="px-3 py-2.5">Authorized By</th>
+                        <th className="px-3 py-2.5 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                      {refundsCreditData.creditNotes
+                        .filter(
+                          (c) =>
+                            c.patientName.toLowerCase().includes(tableSearchTerm.toLowerCase()) ||
+                            c.creditNoteNo.toLowerCase().includes(tableSearchTerm.toLowerCase()) ||
+                            c.uhid.toLowerCase().includes(tableSearchTerm.toLowerCase())
+                        )
+                        .map((c, idx) => (
+                          <tr key={idx} className="hover:bg-blue-50/40">
+                            <td className="px-4 py-2.5 font-mono font-bold text-blue-600">{c.creditNoteNo}</td>
+                            <td className="px-3 py-2.5 font-mono text-slate-500">{new Date(c.createdAt).toLocaleDateString("en-GB")}</td>
+                            <td className="px-3 py-2.5 font-mono text-slate-600">{c.uhid}</td>
+                            <td className="px-3 py-2.5 font-bold text-slate-800">{c.patientName}</td>
+                            <td className="px-3 py-2.5 font-mono text-slate-600">{c.invoiceNo}</td>
+                            <td className="px-3 py-2.5 text-slate-600">{c.reason}</td>
+                            <td className="px-3 py-2.5 text-slate-700 font-semibold">{c.authorizedBy}</td>
+                            <td className="px-3 py-2.5 text-right font-mono font-bold text-rose-600">₹{c.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                    <tfoot className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300 sticky bottom-0">
+                      <tr>
+                        <td colSpan={7} className="px-4 py-2.5 uppercase font-bold text-slate-800">TOTAL CREDIT NOTES</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-rose-700 font-bold">₹{refundsCreditData.summary.totalCreditNotes.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                )}
+
+                {/* ─── 7. REFUND REPORT TABLE ─────────────────────────────────── */}
+                {selectedReportId === "Refund" && refundsCreditData && (
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-100 text-slate-600 uppercase text-[10px] font-bold sticky top-0 z-10 border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-2.5">Refund No</th>
+                        <th className="px-3 py-2.5">Date</th>
+                        <th className="px-3 py-2.5">UHID</th>
+                        <th className="px-3 py-2.5">Patient Name</th>
+                        <th className="px-3 py-2.5">Invoice No</th>
+                        <th className="px-3 py-2.5">Mode</th>
+                        <th className="px-3 py-2.5">Ref No</th>
+                        <th className="px-3 py-2.5">Reason</th>
+                        <th className="px-3 py-2.5">Authorized By</th>
+                        <th className="px-3 py-2.5 text-center">Status</th>
+                        <th className="px-3 py-2.5 text-right">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                      {refundsCreditData.refunds
+                        .filter(
+                          (r) =>
+                            r.patientName.toLowerCase().includes(tableSearchTerm.toLowerCase()) ||
+                            r.refundNo.toLowerCase().includes(tableSearchTerm.toLowerCase()) ||
+                            r.uhid.toLowerCase().includes(tableSearchTerm.toLowerCase())
+                        )
+                        .map((r, idx) => (
+                          <tr key={idx} className="hover:bg-blue-50/40">
+                            <td className="px-4 py-2.5 font-mono font-bold text-blue-600">{r.refundNo}</td>
+                            <td className="px-3 py-2.5 font-mono text-slate-500">{new Date(r.createdAt).toLocaleDateString("en-GB")}</td>
+                            <td className="px-3 py-2.5 font-mono text-slate-600">{r.uhid}</td>
+                            <td className="px-3 py-2.5 font-bold text-slate-800">{r.patientName}</td>
+                            <td className="px-3 py-2.5 font-mono text-slate-600">{r.invoiceNo || "-"}</td>
+                            <td className="px-3 py-2.5">{r.mode}</td>
+                            <td className="px-3 py-2.5 font-mono text-slate-600">{r.refNo || "-"}</td>
+                            <td className="px-3 py-2.5 text-slate-600">{r.reason}</td>
+                            <td className="px-3 py-2.5 text-slate-700 font-semibold">{r.authorizedBy}</td>
+                            <td className="px-3 py-2.5 text-center">
+                              <span className="inline-flex px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">
+                                {r.status}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 text-right font-mono font-bold text-amber-600">₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                    <tfoot className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300 sticky bottom-0">
+                      <tr>
+                        <td colSpan={10} className="px-4 py-2.5 uppercase font-bold text-slate-800">TOTAL REFUNDS</td>
+                        <td className="px-3 py-2.5 text-right font-mono text-amber-700 font-bold">₹{refundsCreditData.summary.totalRefunds.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                )}
+
               </div>
             </CardContent>
           </Card>
@@ -1026,40 +1136,260 @@ export default function ReportsPage() {
               </div>
 
               {/* Data Table Printout */}
-              <table className="w-full text-xs font-sans border-collapse border border-slate-300">
-                <thead>
-                  <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
-                    <th className="border border-slate-300 p-2 text-left">Group / Dimension</th>
-                    <th className="border border-slate-300 p-2 text-center">Count</th>
-                    <th className="border border-slate-300 p-2 text-right">Gross (₹)</th>
-                    <th className="border border-slate-300 p-2 text-right">Discount (₹)</th>
-                    <th className="border border-slate-300 p-2 text-right">Net Revenue (₹)</th>
-                    <th className="border border-slate-300 p-2 text-right">Outstanding (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {revenueData?.data.map((row, i) => (
-                    <tr key={i} className="border-b border-slate-200">
-                      <td className="border border-slate-300 p-2 font-bold">{row.name}</td>
-                      <td className="border border-slate-300 p-2 text-center">{row.billCount}</td>
-                      <td className="border border-slate-300 p-2 text-right font-mono">{row.grossAmt.toFixed(2)}</td>
-                      <td className="border border-slate-300 p-2 text-right font-mono">{row.discountAmt.toFixed(2)}</td>
-                      <td className="border border-slate-300 p-2 text-right font-mono font-bold">{row.netAmt.toFixed(2)}</td>
-                      <td className="border border-slate-300 p-2 text-right font-mono text-rose-600">{row.outstandingAmt.toFixed(2)}</td>
+              {selectedReportId === "Revenue" && revenueData && (
+                <table className="w-full text-xs font-sans border-collapse border border-slate-300">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <th className="border border-slate-300 p-2 text-left">Group / Dimension</th>
+                      <th className="border border-slate-300 p-2 text-center">Count</th>
+                      <th className="border border-slate-300 p-2 text-right">Gross (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">Discount (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">Net Revenue (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">Outstanding (₹)</th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-slate-100 font-bold border-t-2 border-slate-400">
-                    <td className="border border-slate-300 p-2 uppercase">TOTAL HOSPITAL SUMMARY</td>
-                    <td className="border border-slate-300 p-2 text-center">{revenueData?.summary.totalBills || 0}</td>
-                    <td className="border border-slate-300 p-2 text-right font-mono">{revenueData?.summary.totalGross.toFixed(2) || "0.00"}</td>
-                    <td className="border border-slate-300 p-2 text-right font-mono">{revenueData?.summary.totalDiscount.toFixed(2) || "0.00"}</td>
-                    <td className="border border-slate-300 p-2 text-right font-mono">{revenueData?.summary.totalNet.toFixed(2) || "0.00"}</td>
-                    <td className="border border-slate-300 p-2 text-right font-mono">{revenueData?.summary.totalOutstanding.toFixed(2) || "0.00"}</td>
-                  </tr>
-                </tfoot>
-              </table>
+                  </thead>
+                  <tbody>
+                    {revenueData.data.map((row, i) => (
+                      <tr key={i} className="border-b border-slate-200">
+                        <td className="border border-slate-300 p-2 font-bold">{row.name}</td>
+                        <td className="border border-slate-300 p-2 text-center">{row.billCount}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono">{row.grossAmt.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono">{row.discountAmt.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono font-bold">{row.netAmt.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono text-rose-600">{row.outstandingAmt.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                      <td className="border border-slate-300 p-2 uppercase">TOTAL HOSPITAL SUMMARY</td>
+                      <td className="border border-slate-300 p-2 text-center">{revenueData.summary.totalBills}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{revenueData.summary.totalGross.toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{revenueData.summary.totalDiscount.toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{revenueData.summary.totalNet.toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{revenueData.summary.totalOutstanding.toFixed(2)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+
+              {(selectedReportId === "Cash Collection" || selectedReportId === "Credit Collection" || selectedReportId === "Advance Collection Reports") && collectionsData && (
+                <table className="w-full text-xs font-sans border-collapse border border-slate-300">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <th className="border border-slate-300 p-2 text-left">Category / Payment Mode</th>
+                      <th className="border border-slate-300 p-2 text-center">Receipts Count</th>
+                      <th className="border border-slate-300 p-2 text-right">Cash (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">Card (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">UPI (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">Other (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">Total Collection (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {collectionsData.data.map((row, i) => (
+                      <tr key={i} className="border-b border-slate-200">
+                        <td className="border border-slate-300 p-2 font-bold">{row.name}</td>
+                        <td className="border border-slate-300 p-2 text-center font-mono">{row.count}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono">{row.cashAmt.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono">{row.cardAmt.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono">{row.upiAmt.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono">{row.otherAmt.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono font-bold text-emerald-600">{row.amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                      <td className="border border-slate-300 p-2 uppercase">TOTAL SUMMARY</td>
+                      <td className="border border-slate-300 p-2 text-center font-mono">{collectionsData.totalTransactions}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{collectionsData.data.reduce((s, r) => s + r.cashAmt, 0).toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{collectionsData.data.reduce((s, r) => s + r.cardAmt, 0).toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{collectionsData.data.reduce((s, r) => s + r.upiAmt, 0).toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{collectionsData.data.reduce((s, r) => s + r.otherAmt, 0).toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono font-bold text-emerald-700">{collectionsData.totalCollection.toFixed(2)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+
+              {(selectedReportId === "Bill Register" || selectedReportId === "Bill Cancelled" || selectedReportId === "OP Visit" || selectedReportId === "InvestigationWise Census" || selectedReportId === "Discharge Without Billing") && billRegisterData && (
+                <table className="w-full text-xs font-sans border-collapse border border-slate-300">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <th className="border border-slate-300 p-2 text-left">Invoice No</th>
+                      <th className="border border-slate-300 p-2">Date</th>
+                      <th className="border border-slate-300 p-2">UHID</th>
+                      <th className="border border-slate-300 p-2">Patient Name</th>
+                      <th className="border border-slate-300 p-2">Doctor</th>
+                      <th className="border border-slate-300 p-2 text-right">Net Amt (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">Balance (₹)</th>
+                      <th className="border border-slate-300 p-2 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {billRegisterData.invoices.map((inv, i) => (
+                      <tr key={i} className="border-b border-slate-200">
+                        <td className="border border-slate-300 p-2 font-mono font-bold">{inv.invoiceNo}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{new Date(inv.date).toLocaleDateString("en-GB")}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{inv.uhid}</td>
+                        <td className="border border-slate-300 p-2 font-bold">{inv.patientName}</td>
+                        <td className="border border-slate-300 p-2">{inv.doctorName || "-"}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono">{inv.netAmt.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono">{inv.balance.toFixed(2)}</td>
+                        <td className="border border-slate-300 p-2 text-center">{inv.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                      <td colSpan={5} className="border border-slate-300 p-2 uppercase font-bold">TOTAL REGISTER SUMMARY</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{billRegisterData.summary.totalAmount.toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">{billRegisterData.summary.totalBalance.toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-center font-mono">-</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+
+              {(selectedReportId === "Admission Report" || selectedReportId === "Admission Form" || selectedReportId === "Patient Transfer" || selectedReportId === "Admitted List As On Date" || selectedReportId === "Discharge Report" || selectedReportId === "Bed Occupancy Details" || selectedReportId === "Registration List" || selectedReportId === "Registration Report") && atdCensusData && (
+                <table className="w-full text-xs font-sans border-collapse border border-slate-300">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <th className="border border-slate-300 p-2 text-left">UHID</th>
+                      <th className="border border-slate-300 p-2">IP / Visit No</th>
+                      <th className="border border-slate-300 p-2">Patient Name</th>
+                      <th className="border border-slate-300 p-2">Gender/Age</th>
+                      <th className="border border-slate-300 p-2">Bed / Room</th>
+                      <th className="border border-slate-300 p-2">Doctor</th>
+                      <th className="border border-slate-300 p-2 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {atdCensusData.patients.map((p, i) => (
+                      <tr key={i} className="border-b border-slate-200">
+                        <td className="border border-slate-300 p-2 font-mono font-bold">{p.uhid}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{p.ipNo}</td>
+                        <td className="border border-slate-300 p-2 font-bold">{p.name}</td>
+                        <td className="border border-slate-300 p-2">{p.genderAge}</td>
+                        <td className="border border-slate-300 p-2 font-semibold">{p.bedNo}</td>
+                        <td className="border border-slate-300 p-2">{p.doctor}</td>
+                        <td className="border border-slate-300 p-2 text-center">{p.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {(selectedReportId === "Outstanding" || selectedReportId === "Deposit Exhaust") && outstandingData && (
+                <table className="w-full text-xs font-sans border-collapse border border-slate-300">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <th className="border border-slate-300 p-2 text-left">Aging Bucket</th>
+                      <th className="border border-slate-300 p-2 text-center">Invoices Count</th>
+                      <th className="border border-slate-300 p-2 text-right">Outstanding Amount (₹)</th>
+                      <th className="border border-slate-300 p-2 text-right">Share (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {outstandingData.buckets.map((b, i) => {
+                      const pct = outstandingData.totalOutstanding > 0 ? ((b.amount / outstandingData.totalOutstanding) * 100).toFixed(1) : 0;
+                      return (
+                        <tr key={i} className="border-b border-slate-200">
+                          <td className="border border-slate-300 p-2 font-bold">{b.range}</td>
+                          <td className="border border-slate-300 p-2 text-center">{b.count}</td>
+                          <td className="border border-slate-300 p-2 text-right font-mono text-rose-600">₹{b.amount.toFixed(2)}</td>
+                          <td className="border border-slate-300 p-2 text-right font-mono">{pct}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                      <td className="border border-slate-300 p-2 uppercase font-bold">TOTAL OUTSTANDING</td>
+                      <td className="border border-slate-300 p-2 text-center">{outstandingData.totalPendingInvoices}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono text-rose-700">₹{outstandingData.totalOutstanding.toFixed(2)}</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono">100.0%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+
+              {selectedReportId === "Credit Note Report" && refundsCreditData && (
+                <table className="w-full text-xs font-sans border-collapse border border-slate-300">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <th className="border border-slate-300 p-2 text-left">Credit Note No</th>
+                      <th className="border border-slate-300 p-2">Date</th>
+                      <th className="border border-slate-300 p-2">UHID</th>
+                      <th className="border border-slate-300 p-2">Patient Name</th>
+                      <th className="border border-slate-300 p-2">Invoice No</th>
+                      <th className="border border-slate-300 p-2">Reason</th>
+                      <th className="border border-slate-300 p-2">Authorized By</th>
+                      <th className="border border-slate-300 p-2 text-right">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {refundsCreditData.creditNotes.map((c, i) => (
+                      <tr key={i} className="border-b border-slate-200">
+                        <td className="border border-slate-300 p-2 font-mono font-bold text-blue-600">{c.creditNoteNo}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{new Date(c.createdAt).toLocaleDateString("en-GB")}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{c.uhid}</td>
+                        <td className="border border-slate-300 p-2 font-bold">{c.patientName}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{c.invoiceNo}</td>
+                        <td className="border border-slate-300 p-2">{c.reason}</td>
+                        <td className="border border-slate-300 p-2 font-semibold">{c.authorizedBy}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono text-rose-600 font-bold">₹{c.amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                      <td colSpan={7} className="border border-slate-300 p-2 uppercase font-bold">TOTAL CREDIT</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono text-rose-700 font-bold">₹{refundsCreditData.summary.totalCreditNotes.toFixed(2)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+
+              {selectedReportId === "Refund" && refundsCreditData && (
+                <table className="w-full text-xs font-sans border-collapse border border-slate-300">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                      <th className="border border-slate-300 p-2 text-left">Refund No</th>
+                      <th className="border border-slate-300 p-2">Date</th>
+                      <th className="border border-slate-300 p-2">UHID</th>
+                      <th className="border border-slate-300 p-2">Patient Name</th>
+                      <th className="border border-slate-300 p-2">Invoice No</th>
+                      <th className="border border-slate-300 p-2">Mode</th>
+                      <th className="border border-slate-300 p-2">Reason</th>
+                      <th className="border border-slate-300 p-2">Authorized By</th>
+                      <th className="border border-slate-300 p-2 text-right">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {refundsCreditData.refunds.map((r, i) => (
+                      <tr key={i} className="border-b border-slate-200">
+                        <td className="border border-slate-300 p-2 font-mono font-bold text-blue-600">{r.refundNo}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{new Date(r.createdAt).toLocaleDateString("en-GB")}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{r.uhid}</td>
+                        <td className="border border-slate-300 p-2 font-bold">{r.patientName}</td>
+                        <td className="border border-slate-300 p-2 font-mono">{r.invoiceNo || "-"}</td>
+                        <td className="border border-slate-300 p-2">{r.mode}</td>
+                        <td className="border border-slate-300 p-2">{r.reason}</td>
+                        <td className="border border-slate-300 p-2 font-semibold">{r.authorizedBy}</td>
+                        <td className="border border-slate-300 p-2 text-right font-mono text-amber-600 font-bold">₹{r.amount.toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-100 font-bold border-t-2 border-slate-400">
+                      <td colSpan={8} className="border border-slate-300 p-2 uppercase font-bold">TOTAL REFUNDS</td>
+                      <td className="border border-slate-300 p-2 text-right font-mono text-amber-700 font-bold">₹{refundsCreditData.summary.totalRefunds.toFixed(2)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
 
               {/* Signatures */}
               <div className="pt-12 flex items-center justify-between text-xs font-sans">

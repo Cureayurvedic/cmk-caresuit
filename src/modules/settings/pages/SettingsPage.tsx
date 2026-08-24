@@ -64,6 +64,18 @@ const CONFIGS: Record<
     placeholder: "Enter Insurance Provider name",
     icon: <Shield className="h-4 w-4" />,
   },
+  doctors: {
+    title: "Doctors Master List",
+    description: "Manage doctors available in the consultation and billing dropdowns.",
+    placeholder: "Enter Doctor Name (e.g. Dr. Jane Doe)",
+    icon: <User className="h-4 w-4" />,
+  },
+  payers: {
+    title: "Payers Master List",
+    description: "Manage payers available in the billing payer dropdowns.",
+    placeholder: "Enter Payer Name (e.g. CASH, Star Health Insurance)",
+    icon: <Shield className="h-4 w-4" />,
+  },
 };
 
 // ─── Sidebar Nav Items ──────────────────────────────────────────────────────────
@@ -75,6 +87,8 @@ const MASTER_TABS: SettingsCategory[] = [
   "branches",
   "companies",
   "insurances",
+  "doctors",
+  "payers",
 ];
 
 const SIDEBAR_LABELS: Record<SettingsCategory, string> = {
@@ -85,6 +99,8 @@ const SIDEBAR_LABELS: Record<SettingsCategory, string> = {
   branches: "HCF Branches",
   companies: "Payer Companies",
   insurances: "Payer Insurances",
+  doctors: "Doctors Master List",
+  payers: "Payers List",
 };
 
 type TabKey = SettingsCategory | "bedCategories";
@@ -119,7 +135,8 @@ export default function SettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === "bedCategories") return;

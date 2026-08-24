@@ -7,7 +7,9 @@ export type SettingsCategory =
   | "occupations"
   | "branches"
   | "companies"
-  | "insurances";
+  | "insurances"
+  | "doctors"
+  | "payers";
 
 export interface MasterOption {
   id: string;

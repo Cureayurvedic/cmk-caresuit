@@ -28,12 +28,6 @@ const NAV_ITEMS = [
     ],
   },
   {
-    label: "Reports",
-    icon: BarChart3,
-    path: "/reports",
-    color: "text-emerald-400",
-  },
-  {
     label: "Billing",
     icon: ReceiptText,
     path: "/billing",
@@ -50,6 +44,12 @@ const NAV_ITEMS = [
     icon: Building2,
     path: "/wards",
     color: "text-purple-400",
+  },
+  {
+    label: "Reports",
+    icon: BarChart3,
+    path: "/reports",
+    color: "text-emerald-400",
   },
   {
     label: "Settings",

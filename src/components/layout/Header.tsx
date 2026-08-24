@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Search, RefreshCw, HelpCircle, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,16 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleGlobalRefresh = () => {
+    setIsRefreshing(true);
+    window.dispatchEvent(new CustomEvent("app:refresh"));
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 600);
+  };
+
   const page = PAGE_TITLES[location.pathname] ?? {
     title: "CMK CareSuite",
     subtitle: "Professional Healthcare Management",
@@ -67,8 +78,14 @@ export default function Header() {
 
       {/* Actions */}
       <div className="flex items-center gap-1.5">
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700">
-          <RefreshCw className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleGlobalRefresh}
+          title="Refresh Module & Application Data"
+          className="h-8 w-8 text-slate-500 hover:text-slate-700"
+        >
+          <RefreshCw className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin text-blue-600" : ""}`} />
         </Button>
 
         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700">
