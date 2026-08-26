@@ -68,7 +68,7 @@ export default function PatientSearchPage() {
   });
 
   return (
-    <div className="flex flex-col h-[calc(100vh-56px)] bg-slate-50/60 p-5 space-y-4 animate-fade-in">
+    <div className="flex flex-col min-h-[calc(100vh-56px)] bg-slate-50/60 p-3 sm:p-5 space-y-4 animate-fade-in">
       {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

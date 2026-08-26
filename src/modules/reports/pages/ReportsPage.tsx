@@ -279,16 +279,16 @@ export default function ReportsPage() {
 
         {/* Parameter & Filter Box (Matching Screenshot) */}
         <div className="p-4 bg-white border-b border-slate-200 shadow-2xs flex-shrink-0">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
-              <h1 className="text-lg font-black text-slate-800">{selectedReportId}</h1>
+              <h1 className="text-base sm:text-lg font-black text-slate-800">{selectedReportId}</h1>
               <Badge className="bg-blue-100 text-blue-800 border-blue-200 text-[11px] font-bold">
                 {activeCategory} Report
               </Badge>
             </div>
 
             {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button
                 size="sm"
                 variant="outline"

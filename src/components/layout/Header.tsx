@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, RefreshCw, HelpCircle, Settings, X, Loader2, User, Phone } from "lucide-react";
+import { Search, RefreshCw, HelpCircle, Settings, X, Loader2, User, Phone, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getPatients, PatientData } from "@/api/patientApi";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/registration": { title: "Registration", subtitle: "Demographics — New Registration" },
@@ -21,6 +22,7 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toggleMobileSidebar } = useSidebar();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Global Header Search State
@@ -115,15 +117,24 @@ export default function Header() {
   });
 
   return (
-    <header className="fixed top-0 right-0 z-30 flex h-14 items-center gap-3 border-b bg-white/95 backdrop-blur-sm px-5 shadow-sm transition-all duration-300"
-      style={{ left: "var(--sidebar-width)" }}
-    >
+    <header className="fixed top-0 right-0 z-30 flex h-14 items-center gap-2 md:gap-3 border-b bg-white/95 backdrop-blur-sm px-3 md:px-5 shadow-sm transition-all duration-300 left-0 md:left-[var(--sidebar-width)]">
+      {/* Mobile Drawer Hamburger Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={toggleMobileSidebar}
+        className="md:hidden h-8 w-8 text-slate-700 hover:bg-slate-100 flex-shrink-0"
+        title="Toggle Menu"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
+
       {/* Page info */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <h1 className="text-sm font-bold text-slate-800">{page.title}</h1>
-          <span className="text-slate-300">›</span>
-          <span className="text-xs text-slate-500">{page.subtitle}</span>
+        <div className="flex items-center gap-1.5 md:gap-2 truncate">
+          <h1 className="text-xs md:text-sm font-bold text-slate-800 truncate">{page.title}</h1>
+          <span className="text-slate-300 hidden sm:inline">›</span>
+          <span className="text-[11px] md:text-xs text-slate-500 truncate hidden sm:inline">{page.subtitle}</span>
         </div>
       </div>
 

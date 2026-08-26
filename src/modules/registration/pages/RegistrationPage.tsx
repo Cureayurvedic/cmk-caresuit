@@ -994,16 +994,16 @@ export default function RegistrationPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)]">
       {/* ── Top Toolbar ──────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 px-5 py-2.5 bg-white border-b border-slate-200 flex-shrink-0">
+      <div className="flex flex-wrap items-center gap-2 px-3 md:px-5 py-2 bg-white border-b border-slate-200 flex-shrink-0 overflow-x-auto">
         {/* Registration Type */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Label className="text-xs text-slate-500 whitespace-nowrap">Registration Type</Label>
           <Controller
             control={control}
             name="registrationType"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="h-8 w-40 text-xs">
+                <SelectTrigger className="h-8 w-36 md:w-40 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1020,10 +1020,10 @@ export default function RegistrationPage() {
           />
         </div>
 
-        <Separator orientation="vertical" className="h-6" />
+        <Separator orientation="vertical" className="h-6 hidden sm:block" />
 
         {/* UHID */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Label 
             className="text-xs text-blue-600 font-bold underline cursor-pointer"
             onClick={() => setIsPatientSearchModalOpen(true)}
@@ -1648,8 +1648,8 @@ export default function RegistrationPage() {
             {/* ── Section 2: Tabs (Payer / Referral / Other) ── */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <div className="border-b border-slate-200 px-4 pt-3">
-                  <TabsList className="h-8 bg-transparent p-0 gap-1">
+                <div className="border-b border-slate-200 px-3 md:px-4 pt-3 overflow-x-auto">
+                  <TabsList className="h-8 bg-transparent p-0 gap-1 flex-nowrap min-w-max">
                     <TabsTrigger
                       value="other-info"
                       className="h-8 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-medium px-3"

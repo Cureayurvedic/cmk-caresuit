@@ -13,8 +13,7 @@ function DashboardLayoutContent() {
       <Sidebar />
       <Header />
       <main
-        className="min-h-screen pt-14 transition-all duration-300"
-        style={{ marginLeft: "var(--sidebar-width)" }}
+        className="min-h-screen pt-14 transition-all duration-300 ml-0 md:ml-[var(--sidebar-width)]"
       >
         <div className="animate-fade-in">
           <Outlet />

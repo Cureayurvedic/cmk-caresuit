@@ -64,7 +64,7 @@ const NAV_ITEMS = [
 
 export default function Sidebar() {
   const location = useLocation();
-  const { isCollapsed, toggleSidebar } = useSidebar();
+  const { isCollapsed, toggleSidebar, isMobileOpen, closeMobileSidebar } = useSidebar();
   const {
     activeCategory,
     setActiveCategory,
@@ -84,14 +84,27 @@ export default function Sidebar() {
   const isShowingReportsMenu = isReportsRoute && showReportsSidebar;
 
   return (
-    <aside
-      className="fixed top-0 left-0 h-full flex flex-col z-40 transition-all duration-300 select-none"
-      style={{
-        width: "var(--sidebar-width)",
-        background: "hsl(var(--sidebar-bg))",
-        borderRight: "1px solid hsl(var(--sidebar-border))",
-      }}
-    >
+    <>
+      {/* Mobile Drawer Overlay Backdrop */}
+      <div
+        onClick={closeMobileSidebar}
+        className={cn(
+          "fixed inset-0 bg-slate-950/60 z-30 md:hidden transition-opacity duration-300",
+          isMobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+      />
+
+      <aside
+        className={cn(
+          "fixed top-0 left-0 h-full flex flex-col z-40 transition-all duration-300 select-none",
+          isMobileOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full md:translate-x-0"
+        )}
+        style={{
+          width: "var(--sidebar-width)",
+          background: "hsl(var(--sidebar-bg))",
+          borderRight: "1px solid hsl(var(--sidebar-border))",
+        }}
+      >
       {/* Header Section */}
       <div
         className={cn(
@@ -338,6 +351,7 @@ export default function Sidebar() {
                       <NavLink
                         to={item.path}
                         onClick={() => {
+                          closeMobileSidebar();
                           if (item.path === "/reports") {
                             handleOpenReportsMenu();
                           }
@@ -390,6 +404,7 @@ export default function Sidebar() {
                         <NavLink
                           key={subItem.path}
                           to={subItem.path}
+                          onClick={closeMobileSidebar}
                           className={({ isActive }) =>
                             cn(
                               "block px-3 py-1.5 text-xs rounded-md transition-colors truncate",
@@ -432,5 +447,6 @@ export default function Sidebar() {
         </div>
       </div>
     </aside>
+    </>
   );
 }

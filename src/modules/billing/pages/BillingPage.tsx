@@ -1780,7 +1780,7 @@ export default function BillingPage() {
               </div>
 
               {/* Patient Category Tabs */}
-              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg">
+              <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg overflow-x-auto scrollbar-none max-w-full">
                 {["Registration", "Admission", "Discharge But Not Bill", "Discharge"].map((t) => (
                   <button
                     key={t}

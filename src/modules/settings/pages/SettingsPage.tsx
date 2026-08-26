@@ -194,15 +194,15 @@ export default function SettingsPage() {
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 w-full space-y-6">
-      {/* ── Page Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto animate-fade-in">
+      {/* Header Banner */}
+      <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-slate-100">
         <div className="flex items-center gap-3.5">
-          <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-primary shadow-sm border border-blue-100">
-            <Settings2 className="h-6 w-6" />
+          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-blue-50 flex items-center justify-center text-primary shadow-sm border border-blue-100 shrink-0">
+            <Settings2 className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">Application Settings</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">Application Settings</h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Configure CMK CareSuite master values, dropdown list options, and system parameters
             </p>
@@ -210,18 +210,14 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Two-column Layout ── */}
-      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-6 items-start">
+      {/* ── Responsive Layout ── */}
+      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 sm:gap-6 items-start">
 
-        {/* ── Sidebar Navigation ── */}
-        <div className="space-y-1">
-          {/* Ward & Bed Management Section */}
-          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-            Ward & Bed Management
-          </p>
+        {/* ── Sidebar Navigation (Horizontal scroll on mobile, vertical list on desktop) ── */}
+        <div className="flex md:flex-col overflow-x-auto gap-1 pb-2 md:pb-0 scrollbar-none shrink-0 border-b md:border-b-0 border-slate-200">
           <button
             onClick={() => setActiveTab("bedCategories")}
-            className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all ${
+            className={`whitespace-nowrap text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
               activeTab === "bedCategories"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
@@ -231,41 +227,20 @@ export default function SettingsPage() {
             Bed Categories
           </button>
 
-          {/* Master Settings Section */}
-          <div className="pt-4 border-t border-slate-100 mt-4">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Master Settings
-            </p>
-
-            {MASTER_TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 transition-all ${
-                  activeTab === tab
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
-                }`}
-              >
-                {CONFIGS[tab].icon}
-                {SIDEBAR_LABELS[tab]}
-              </button>
-            ))}
-          </div>
-
-          {/* Access Control Section */}
-          <div className="pt-4 border-t border-slate-100 mt-4">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
-              Access Control
-            </p>
+          {MASTER_TABS.map((tab) => (
             <button
-              className="w-full text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2.5 text-slate-400 cursor-not-allowed"
-              disabled
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`whitespace-nowrap text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+                activeTab === tab
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+              }`}
             >
-              <Shield className="h-4 w-4" />
-              Role Permissions
+              {CONFIGS[tab].icon}
+              {SIDEBAR_LABELS[tab]}
             </button>
-          </div>
+          ))}
         </div>
 
         {/* ── Content Area ── */}

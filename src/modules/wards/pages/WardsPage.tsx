@@ -291,15 +291,15 @@ export default function WardsPage() {
   }, [registeredPatients, patientSearchTerm]);
 
   return (
-    <div className="p-6 space-y-6 animate-fade-in text-slate-800">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 animate-fade-in text-slate-800">
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
             <Building2 className="h-5 w-5 text-blue-600" />
             Ward Management
           </h2>
-          <p className="text-sm text-slate-500 mt-0.5">Monitor bed occupancy and assign vacant inpatient beds across all hospital wards</p>
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">Monitor bed occupancy and assign vacant inpatient beds across all hospital wards</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -307,7 +307,7 @@ export default function WardsPage() {
             size="sm"
             variant="outline"
             onClick={() => navigate("/atd")}
-            className="gap-1.5 text-slate-700 border-slate-300 hover:bg-slate-50"
+            className="gap-1.5 text-slate-700 border-slate-300 hover:bg-slate-50 text-xs"
           >
             <ExternalLink className="h-4 w-4 text-blue-600" />
             View Full ATD Matrix
@@ -316,7 +316,7 @@ export default function WardsPage() {
           <Button
             size="sm"
             onClick={() => openAssignModal()}
-            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs"
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-xs text-xs"
           >
             <BedDouble className="h-4 w-4" />
             Assign Bed
@@ -325,7 +325,7 @@ export default function WardsPage() {
       </div>
 
       {/* Summary Counters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
         {[
           { label: "Total Hospital Beds", value: totalBeds, icon: BedDouble, color: "text-blue-500", bg: "bg-blue-50" },
           { label: "Occupied Beds", value: totalOccupied, icon: UserCheck, color: "text-rose-500", bg: "bg-rose-50" },
