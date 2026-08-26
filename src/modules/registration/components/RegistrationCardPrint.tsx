@@ -48,14 +48,25 @@ export const RegistrationCardPrint = forwardRef<HTMLDivElement, Props>(
 
           {/* Barcode at bottom, centered and large enough to scan perfectly */}
           <div className="w-full flex justify-center mt-auto pb-1">
-            <Barcode 
-              value={patient.uhid} 
-              width={1.2} 
-              height={40} 
-              displayValue={false} 
-              margin={0}
-              background="transparent"
-            />
+            {patient.uhid && patient.uhid.trim() ? (
+              <Barcode 
+                value={patient.uhid.trim()} 
+                width={1.2} 
+                height={40} 
+                displayValue={false} 
+                margin={0}
+                background="transparent"
+              />
+            ) : (
+              <Barcode 
+                value="00000000" 
+                width={1.2} 
+                height={40} 
+                displayValue={false} 
+                margin={0}
+                background="transparent"
+              />
+            )}
           </div>
 
         </div>

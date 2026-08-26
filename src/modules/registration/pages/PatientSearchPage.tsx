@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, UserPlus, FileEdit, Trash2, Filter, FileSpreadsheet, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,8 +19,9 @@ import PatientLedgerView from "../components/PatientLedgerView";
 
 export default function PatientSearchPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const toast = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get("query") || searchParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState("all");
   const [genderFilter, setGenderFilter] = useState("all");
   const [patients, setPatients] = useState<PatientData[]>([]);
@@ -29,18 +30,7 @@ export default function PatientSearchPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
 
-  const handleDeletePatient = async (id?: string) => {
-    if (!id) return;
-    if (!window.confirm("Are you sure you want to delete this patient record?")) return;
-
-    try {
-      await deletePatient(id);
-      toast.success("Patient Deleted Successfully", "The patient record has been removed.");
-      fetchPatients();
-    } catch (err: any) {
-      toast.error("Failed to Delete Patient", err.message || "Something went wrong.");
-    }
-  };
+ 
 
   const fetchPatients = useCallback(async () => {
     setIsLoading(true);

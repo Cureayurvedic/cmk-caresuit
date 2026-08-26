@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
 import { SidebarProvider, useSidebar } from "@/contexts/SidebarContext";
+import { ReportsProvider } from "@/contexts/ReportsContext";
 import { cn } from "@/lib/utils";
 
 function DashboardLayoutContent() {
@@ -26,8 +27,11 @@ function DashboardLayoutContent() {
 export default function DashboardLayout() {
   return (
     <SidebarProvider>
-      <DashboardLayoutContent />
+      <ReportsProvider>
+        <DashboardLayoutContent />
+      </ReportsProvider>
     </SidebarProvider>
   );
 }
+
 

@@ -1156,7 +1156,8 @@ export default function RegistrationPage() {
           type="button"
           variant="outline"
           size="sm"
-          className="h-8 text-xs gap-1.5"
+          onClick={() => setIsImportModalOpen(true)}
+          className="h-8 text-xs gap-1.5 cursor-pointer"
         >
           <Search className="h-3.5 w-3.5" />
           Borrow
@@ -1361,8 +1362,8 @@ export default function RegistrationPage() {
                 </FieldRow>
 
                 {/* DOB + Age */}
-                <FieldRow className="grid-cols-3 mb-3">
-                  <FormField label="DOB" required className="col-span-2" error={errors.dob?.message}>
+                <FieldRow className="grid-cols-2 mb-3">
+                  <FormField label="DOB" required error={errors.dob?.message}>
                     <Input
                       {...register("dob")}
                       type="date"

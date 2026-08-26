@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { Search, RefreshCw, HelpCircle, Settings } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Search, RefreshCw, HelpCircle, Settings, X, Loader2, User, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLocation, useNavigate } from "react-router-dom";
+import { getPatients, PatientData } from "@/api/patientApi";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/registration": { title: "Registration", subtitle: "Demographics — New Registration" },
@@ -22,12 +23,77 @@ export default function Header() {
   const navigate = useNavigate();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Global Header Search State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<PatientData[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
   const handleGlobalRefresh = () => {
     setIsRefreshing(true);
     window.dispatchEvent(new CustomEvent("app:refresh"));
     setTimeout(() => {
       setIsRefreshing(false);
     }, 600);
+  };
+
+  // Close search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch search results on typing
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setIsOpen(false);
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setIsOpen(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await getPatients({ search: searchQuery.trim(), limit: 6 });
+        setSearchResults(res.patients || []);
+      } catch (err) {
+        console.error("Global header search error:", err);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchQuery.trim()) {
+      e.preventDefault();
+      setIsOpen(false);
+      navigate(`/registration/search?query=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSelectPatient = (p: PatientData) => {
+    setIsOpen(false);
+    setSearchQuery("");
+    const targetUhid = p.uhid || p.fullName || "";
+    
+    if (location.pathname.startsWith("/billing")) {
+      navigate(`/billing?uhid=${encodeURIComponent(targetUhid)}`);
+    } else {
+      navigate(`/registration/search?query=${encodeURIComponent(targetUhid)}`);
+    }
   };
 
   const page = PAGE_TITLES[location.pathname] ?? {
@@ -61,13 +127,94 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative hidden md:flex items-center w-56">
-        <Search className="absolute left-2.5 h-3.5 w-3.5 text-slate-400" />
+      {/* Global Interactive Search */}
+      <div ref={searchContainerRef} className="relative hidden md:flex items-center w-72">
+        <Search className="absolute left-2.5 h-3.5 w-3.5 text-slate-400 z-10" />
         <Input
-          placeholder="Search patients..."
-          className="pl-8 h-8 text-xs bg-slate-50 border-slate-200"
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => { if (searchQuery.trim()) setIsOpen(true); }}
+          onKeyDown={handleKeyDown}
+          placeholder="Search patients (Name, UHID, Mobile)..."
+          className="pl-8 pr-7 h-8 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 shadow-2xs font-medium"
         />
+        {searchQuery && (
+          <button
+            onClick={() => { setSearchQuery(""); setSearchResults([]); setIsOpen(false); }}
+            className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+
+        {/* Search Results Dropdown */}
+        {isOpen && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-xl overflow-hidden z-50 animate-in fade-in-50 zoom-in-95 duration-150">
+            <div className="p-2 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between text-[11px] font-bold text-slate-600">
+              <span>Patient Search Results</span>
+              {isSearching && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+            </div>
+
+            <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+              {isSearching && searchResults.length === 0 ? (
+                <div className="p-4 text-center text-xs text-slate-500 font-medium flex items-center justify-center gap-2">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600" /> Searching database...
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="p-4 text-center text-xs text-slate-500">
+                  No matching patients found for <span className="font-bold text-slate-700">"{searchQuery}"</span>
+                </div>
+              ) : (
+                searchResults.map((p) => {
+                  const displayName = p.fullName || `${p.firstName || ""} ${p.lastName || ""}`.trim() || "Patient";
+                  return (
+                    <div
+                      key={p.id || p.uhid}
+                      onClick={() => handleSelectPatient(p)}
+                      className="p-2.5 hover:bg-blue-50/60 cursor-pointer transition-colors flex items-center justify-between group"
+                    >
+                      <div className="space-y-0.5 min-w-0 pr-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-800 group-hover:text-blue-700 transition-colors truncate">
+                            {displayName}
+                          </span>
+                          {p.gender && (
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              ({p.gender}{p.age ? `, ${p.age}Yr` : ""})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-[10px] text-slate-500 font-mono">
+                          {p.mobile && <span className="flex items-center gap-0.5"><Phone className="w-2.5 h-2.5 text-slate-400" />{p.mobile}</span>}
+                          {p.payer && <span className="truncate max-w-[120px] text-slate-400">{p.payer}</span>}
+                        </div>
+                      </div>
+
+                      {p.uhid && (
+                        <Badge className="bg-blue-50 text-blue-700 border-blue-200 font-mono text-[10px] font-bold shrink-0">
+                          {p.uhid}
+                        </Badge>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {searchQuery.trim() && (
+              <div
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate(`/registration/search?query=${encodeURIComponent(searchQuery.trim())}`);
+                }}
+                className="p-2 bg-slate-50 border-t border-slate-100 text-center text-xs font-bold text-blue-600 hover:text-blue-800 cursor-pointer hover:bg-slate-100 transition-colors"
+              >
+                View all results for "{searchQuery}" →
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Date/Time */}

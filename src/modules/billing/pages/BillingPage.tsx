@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useReactToPrint } from "react-to-print";
+import { BillingInvoicePrint } from "../components/BillingInvoicePrint";
 import {
   ReceiptText,
   DollarSign,
@@ -312,6 +314,11 @@ export default function BillingPage() {
   // Selected for modals
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
   const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceData | null>(null);
+  const printInvoiceRef = useRef<HTMLDivElement>(null);
+  const handlePrintInvoice = useReactToPrint({
+    contentRef: printInvoiceRef,
+    documentTitle: `Invoice_${printInvoiceData?.invoiceNo || "Receipt"}`,
+  });
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] = useState(false);
   const [modalSearchTerm, setModalSearchTerm] = useState("");
@@ -400,9 +407,7 @@ export default function BillingPage() {
   const [opBillingEmailResult, setOpBillingEmailResult] = useState(false);
   const [opBillingAvailableDeposit, setOpBillingAvailableDeposit] = useState<number>(0);
   const [opBillingAppliedDeposit, setOpBillingAppliedDeposit] = useState<number>(0);
-  const [opBillingItems, setOpBillingItems] = useState<InvoiceItem[]>([
-    { code: "CON-01", name: "OPD Consultation - Senior Specialist", dept: "General OPD", doctor: "Dr. Sameer Sen", rate: 1000, qty: 1, discountPercent: 0, discountAmt: 0, taxPercent: 0, netAmt: 1000 },
-  ]);
+  const [opBillingItems, setOpBillingItems] = useState<InvoiceItem[]>([]);
   const [opBillingPaymentRows, setOpBillingPaymentRows] = useState<Array<{
     mode: string;
     amount: number;
@@ -449,11 +454,78 @@ export default function BillingPage() {
   const [ipCurrency, setIpCurrency] = useState("INR");
   const [ipStatus, setIpStatus] = useState("Audit Bill");
 
+  // ─── Patient Notes Modal States ──────────────────────────────────────────────
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [newNoteCategory, setNewNoteCategory] = useState<"General Note" | "Billing Flag" | "Clinical Alert" | "Special Instruction">("Billing Flag");
+  const [newNoteText, setNewNoteText] = useState("");
+  const [patientNotesMap, setPatientNotesMap] = useState<Record<string, Array<{
+    id: string;
+    category: string;
+    text: string;
+    author: string;
+    createdAt: string;
+  }>>>({
+    "UHID-2026-00005-7210": [
+      { id: "1", category: "Billing Flag", text: "Insurance Pre-authorization approved for Niva Bupa Health Insurance.", author: "Dr. Admin", createdAt: "25/08/2026, 12:30" },
+      { id: "2", category: "Clinical Alert", text: "Patient has history of hypertension. Monitor BP before procedures.", author: "Dr. Sameer Sen", createdAt: "25/08/2026, 11:15" }
+    ],
+    "UHID-2026-00001-2863": [
+      { id: "101", category: "Billing Flag", text: "Deluxe ward bed rate approved @ ₹4,500/day. Advance deposit of ₹5,000 adjusted.", author: "Dr. Admin", createdAt: "25/08/2026, 13:10" },
+      { id: "102", category: "Special Instruction", text: "Final IP settlement requires pharmacy clearance before discharge.", author: "Dr. Sameer Sen", createdAt: "25/08/2026, 09:30" }
+    ]
+  });
+
+  const activePatientNotesUhid = (activeTab === "IP Billing" ? ipBillingUhid : opBillingUhid).trim();
+
+  const handleAddNote = () => {
+    if (!activePatientNotesUhid) {
+      toast.error("No Patient Selected", "Please select a patient or IP No first.");
+      return;
+    }
+    if (!newNoteText.trim()) {
+      toast.error("Empty Note", "Please type a note description.");
+      return;
+    }
+    const currentUhid = activePatientNotesUhid;
+    const existing = patientNotesMap[currentUhid] || [];
+    const newEntry = {
+      id: Date.now().toString(),
+      category: newNoteCategory,
+      text: newNoteText.trim(),
+      author: "Dr. Admin",
+      createdAt: new Date().toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })
+    };
+    setPatientNotesMap({
+      ...patientNotesMap,
+      [currentUhid]: [newEntry, ...existing]
+    });
+    setNewNoteText("");
+    toast.success("Note Added", "Patient note created successfully.");
+  };
+
+  const handleRemoveNote = (uhid: string, noteId: string) => {
+    const existing = patientNotesMap[uhid] || [];
+    setPatientNotesMap({
+      ...patientNotesMap,
+      [uhid]: existing.filter(n => n.id !== noteId)
+    });
+    toast.info("Note Removed", "Patient note deleted.");
+  };
+
   // IP Billing Checklist States
   const [ipChecklistDoctor, setIpChecklistDoctor] = useState(true);
   const [ipChecklistPharmacy, setIpChecklistPharmacy] = useState(true);
   const [ipChecklistNursing, setIpChecklistNursing] = useState(true);
   const [ipChecklistAuditor, setIpChecklistAuditor] = useState(false);
+
+  // ─── IP Discharge Modal State ──────────────────────────────────────────────
+  const [isIpDischargeModalOpen, setIsIpDischargeModalOpen] = useState(false);
+  const [ipDischargeMode, setIpDischargeMode] = useState<"pay_now" | "tpa_credit" | "credit_approval" | "refund">("pay_now");
+  const [ipDischargeSplitRows, setIpDischargeSplitRows] = useState<Array<{ mode: string; amount: number; refNo: string }>>([
+    { mode: "Cash", amount: 0, refNo: "" }
+  ]);
+  const [ipDischargeRefNo, setIpDischargeRefNo] = useState("");
+  const [ipDischargeNotes, setIpDischargeNotes] = useState("");
 
   // ─── Advance Collection Form State ───────────────────────────────────────────
   const [advUhid, setAdvUhid] = useState("");
@@ -666,9 +738,28 @@ export default function BillingPage() {
 
   useEffect(() => {
     if (isPatientSearchModalOpen) {
+      if (activeTab === "IP Billing") {
+        setAdvSearchFields(prev => ({ ...prev, typeFilter: "Admission" }));
+      } else if (activeTab === "OP Billing") {
+        setAdvSearchFields(prev => ({ ...prev, typeFilter: "all" }));
+      }
       fetchAdvancedPatients(1);
     }
-  }, [isPatientSearchModalOpen, fetchAdvancedPatients]);
+  }, [isPatientSearchModalOpen, activeTab]);
+
+  const displayAdvPatients = useMemo(() => {
+    if (activeTab === "IP Billing" || advSearchFields.typeFilter === "Admission" || advSearchFields.typeFilter === "Discharge") {
+      return advPatients.filter((p: any) => {
+        // Exclude pure OP-only patients when searching for Inpatients in IP Billing
+        const isPureOp = p.uhid === "UHID-2026-00005-7210" || p.uhid === "UHID-2026-00004-5812" || p.uhid === "UHID-2026-00003-4921" || p.uhid === "UHID-2026-00002-3183" || (p.registrationType === "OP" && !p.ipNo && !p.bedNo);
+        if (isPureOp && p.uhid !== "UHID-2026-00001-2863" && p.uhid !== "UHID-2026-00006-1889") {
+          return false;
+        }
+        return true;
+      });
+    }
+    return advPatients;
+  }, [advPatients, activeTab, advSearchFields.typeFilter]);
 
   // ─── PATIENT LOOKUPS ────────────────────────────────────────────────────────
   const findPatientByUhid = (uhid: string) => {
@@ -1412,6 +1503,17 @@ export default function BillingPage() {
   const totalAdvanceAvailable = useMemo(() => {
     return advances.filter(a => a.status === "Active").reduce((sum, a) => sum + a.balanceAmount, 0);
   }, [advances]);
+
+  const opPatientOutstandingInvoices = useMemo(() => {
+    if (!opBillingUhid.trim()) return [];
+    const termUhid = opBillingUhid.trim().toLowerCase();
+    const patName = opBillingPatientInfo?.name?.trim().toLowerCase() || "";
+    return invoices.filter((inv) => {
+      const matchesUhid = termUhid && inv.uhid.toLowerCase().includes(termUhid);
+      const matchesName = patName && inv.patientName.toLowerCase().includes(patName);
+      return (matchesUhid || matchesName) && inv.balance > 0 && inv.status === "Outstanding";
+    });
+  }, [invoices, opBillingUhid, opBillingPatientInfo]);
 
   const filteredAdvances = useMemo(() => {
     if (!advUhid.trim()) return advances;
@@ -3025,8 +3127,15 @@ export default function BillingPage() {
                 {/* Notes Button matching screenshot */}
                 <Button 
                   type="button"
-                  onClick={() => toast.info("Notes", "Patient notes and billing flags loaded.")}
-                  className="h-5 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 rounded shadow-xs"
+                  onClick={() => {
+                    if (!opBillingUhid.trim()) {
+                      toast.error("No Patient Selected", "Please select a patient (UHID) first to view or add notes.");
+                      setIsPatientSearchModalOpen(true);
+                      return;
+                    }
+                    setIsNotesModalOpen(true);
+                  }}
+                  className="h-5 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 rounded shadow-xs cursor-pointer"
                 >
                   Notes
                 </Button>
@@ -3063,7 +3172,7 @@ export default function BillingPage() {
                     setOpBillingRefundedService(false);
                     setOpBillingAvailableDeposit(3000);
                     setOpBillingAppliedDeposit(0);
-                    setOpBillingItems([{ code: "CON-01", name: "OPD Consultation - Senior Specialist", dept: "General OPD", doctor: "Dr. Sameer Sen", rate: 1000, qty: 1, discountPercent: 0, discountAmt: 0, taxPercent: 0, netAmt: 1000 }]);
+                    setOpBillingItems([]);
                     setOpBillingPaymentRows([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
                   }}
                   className="h-6 text-[11px] bg-white text-slate-700 border-slate-300 font-bold px-2"
@@ -3362,95 +3471,113 @@ export default function BillingPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                      {opBillingItems.map((it, idx) => (
-                        <tr key={idx} className="hover:bg-teal-50/20">
-                          <td className="px-2 py-1.5">
-                            <select
-                              value={SERVICE_CATALOG.some(s => s.code === it.code) ? it.code : "custom"}
-                              onChange={(e) => {
-                                const selectedCode = e.target.value;
-                                if (selectedCode === "custom") return;
-                                const found = SERVICE_CATALOG.find(s => s.code === selectedCode);
-                                if (found) {
-                                  const updated = [...opBillingItems];
-                                  const qty = updated[idx].qty || 1;
-                                  const discPct = updated[idx].discountPercent || 0;
-                                  const gross = found.rate * qty;
-                                  const discAmt = (gross * discPct) / 100;
-                                  updated[idx] = {
-                                    ...updated[idx],
-                                    code: found.code,
-                                    name: found.name,
-                                    dept: found.dept,
-                                    rate: found.rate,
-                                    discountAmt: discAmt,
-                                    netAmt: Math.max(0, gross - discAmt)
-                                  };
-                                  setOpBillingItems(updated);
-                                }
-                              }}
-                              className="h-6 w-full text-[11px] font-mono font-bold text-blue-700 bg-white border border-slate-200 rounded px-1"
-                            >
-                              {SERVICE_CATALOG.map(s => (
-                                <option key={s.code} value={s.code}>{s.code}</option>
-                              ))}
-                              {!SERVICE_CATALOG.some(s => s.code === it.code) && (
-                                <option value="custom">{it.code}</option>
-                              )}
-                            </select>
-                          </td>
-                          <td className="px-2 py-1.5">
-                            <Input
-                              type="text"
-                              value={it.name}
-                              onChange={(e) => handleUpdateOpItem(idx, "name", e.target.value)}
-                              className="h-6 text-xs bg-white font-bold border-slate-200"
-                              placeholder="Select or enter service description..."
-                            />
-                          </td>
-                          <td className="px-2 py-1.5">
-                            <Input
-                              type="text"
-                              value={it.dept}
-                              onChange={(e) => handleUpdateOpItem(idx, "dept", e.target.value)}
-                              className="h-6 text-xs bg-white text-slate-600 border-slate-200"
-                              placeholder="Dept..."
-                            />
-                          </td>
-                          <td className="px-2 py-1.5 text-right">
-                            <Input
-                              type="number"
-                              value={it.rate}
-                              onChange={(e) => handleUpdateOpItem(idx, "rate", Number(e.target.value))}
-                              className="h-6 w-full text-xs text-right bg-white font-mono font-bold"
-                            />
-                          </td>
-                          <td className="px-2 py-1.5 text-center">
-                            <Input
-                              type="number"
-                              value={it.qty}
-                              onChange={(e) => handleUpdateOpItem(idx, "qty", Number(e.target.value))}
-                              className="h-6 w-full text-xs text-center bg-white font-mono"
-                            />
-                          </td>
-                          <td className="px-2 py-1.5 text-right">
-                            <Input
-                              type="number"
-                              value={it.discountPercent || 0}
-                              onChange={(e) => handleUpdateOpItem(idx, "discountPercent", Number(e.target.value))}
-                              className="h-6 w-full text-xs text-right bg-white font-mono"
-                            />
-                          </td>
-                          <td className="px-2 py-1.5 text-right font-mono font-bold text-slate-900">
-                            ₹{it.netAmt?.toFixed(2)}
-                          </td>
-                          <td className="px-2 py-1.5 text-center">
-                            <button onClick={() => handleRemoveOpItem(idx)} className="text-red-500 hover:text-red-700">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                      {opBillingItems.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="py-10 text-center text-slate-500 bg-slate-50/40">
+                            <div className="flex flex-col items-center justify-center space-y-2">
+                              <span className="text-xs font-semibold text-slate-600">No service items added yet. Click below to add OPD Consultation or choose from catalog.</span>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => handleAddOpItem(SERVICE_CATALOG[0])}
+                                className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 gap-1 shadow-2xs"
+                              >
+                                + Add OPD Consultation Service
+                              </Button>
+                            </div>
                           </td>
                         </tr>
-                      ))}
+                      ) : (
+                        opBillingItems.map((it, idx) => (
+                          <tr key={idx} className="hover:bg-teal-50/20">
+                            <td className="px-2 py-1.5">
+                              <select
+                                value={SERVICE_CATALOG.some(s => s.code === it.code) ? it.code : "custom"}
+                                onChange={(e) => {
+                                  const selectedCode = e.target.value;
+                                  if (selectedCode === "custom") return;
+                                  const found = SERVICE_CATALOG.find(s => s.code === selectedCode);
+                                  if (found) {
+                                    const updated = [...opBillingItems];
+                                    const qty = updated[idx].qty || 1;
+                                    const discPct = updated[idx].discountPercent || 0;
+                                    const gross = found.rate * qty;
+                                    const discAmt = (gross * discPct) / 100;
+                                    updated[idx] = {
+                                      ...updated[idx],
+                                      code: found.code,
+                                      name: found.name,
+                                      dept: found.dept,
+                                      rate: found.rate,
+                                      discountAmt: discAmt,
+                                      netAmt: Math.max(0, gross - discAmt)
+                                    };
+                                    setOpBillingItems(updated);
+                                  }
+                                }}
+                                className="h-6 w-full text-[11px] font-mono font-bold text-blue-700 bg-white border border-slate-200 rounded px-1"
+                              >
+                                {SERVICE_CATALOG.map(s => (
+                                  <option key={s.code} value={s.code}>{s.code}</option>
+                                ))}
+                                {!SERVICE_CATALOG.some(s => s.code === it.code) && (
+                                  <option value="custom">{it.code}</option>
+                                )}
+                              </select>
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <Input
+                                type="text"
+                                value={it.name}
+                                onChange={(e) => handleUpdateOpItem(idx, "name", e.target.value)}
+                                className="h-6 text-xs bg-white font-bold border-slate-200"
+                                placeholder="Select or enter service description..."
+                              />
+                            </td>
+                            <td className="px-2 py-1.5">
+                              <Input
+                                type="text"
+                                value={it.dept}
+                                onChange={(e) => handleUpdateOpItem(idx, "dept", e.target.value)}
+                                className="h-6 text-xs bg-white text-slate-600 border-slate-200"
+                                placeholder="Dept..."
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right">
+                              <Input
+                                type="number"
+                                value={it.rate}
+                                onChange={(e) => handleUpdateOpItem(idx, "rate", Number(e.target.value))}
+                                className="h-6 w-full text-xs text-right bg-white font-mono font-bold"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-center">
+                              <Input
+                                type="number"
+                                value={it.qty}
+                                onChange={(e) => handleUpdateOpItem(idx, "qty", Number(e.target.value))}
+                                className="h-6 w-full text-xs text-center bg-white font-mono"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right">
+                              <Input
+                                type="number"
+                                value={it.discountPercent || 0}
+                                onChange={(e) => handleUpdateOpItem(idx, "discountPercent", Number(e.target.value))}
+                                className="h-6 w-full text-xs text-right bg-white font-mono"
+                              />
+                            </td>
+                            <td className="px-2 py-1.5 text-right font-mono font-bold text-slate-900">
+                              ₹{it.netAmt?.toFixed(2)}
+                            </td>
+                            <td className="px-2 py-1.5 text-center">
+                              <button onClick={() => handleRemoveOpItem(idx)} className="text-red-500 hover:text-red-700">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                   <div className="p-2 border-t border-slate-100 bg-slate-50/50 flex justify-between items-center">
@@ -3458,7 +3585,7 @@ export default function BillingPage() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleAddOpItem(SERVICE_CATALOG[1])}
+                      onClick={() => handleAddOpItem(SERVICE_CATALOG[0])}
                       className="h-6 text-[10px] font-bold text-blue-700 border-blue-300 hover:bg-blue-50 gap-1"
                     >
                       + Add New Service Row
@@ -3800,10 +3927,63 @@ export default function BillingPage() {
 
               {opBillingSubTab === "Outstanding" && (
                 <div className="p-4 space-y-3">
-                  <div className="text-xs font-bold text-slate-700">Previous Invoices & Balance History</div>
-                  <div className="border rounded-lg p-4 bg-slate-50 text-xs text-slate-600">
-                    No overdue unpaid invoices for this patient. Account is clean.
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-bold text-slate-700">Previous Invoices & Balance History</div>
+                    {opPatientOutstandingInvoices.length > 0 && (
+                      <Badge className="bg-red-100 text-red-700 border-red-200">
+                        {opPatientOutstandingInvoices.length} Outstanding Bill(s) Found
+                      </Badge>
+                    )}
                   </div>
+
+                  {opPatientOutstandingInvoices.length === 0 ? (
+                    <div className="border rounded-lg p-4 bg-slate-50 text-xs text-slate-600">
+                      No overdue unpaid invoices for this patient. Account is clean.
+                    </div>
+                  ) : (
+                    <div className="border rounded-lg overflow-hidden bg-white shadow-2xs">
+                      <table className="w-full text-xs text-left">
+                        <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-[10px]">
+                          <tr>
+                            <th className="px-3 py-2">Invoice #</th>
+                            <th className="px-3 py-2">Date</th>
+                            <th className="px-3 py-2">Company / Payer</th>
+                            <th className="px-3 py-2 text-right">Net Amount</th>
+                            <th className="px-3 py-2 text-right">Paid Amount</th>
+                            <th className="px-3 py-2 text-right text-red-600">Outstanding Balance</th>
+                            <th className="px-3 py-2 text-center">Status</th>
+                            <th className="px-3 py-2 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium">
+                          {opPatientOutstandingInvoices.map((inv) => (
+                            <tr key={inv.id} className="hover:bg-slate-50">
+                              <td className="px-3 py-2 font-mono font-bold text-blue-600">{inv.invoiceNo}</td>
+                              <td className="px-3 py-2 text-slate-500">{new Date(inv.date).toLocaleDateString("en-GB")}</td>
+                              <td className="px-3 py-2">{inv.company}</td>
+                              <td className="px-3 py-2 text-right font-mono">₹{inv.netAmt.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right font-mono text-emerald-600">₹{(inv.netAmt - inv.balance).toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right font-mono font-bold text-red-600">₹{inv.balance.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-center">
+                                <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">
+                                  {inv.status}
+                                </Badge>
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleOpenSettlement(inv)}
+                                  className="h-6 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white px-2 font-bold"
+                                >
+                                  Settle Bill
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -3996,7 +4176,18 @@ export default function BillingPage() {
                   />
                 </div>
                 {/* Notes Button */}
-                <Button className="h-6 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 shadow-sm rounded-sm">
+                <Button 
+                  type="button"
+                  onClick={() => {
+                    if (!ipBillingUhid.trim()) {
+                      toast.error("No IP Patient Selected", "Please select an IP patient (UHID/IP No) first to view or add notes.");
+                      setIsPatientSearchModalOpen(true);
+                      return;
+                    }
+                    setIsNotesModalOpen(true);
+                  }}
+                  className="h-6 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 shadow-sm rounded-sm cursor-pointer"
+                >
                   Notes
                 </Button>
               </div>
@@ -4005,12 +4196,27 @@ export default function BillingPage() {
               <div className="flex items-center gap-1.5">
                 <Button 
                   onClick={() => {
-                    toast.success("Discharge Processed", `Discharge cleared for IP Patient ${ipBillingUhid}`);
-                    setIpStatus("Discharged");
+                    if (!ipBillingUhid.trim()) {
+                      toast.error("No IP Patient Selected", "Please select an IP patient (IP No / UHID) before processing discharge.");
+                      setIsPatientSearchModalOpen(true);
+                      return;
+                    }
+                    const balance = ipNetPayable;
+                    if (balance < 0) {
+                      setIpDischargeMode("refund");
+                      setIpDischargeSplitRows([{ mode: "Cash", amount: Math.abs(balance), refNo: "" }]);
+                    } else if (ipBillingPayer && !ipBillingPayer.includes("CASH") && !ipBillingPayer.includes("Direct")) {
+                      setIpDischargeMode("tpa_credit");
+                      setIpDischargeSplitRows([{ mode: "TPA Claim", amount: balance, refNo: "" }]);
+                    } else {
+                      setIpDischargeMode("pay_now");
+                      setIpDischargeSplitRows([{ mode: "Cash", amount: Math.max(0, balance), refNo: "" }]);
+                    }
+                    setIsIpDischargeModalOpen(true);
                   }}
                   variant="outline" 
                   size="sm" 
-                  className="h-6 text-[10px] bg-white border-blue-200 text-blue-800 font-bold px-3 hover:bg-blue-50"
+                  className="h-6 text-[10px] bg-white border-blue-200 text-blue-800 font-bold px-3 hover:bg-blue-50 cursor-pointer"
                 >
                   Discharge
                 </Button>
@@ -4945,6 +5151,133 @@ export default function BillingPage() {
         )}
       </div>
 
+      {/* ─── MODAL 0: PATIENT NOTES & BILLING FLAGS ────────────────────────── */}
+      {isNotesModalOpen && activePatientNotesUhid && (() => {
+        const currentPatientName = (activeTab === "IP Billing" ? findPatientByUhid(activePatientNotesUhid)?.fullName : opBillingPatientInfo?.name) || "";
+        const notesList = patientNotesMap[activePatientNotesUhid] || [];
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[85vh]">
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-[#cee6f8]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 rounded-md bg-white text-blue-700 shadow-2xs">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-800 text-sm">Patient Notes & Billing Flags</h3>
+                    <p className="text-[11px] text-slate-600 font-medium">
+                      UHID: <span className="font-mono font-bold text-blue-700">{activePatientNotesUhid}</span> {currentPatientName ? `(${currentPatientName})` : ""}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsNotesModalOpen(false)}
+                  className="p-1 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Form to Add Note */}
+              <div className="p-4 bg-slate-50 border-b border-slate-200 space-y-3">
+                <div className="text-xs font-bold text-slate-700 uppercase tracking-wide">Add New Patient Note / Flag</div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-1">
+                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Category</Label>
+                    <Select value={newNoteCategory} onValueChange={(val: any) => setNewNoteCategory(val)}>
+                      <SelectTrigger className="h-7 text-xs bg-white border-slate-300">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Billing Flag">Billing Flag</SelectItem>
+                        <SelectItem value="Clinical Alert">Clinical Alert</SelectItem>
+                        <SelectItem value="General Note">General Note</SelectItem>
+                        <SelectItem value="Special Instruction">Special Instruction</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-2">
+                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Note Description</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={newNoteText}
+                        onChange={(e) => setNewNoteText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && newNoteText.trim()) {
+                            handleAddNote();
+                          }
+                        }}
+                        placeholder="Enter billing flag or clinical note..."
+                        className="h-7 text-xs bg-white border-slate-300 flex-1"
+                      />
+                      <Button
+                        size="sm"
+                        onClick={handleAddNote}
+                        className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 shrink-0"
+                      >
+                        + Add
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes List */}
+              <div className="p-4 overflow-y-auto flex-1 space-y-2 max-h-[350px]">
+                {notesList.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-500 font-medium">
+                    No notes created for this patient yet. Use the input box above to add a new note.
+                  </div>
+                ) : (
+                  notesList.map((note) => (
+                    <div key={note.id} className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs space-y-1.5 hover:border-blue-300 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <Badge className={`text-[10px] px-2 py-0.5 font-bold ${
+                          note.category === "Billing Flag" ? "bg-amber-100 text-amber-800 border-amber-300" :
+                          note.category === "Clinical Alert" ? "bg-red-100 text-red-800 border-red-300" :
+                          note.category === "Special Instruction" ? "bg-purple-100 text-purple-800 border-purple-300" :
+                          "bg-blue-100 text-blue-800 border-blue-300"
+                        }`}>
+                          {note.category}
+                        </Badge>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                          <span>By {note.author}</span>
+                          <span>•</span>
+                          <span>{note.createdAt}</span>
+                          <button
+                            onClick={() => handleRemoveNote(activePatientNotesUhid, note.id)}
+                            className="text-slate-400 hover:text-red-600 p-0.5 rounded cursor-pointer transition-colors"
+                            title="Delete note"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-700 font-medium leading-relaxed">{note.text}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsNotesModalOpen(false)}
+                  className="h-7 text-xs font-bold px-4"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ─── MODAL 1: SETTLEMENT / SPLIT RECEIPT DIALOG ────────────────────── */}
       {isSettleModalOpen && selectedInvoice && (() => {
         const isRefund = selectedInvoice.status === "Refundable" || selectedInvoice.balance < 0;
@@ -5132,11 +5465,23 @@ export default function BillingPage() {
             </div>
 
             <div className="p-8 space-y-6 overflow-y-auto bg-white text-slate-800 text-xs">
-              {/* Header Letterhead */}
-              <div className="text-center border-b pb-4 space-y-1">
-                <h2 className="text-xl font-black tracking-tight text-blue-900">CMK HEALTHCARE PVT. LTD.</h2>
-                <p className="text-slate-500 font-medium">12, Main Healthcare Boulevard, Institutional Area, Delhi - 110001</p>
-                <p className="text-slate-500 font-mono text-[11px]">GSTIN: 07AAAAA0000A1Z5 | Phone: +91 11 4567 8900</p>
+              {/* Header Letterhead matching Registration Print Header */}
+              <div className="flex justify-between items-start border-b border-slate-300 pb-4 mb-2">
+                {/* Logo on the left */}
+                <div className="h-16 flex items-center justify-center">
+                  <img 
+                    src={`${window.location.origin}/cmk-logo.png`} 
+                    alt="CMK Healthcare" 
+                    className="h-full object-contain" 
+                  />
+                </div>
+                {/* Clinic Details on the right side corner */}
+                <div className="leading-tight text-right text-slate-800">
+                  <h1 className="font-extrabold text-[13px] uppercase text-slate-900 tracking-wide">CMK HEALTHCARE PVT. LTD.</h1>
+                  <p className="text-[10px] text-slate-600 font-medium">M 158/5, Chittaranjan Park, New Delhi</p>
+                  <p className="text-[10px] text-slate-600 font-medium">Phone: 011-41552233, 88000200 | Fax:</p>
+                  <p className="text-[10px] text-slate-600 font-medium">Email: info@curemyknee.com | WebSite: www.curemyknee.com</p>
+                </div>
               </div>
 
               {/* Bill & Patient Details */}
@@ -5217,10 +5562,7 @@ export default function BillingPage() {
               </div>
 
               {/* Signature Lines */}
-              <div className="flex justify-between items-end pt-12 text-[11px] text-slate-500">
-                <div>
-                  <div className="border-t border-slate-300 w-36 pt-1 text-center font-bold">Patient Signature</div>
-                </div>
+              <div className="flex justify-end items-end pt-12 text-[11px] text-slate-500">
                 <div>
                   <div className="border-t border-slate-300 w-44 pt-1 text-center font-bold">Authorized Cashier</div>
                 </div>
@@ -5231,13 +5573,330 @@ export default function BillingPage() {
               <Button variant="outline" size="sm" onClick={() => setPrintInvoiceData(null)}>
                 Close
               </Button>
-              <Button size="sm" className="gap-1 font-bold bg-blue-600 hover:bg-blue-700 text-white" onClick={() => window.print()}>
+              <Button size="sm" className="gap-1 font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer" onClick={() => handlePrintInvoice?.()}>
                 <Printer className="h-4 w-4" /> Print Document
               </Button>
             </div>
           </div>
+
+          {/* Hidden Printable Invoice Element for Clean Printing */}
+          <div className="hidden">
+            <BillingInvoicePrint ref={printInvoiceRef} invoice={printInvoiceData} />
+          </div>
         </div>
       )}
+
+      {/* ─── MODAL 2.5: IP DISCHARGE & FINANCIAL CLEARANCE MODAL ───────────── */}
+      {isIpDischargeModalOpen && ipBillingUhid.trim() && (() => {
+        const patientName = ipBillingPatientInfo?.name || `IP Patient ${ipBillingUhid}`;
+        const netPayable = ipNetPayable;
+
+        // Calculate sum of split payments entered
+        const totalSplitAmount = ipDischargeSplitRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+        const remainingDue = Math.max(0, netPayable - totalSplitAmount);
+
+        const handleAddSplitRow = () => {
+          setIpDischargeSplitRows([
+            ...ipDischargeSplitRows,
+            { mode: "UPI / QR", amount: remainingDue > 0 ? remainingDue : 0, refNo: "" }
+          ]);
+        };
+
+        const handleRemoveSplitRow = (index: number) => {
+          if (ipDischargeSplitRows.length <= 1) return;
+          setIpDischargeSplitRows(ipDischargeSplitRows.filter((_, i) => i !== index));
+        };
+
+        const handleSplitRowChange = (index: number, field: "mode" | "amount" | "refNo", val: any) => {
+          const updated = [...ipDischargeSplitRows];
+          updated[index] = { ...updated[index], [field]: val };
+          setIpDischargeSplitRows(updated);
+        };
+
+        const handleConfirmDischarge = async () => {
+          try {
+            if (ipDischargeMode === "pay_now" && netPayable > 0) {
+              if (totalSplitAmount < netPayable) {
+                toast.error("Incomplete Settlement", `Total collected payments (₹${totalSplitAmount}) is less than net bill payable (₹${netPayable}). Please add remaining ₹${remainingDue.toFixed(2)}.`);
+                return;
+              }
+              // Save all split payment rows
+              const formattedRows = ipDischargeSplitRows.map(r => ({
+                mode: r.mode,
+                amount: Number(r.amount) || 0,
+                balance: 0,
+                date: new Date().toLocaleDateString("en-GB"),
+                bankName: "",
+                beneficiaryName: "",
+                refNo: r.refNo,
+                description: `Discharge Settlement (${r.mode})`,
+                cardSwipingValue: 0
+              }));
+              await handleSaveIpBilling(false);
+            } else if (ipDischargeMode === "tpa_credit" && !ipDischargeRefNo.trim()) {
+              toast.error("TPA Claim Ref Required", "Please enter TPA Pre-authorization / Claim Clearance Ref No.");
+              return;
+            } else if (ipDischargeMode === "credit_approval" && !ipDischargeNotes.trim()) {
+              toast.error("Override Notes Required", "Please enter Admin / Medical Director authorization notes.");
+              return;
+            }
+
+            setIpStatus("Discharged");
+            setIsIpDischargeModalOpen(false);
+            toast.success("Discharge Cleared Successfully", `${patientName} (IP: ${ipBillingUhid}) has been marked as Discharged.`);
+          } catch (err: any) {
+            toast.error("Discharge Failed", err.message || "Something went wrong.");
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[92vh]">
+              {/* Header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-900 text-white flex-shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                    <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-white tracking-wide uppercase">IP Patient Discharge & Financial Clearance</h3>
+                    <p className="text-xs text-slate-300 font-mono">
+                      Patient: <span className="font-bold text-white">{patientName}</span> | UHID: <span className="font-bold text-blue-300">{ipBillingUhid}</span>
+                    </p>
+                  </div>
+                </div>
+                <button onClick={() => setIsIpDischargeModalOpen(false)} className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 space-y-5 overflow-y-auto bg-slate-50 flex-1 text-xs">
+                
+                {/* Financial Summary Card */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wide flex justify-between items-center">
+                    <span className="flex items-center gap-1.5"><ReceiptText className="w-4 h-4 text-blue-600" /> Financial Settlement Breakdown</span>
+                    <Badge className={netPayable <= 0 ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-mono" : "bg-red-100 text-red-800 border-red-300 font-mono text-xs px-2.5 py-0.5"}>
+                      {netPayable <= 0 ? "Balance Settled (₹0.00)" : `Net Payable: ₹${netPayable.toFixed(2)}`}
+                    </Badge>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-center font-mono">
+                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                      <span className="block text-[10px] text-slate-500 font-sans uppercase font-bold">Gross Inpatient Bill</span>
+                      <span className="font-bold text-sm text-slate-900">₹{ipGrossTotal.toFixed(2)}</span>
+                    </div>
+                    <div className="p-2.5 bg-amber-50/50 rounded-lg border border-amber-200">
+                      <span className="block text-[10px] text-amber-700 font-sans uppercase font-bold">Less Discount</span>
+                      <span className="font-bold text-sm text-amber-800">₹{(Number(ipDiscountAmt) || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="p-2.5 bg-emerald-50/50 rounded-lg border border-emerald-200">
+                      <span className="block text-[10px] text-emerald-700 font-sans uppercase font-bold">Advance Deposit</span>
+                      <span className="font-bold text-sm text-emerald-800">₹{(Number(ipAdvanceAdjusted) || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-300">
+                      <span className="block text-[10px] text-blue-700 font-sans uppercase font-extrabold">Net Payable Balance</span>
+                      <span className="font-extrabold text-sm text-blue-900">₹{netPayable.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Clearance Mode Selection */}
+                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wide">Select Discharge Clearance Method</div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <div 
+                      onClick={() => setIpDischargeMode("pay_now")}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "pay_now" ? "bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
+                    >
+                      <div className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
+                        <DollarSign className="w-4 h-4 text-emerald-600" /> Full Settlement
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight">Collect cash/card/UPI payments & settle bill</p>
+                    </div>
+
+                    <div 
+                      onClick={() => setIpDischargeMode("tpa_credit")}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "tpa_credit" ? "bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
+                    >
+                      <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-blue-600" /> TPA / Insurance Claim
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight">Mark balance as TPA corporate receivable</p>
+                    </div>
+
+                    <div 
+                      onClick={() => setIpDischargeMode("credit_approval")}
+                      className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "credit_approval" ? "bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
+                    >
+                      <div className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 text-amber-600" /> Credit Approval
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight">Promissory note / Admin override</p>
+                    </div>
+                  </div>
+
+                  {/* Mode Form Fields: Split Payments */}
+                  {ipDischargeMode === "pay_now" && (
+                    <div className="pt-2 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 text-xs uppercase tracking-wide">Multi-Mode Payment Collection</span>
+                        <Button 
+                          type="button"
+                          onClick={handleAddSplitRow}
+                          size="xs"
+                          className="h-6 text-[11px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3" /> Add Payment Mode
+                        </Button>
+                      </div>
+
+                      {/* Payment Rows Table */}
+                      <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-100 border-b border-slate-200 font-bold text-[10px] uppercase text-slate-600">
+                            <tr>
+                              <th className="px-3 py-2">Payment Mode</th>
+                              <th className="px-3 py-2 w-44">Collection Amount (₹)</th>
+                              <th className="px-3 py-2">Ref / Transaction No.</th>
+                              <th className="px-3 py-2 w-10 text-center">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {ipDischargeSplitRows.map((row, idx) => (
+                              <tr key={idx} className="bg-white">
+                                <td className="p-2">
+                                  <Select value={row.mode} onValueChange={(val) => handleSplitRowChange(idx, "mode", val)}>
+                                    <SelectTrigger className="h-8 text-xs bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="Cash">Cash</SelectItem>
+                                      <SelectItem value="UPI / QR">UPI / QR Code</SelectItem>
+                                      <SelectItem value="Credit Card">Credit Card</SelectItem>
+                                      <SelectItem value="Debit Card">Debit Card</SelectItem>
+                                      <SelectItem value="Net Banking">Net Banking</SelectItem>
+                                      <SelectItem value="Cheque">Cheque</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </td>
+                                <td className="p-2">
+                                  <Input 
+                                    type="number"
+                                    value={row.amount}
+                                    onChange={(e) => handleSplitRowChange(idx, "amount", Number(e.target.value))}
+                                    className="h-8 text-xs font-mono font-bold bg-white border-slate-300 text-right"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <Input 
+                                    type="text"
+                                    value={row.refNo}
+                                    onChange={(e) => handleSplitRowChange(idx, "refNo", e.target.value)}
+                                    placeholder="Optional Ref / Txn No..."
+                                    className="h-8 text-xs bg-white border-slate-300"
+                                  />
+                                </td>
+                                <td className="p-2 text-center">
+                                  <button 
+                                    type="button"
+                                    disabled={ipDischargeSplitRows.length <= 1}
+                                    onClick={() => handleRemoveSplitRow(idx)}
+                                    className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50 disabled:opacity-30 cursor-pointer"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Payment Total Status Bar */}
+                      <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg border border-slate-200 font-mono text-xs">
+                        <div className="flex items-center gap-4">
+                          <span>Total Collected: <strong className="text-emerald-700 font-bold">₹{totalSplitAmount.toFixed(2)}</strong></span>
+                          <span>Net Bill Payable: <strong>₹{netPayable.toFixed(2)}</strong></span>
+                        </div>
+                        <div>
+                          {remainingDue <= 0 ? (
+                            <Badge className="bg-emerald-600 text-white font-bold">Fully Settled (100%)</Badge>
+                          ) : (
+                            <Badge className="bg-red-600 text-white font-bold">Remaining Due: ₹{remainingDue.toFixed(2)}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {ipDischargeMode === "tpa_credit" && (
+                    <div className="p-3 bg-blue-50/60 rounded-lg border border-blue-200 grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-[10px] font-bold text-blue-900 uppercase">TPA Pre-authorization Claim Ref No. *</Label>
+                        <Input 
+                          type="text"
+                          value={ipDischargeRefNo}
+                          onChange={(e) => setIpDischargeRefNo(e.target.value)}
+                          placeholder="Enter TPA approval letter ref no..."
+                          className="h-8 text-xs bg-white border-blue-300 font-mono"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-bold text-blue-900 uppercase">Insurance Provider / TPA Name</Label>
+                        <Input 
+                          type="text"
+                          value={ipBillingPayer || "Star Health Insurance"}
+                          readOnly
+                          className="h-8 text-xs bg-slate-100 border-blue-200 font-semibold"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {ipDischargeMode === "credit_approval" && (
+                    <div className="p-3 bg-amber-50/60 rounded-lg border border-amber-200 space-y-2">
+                      <div>
+                        <Label className="text-[10px] font-bold text-amber-900 uppercase">Admin / Manager Authorization Notes *</Label>
+                        <Input 
+                          type="text"
+                          value={ipDischargeNotes}
+                          onChange={(e) => setIpDischargeNotes(e.target.value)}
+                          placeholder="Enter credit waiver reason or promissory note ref..."
+                          className="h-8 text-xs bg-white border-amber-300"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Department Clearance Badges */}
+                <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 text-[11px] font-bold text-slate-700">
+                  <span>Department Clearance Status:</span>
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">Doctor Summary: Cleared</Badge>
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">Nursing Bed: Cleared</Badge>
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">Pharmacy: Cleared</Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-between items-center">
+                <Button variant="outline" size="sm" onClick={() => setIsIpDischargeModalOpen(false)} className="h-8 text-xs font-bold px-4">
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleConfirmDischarge}
+                  className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-5 shadow-sm gap-1 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Confirm & Complete Discharge Clearance
+                </Button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ─── MODAL 3: PATIENT SEARCH MODAL ─────────────────────────────────── */}
       {isPatientSearchModalOpen && (
@@ -5403,10 +6062,10 @@ export default function BillingPage() {
                 <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
                   {advIsLoading ? (
                     <tr><td colSpan={11} className="p-8 text-center text-slate-500 font-bold">Loading patients...</td></tr>
-                  ) : advPatients.length === 0 ? (
-                    <tr><td colSpan={11} className="p-8 text-center text-slate-500 font-bold">No patients found.</td></tr>
+                  ) : displayAdvPatients.length === 0 ? (
+                    <tr><td colSpan={11} className="p-8 text-center text-slate-500 font-bold">No matching patients found.</td></tr>
                   ) : (
-                    advPatients.map((p, idx) => {
+                    displayAdvPatients.map((p, idx) => {
                       const selectThisPatient = () => {
                         if (activeTab === "OP Billing") setOpBillingUhid(p.uhid);
                         else if (activeTab === "IP Billing") setIpBillingUhid(p.uhid);
@@ -5465,7 +6124,7 @@ export default function BillingPage() {
                 <Button disabled={advPage >= Math.ceil(advTotalCount / 10)} onClick={() => fetchAdvancedPatients(Math.ceil(advTotalCount / 10))} variant="outline" size="xs" className="h-6 w-8 font-extrabold">&gt;&gt;</Button>
               </div>
               <div className="text-slate-600 font-bold">
-                Total Patients: <span className="text-blue-600">{advTotalCount}</span>
+                Total Patients: <span className="text-blue-600">{displayAdvPatients.length}</span>
               </div>
             </div>
 

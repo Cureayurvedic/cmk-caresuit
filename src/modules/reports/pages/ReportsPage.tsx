@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   BarChart3,
   Calendar,
@@ -53,75 +53,17 @@ import {
   OutstandingReportData,
   RefundsCreditReportData
 } from "@/api/reportsApi";
-
-// ─── REPORT TREE STRUCTURE ───────────────────────────────────────────────────
-interface ReportTreeItem {
-  id: string;
-  name: string;
-  category: "Registration" | "ATD" | "Billing";
-  description: string;
-}
-
-interface ReportCategoryGroup {
-  category: "Registration" | "ATD" | "Billing";
-  icon: any;
-  items: ReportTreeItem[];
-}
-
-const REPORT_TREE: ReportCategoryGroup[] = [
-  {
-    category: "Registration",
-    icon: Users,
-    items: [
-      { id: "Registration List", name: "Registration List", category: "Registration", description: "Comprehensive list of registered outpatients and inpatients" },
-      { id: "Registration Report", name: "Registration Report", category: "Registration", description: "Daily & monthly patient registration volume analysis" },
-    ],
-  },
-  {
-    category: "ATD",
-    icon: Building2,
-    items: [
-      { id: "Admission Form", name: "Admission Form", category: "ATD", description: "IP admission summaries, demographic intake and initial orders" },
-      { id: "Admission Report", name: "Admission Report", category: "ATD", description: "Inpatient admission census, doctor and ward distributions" },
-      { id: "Patient Transfer", name: "Patient Transfer", category: "ATD", description: "Bed and ward transfer logs with timestamps and reasons" },
-      { id: "Admitted List As On Date", name: "Admitted List As On Date", category: "ATD", description: "Live active in-hospital census as of selected date" },
-      { id: "Discharge Report", name: "Discharge Report", category: "ATD", description: "Discharged patient statistics, average length of stay" },
-      { id: "Bed Occupancy Details", name: "Bed Occupancy Details", category: "ATD", description: "Ward-wise bed utilization, vacancy and occupancy rates" },
-    ],
-  },
-  {
-    category: "Billing",
-    icon: DollarSign,
-    items: [
-      { id: "Cash Collection", name: "Cash Collection", category: "Billing", description: "Daily counter receipts breakdown by cash, card, UPI and cheque" },
-      { id: "Credit Collection", name: "Credit Collection", category: "Billing", description: "Insurance, TPA and corporate company settlement receipts" },
-      { id: "OP Visit", name: "OP Visit", category: "Billing", description: "Outpatient consultations, doctor fees and department traffic" },
-      { id: "Bill Register", name: "Bill Register", category: "Billing", description: "Master invoice log for all OP and IP bills with settlement status" },
-      { id: "Deposit Exhaust", name: "Deposit Exhaust", category: "Billing", description: "Advance deposit consumption against active inpatient bills" },
-      { id: "InvestigationWise Census", name: "InvestigationWise Census", category: "Billing", description: "Lab, Radiology and Diagnostics service utilization counts" },
-      { id: "Outstanding", name: "Outstanding", category: "Billing", description: "Aging ledger of unpaid balances from patients and payers" },
-      { id: "Discharge Without Billing", name: "Discharge Without Billing", category: "Billing", description: "Discharged patients with unsettled final bills" },
-      { id: "Discount Report", name: "Discount Report", category: "Billing", description: "Authorized billing waivers, concessions and courtesy discounts" },
-      { id: "Revenue", name: "Revenue", category: "Billing", description: "Consolidated hospital gross, net revenue by department/doctor" },
-      { id: "IP TAT", name: "IP TAT", category: "Billing", description: "Inpatient billing turnaround time from discharge order to final bill" },
-      { id: "Bill Cancelled", name: "Bill Cancelled", category: "Billing", description: "Cancelled invoice audit trail with authorization reasons" },
-      { id: "Refund", name: "Refund", category: "Billing", description: "Patient deposit and excess payment refund disbursement log" },
-      { id: "Credit Note Report", name: "Credit Note Report", category: "Billing", description: "Credit notes issued with authorized reasons and adjustments" },
-      { id: "Advance Collection Reports", name: "Advance Collection Reports", category: "Billing", description: "Patient advance receipts, adjusted balances and deposits" },
-    ],
-  },
-];
+import { useReports, REPORT_TREE } from "@/contexts/ReportsContext";
 
 export default function ReportsPage() {
-  // ─── Navigation State ────────────────────────────────────────────────────────
-  const [activeCategory, setActiveCategory] = useState<"Registration" | "ATD" | "Billing">("Billing");
-  const [selectedReportId, setSelectedReportId] = useState<string>("Revenue");
-  const [collapsedCategories, setCollapsedCategories] = useState<{ [key: string]: boolean }>({
-    Registration: false,
-    ATD: false,
-    Billing: false,
-  });
-  const [sidebarFilterSearch, setSidebarFilterSearch] = useState("");
+  // ─── Navigation Context ──────────────────────────────────────────────────────
+  const {
+    activeCategory,
+    setActiveCategory,
+    selectedReportId,
+    setSelectedReportId,
+  } = useReports();
+
 
   // ─── Filter Parameters State ─────────────────────────────────────────────────
   const [fromDate, setFromDate] = useState<string>(() => {
@@ -150,10 +92,6 @@ export default function ReportsPage() {
   // ─── Print Modal State ───────────────────────────────────────────────────────
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
-  // Toggle Category Collapsing in Sidebar
-  const toggleCategory = (cat: string) => {
-    setCollapsedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
-  };
 
   // ─── FETCH REPORT FROM API ───────────────────────────────────────────────────
   const fetchReportData = useCallback(async () => {
@@ -245,16 +183,6 @@ export default function ReportsPage() {
     else if (selectedReportId === "Admission Report") setGroupByDimension("Ward");
   }, [selectedReportId]);
 
-  // Filter tree items by search
-  const filteredTree = useMemo(() => {
-    if (!sidebarFilterSearch.trim()) return REPORT_TREE;
-    return REPORT_TREE.map((grp) => ({
-      ...grp,
-      items: grp.items.filter((it) =>
-        it.name.toLowerCase().includes(sidebarFilterSearch.toLowerCase())
-      ),
-    })).filter((grp) => grp.items.length > 0);
-  }, [sidebarFilterSearch]);
 
   // Export to CSV
   const handleExportCSV = () => {
@@ -305,126 +233,8 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-56px)] bg-slate-100 overflow-hidden font-sans text-slate-800">
+    <div className="flex flex-col flex-1 h-[calc(100vh-56px)] bg-slate-50 overflow-hidden font-sans text-slate-800">
       
-      {/* ─── LEFT REPORTS TREE SIDEBAR (MATCHING SCREENSHOT) ────────────────── */}
-      <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col flex-shrink-0 text-slate-300 select-none">
-        
-        {/* Sidebar Header */}
-        <div className="p-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-blue-400" />
-            <span className="font-extrabold text-xs text-white uppercase tracking-wider">Reports Center</span>
-          </div>
-          <Badge variant="outline" className="bg-blue-900/40 text-blue-300 border-blue-700/50 text-[10px] h-5 font-mono">
-            v50.24
-          </Badge>
-        </div>
-
-        {/* Quick Search inside Sidebar */}
-        <div className="p-2 border-b border-slate-800/80 bg-slate-900/50">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Search reports..."
-              value={sidebarFilterSearch}
-              onChange={(e) => setSidebarFilterSearch(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-md pl-8 pr-2 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Tree Menu List */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 scrollbar-thin scrollbar-thumb-slate-700">
-          {filteredTree.map((group) => {
-            const isCollapsed = collapsedCategories[group.category];
-            const Icon = group.icon;
-            const isCategoryActive = activeCategory === group.category;
-
-            return (
-              <div key={group.category} className="space-y-0.5">
-                {/* Category Header */}
-                <button
-                  onClick={() => {
-                    setActiveCategory(group.category);
-                    toggleCategory(group.category);
-                  }}
-                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-bold transition-colors ${
-                    isCategoryActive
-                      ? "bg-blue-950/60 text-blue-300"
-                      : "hover:bg-slate-800/60 text-slate-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-slate-400 font-black">
-                      {isCollapsed ? "+" : "−"}
-                    </span>
-                    <Icon className={`h-3.5 w-3.5 ${isCategoryActive ? "text-blue-400" : "text-slate-400"}`} />
-                    <span>{group.category}</span>
-                  </div>
-                  <Badge className="bg-slate-800 text-[10px] text-slate-400 border-none px-1.5 h-4">
-                    {group.items.length}
-                  </Badge>
-                </button>
-
-                {/* Tree Items */}
-                {!isCollapsed && (
-                  <div className="pl-4 ml-2 border-l border-slate-800 space-y-0.5 mt-0.5">
-                    {group.items.map((item) => {
-                      const isSelected = selectedReportId === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setSelectedReportId(item.id);
-                            setActiveCategory(item.category);
-                          }}
-                          className={`w-full flex items-center justify-between px-2 py-1.5 rounded text-left text-xs font-medium transition-all ${
-                            isSelected
-                              ? "bg-blue-600 text-white font-bold shadow-xs translate-x-1"
-                              : "hover:bg-slate-800/40 text-slate-400 hover:text-slate-200"
-                          }`}
-                        >
-                          <span className="truncate pr-1">• {item.name}</span>
-                          {isSelected && <ChevronRight className="h-3 w-3 text-white flex-shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Sidebar Bottom Domain Module Switcher */}
-        <div className="p-2 border-t border-slate-800 bg-slate-950/70 space-y-1">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-2 py-1">
-            Report Modules
-          </div>
-          <div className="grid grid-cols-3 gap-1">
-            {(["Registration", "ATD", "Billing"] as const).map((cat) => (
-              <button
-                key={cat}
-                onClick={() => {
-                  setActiveCategory(cat);
-                  const firstItem = REPORT_TREE.find((g) => g.category === cat)?.items[0];
-                  if (firstItem) setSelectedReportId(firstItem.id);
-                }}
-                className={`px-2 py-1.5 rounded text-[11px] font-bold text-center transition-colors truncate ${
-                  activeCategory === cat
-                    ? "bg-blue-600 text-white shadow-2xs"
-                    : "bg-slate-800/80 hover:bg-slate-800 text-slate-400 hover:text-slate-200"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* ─── MAIN REPORT VIEW & PARAMETER PANEL ─────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden bg-slate-50">
         
