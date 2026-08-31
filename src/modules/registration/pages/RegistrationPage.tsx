@@ -6,7 +6,7 @@ import { z } from "zod";
 import {
   Save, Printer, Plus, Copy, Search, Upload, Trash2, Calendar,
   User, Phone, AlertCircle, Shield, CreditCard,
-  Users, FileText, Tag, ChevronDown, Sliders, Loader2, FileSpreadsheet, Check
+  Users, FileText, Tag, ChevronDown, Sliders, Loader2, FileSpreadsheet, Check, Building2
 } from "lucide-react";
 import { format } from "date-fns";
 import { Country, State, City } from "country-state-city";
@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createPatient, getPatientById, updatePatient, getPatients, PatientData } from "@/api/patientApi";
+import { getSettingsItems } from "@/api/settingsApi";
+import { useBranch } from "@/contexts/BranchContext";
 import ImportPatientsModal from "../components/ImportPatientsModal";
 import { useToast } from "@/components/ui/toast-notification";
 import { useReactToPrint } from "react-to-print";
@@ -577,6 +579,7 @@ export default function RegistrationPage() {
     documentTitle: "PatientRegistrationDetails"
   });
 
+  const { activeBranch } = useBranch();
   const [dynamicProviders, setDynamicProviders] = useState<string[]>(PROVIDERS);
   const [dynamicLeadSources, setDynamicLeadSources] = useState<string[]>(LEAD_SOURCES);
   const [dynamicReligions, setDynamicReligions] = useState<string[]>(RELIGIONS);
@@ -628,13 +631,23 @@ export default function RegistrationPage() {
       localStorage.setItem("cmk_occupations", JSON.stringify(OCCUPATIONS));
     }
 
-    // Load Branches
-    const storedBranches = localStorage.getItem("cmk_hcf_branches");
-    if (storedBranches) {
-      try { setDynamicBranches(JSON.parse(storedBranches)); } catch (e) {}
-    } else {
-      localStorage.setItem("cmk_hcf_branches", JSON.stringify(HCF_OPTIONS));
-    }
+    // Load Branches dynamically from Application Settings -> HCF Branches
+    getSettingsItems("branches")
+      .then((res) => {
+        if (res.items && res.items.length > 0) {
+          const fetched = res.items.map((i) => i.value);
+          setDynamicBranches(fetched);
+          localStorage.setItem("cmk_hcf_branches", JSON.stringify(fetched));
+        }
+      })
+      .catch((err) => {
+        const storedBranches = localStorage.getItem("cmk_hcf_branches");
+        if (storedBranches) {
+          try { setDynamicBranches(JSON.parse(storedBranches)); } catch (e) {}
+        } else {
+          localStorage.setItem("cmk_hcf_branches", JSON.stringify(HCF_OPTIONS));
+        }
+      });
 
     // Load Corporate Companies
     const storedCompanies = localStorage.getItem("cmk_payer_companies");
@@ -977,6 +990,12 @@ export default function RegistrationPage() {
   const selectedStateName = watch("state");
 
   useEffect(() => {
+    if (!isEditing && activeBranch) {
+      setValue("hcf", activeBranch);
+    }
+  }, [activeBranch, isEditing, setValue]);
+
+  useEffect(() => {
     if (payerType === "direct") {
       setValue("payer", "CASH");
       setValue("sponsor", "");
@@ -1036,6 +1055,12 @@ export default function RegistrationPage() {
             className="h-8 w-36 text-xs bg-slate-50"
             readOnly
           />
+        </div>
+
+        {/* Active Branch Badge */}
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs font-bold text-blue-700 ml-2">
+          <Building2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+          <span>Branch: <strong className="font-extrabold text-blue-900">{activeBranch}</strong></span>
         </div>
 
         <div className="flex-1" />
@@ -2286,7 +2311,7 @@ export default function RegistrationPage() {
             regDate: watch("regDate") || new Date().toISOString(),
             name: watch("firstName") ? `${watch("title") || ""} ${watch("firstName")} ${watch("lastName") || ""}`.trim() : "",
             guardianName: watch("guardianName") || "",
-            genderAge: `${watch("gender") || ""} / ${watch("age") ? `${watch("age")} Y` : ""}`.trim(),
+            genderAge: `${watch("gender") || ""} / ${watch("age") ? `${watch("age")} Yr` : ""}`.trim(),
             maritalStatus: watch("maritalStatus") || "",
             religion: watch("religion") || "",
             aadhaarCard: watch("aadhaarCard") || "",
@@ -2294,6 +2319,8 @@ export default function RegistrationPage() {
             passportNo: watch("passportNo") || "",
             address: watch("address") || "",
             cityStateZip: `${watch("districtCity") || ""} - ${watch("pinCode") || ""}`.trim(),
+            city: watch("districtCity") || "",
+            pinCode: watch("pinCode") || "",
             mobile: watch("mobile") || "",
             altPhone: watch("altPhone") || "",
             emergencyName: watch("emergencyName") || "",

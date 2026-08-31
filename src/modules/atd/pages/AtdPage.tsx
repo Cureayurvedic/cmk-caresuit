@@ -13,7 +13,6 @@ import {
   LogOut,
   Sparkles,
   DollarSign,
-  UserPlus,
   ShieldCheck,
   ChevronRight,
   Filter,
@@ -36,8 +35,10 @@ import {
   Edit3,
   Lock,
   Wrench,
-  Bookmark
+  Bookmark,
+  UserPlus
 } from "lucide-react";
+import AddDoctorModal from "@/components/AddDoctorModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast-notification";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,7 @@ import {
 } from "@/api/atdApi";
 import { getPatients, PatientData } from "@/api/patientApi";
 import { getBedCategories, type BedCategoryData } from "@/api/bedCategoryApi";
+import { fetchDoctorsFromSettings, DEFAULT_DOCTORS } from "@/api/settingsApi";
 import { useNavigate } from "react-router-dom";
 
 // ─── DOCTOR OPTIONS FOR SELECTION DROPDOWNS ──────────────────────────────────
@@ -81,6 +83,7 @@ const DOCTOR_OPTIONS = [
 
 // ─── BED STATUS METRIC BADGE DEFINITIONS ─────────────────────────────────────
 const STATUS_CONFIGS = [
+  { key: "All", label: "All", bgClass: "bg-[#0284c7] hover:bg-[#0369a1] text-white", borderClass: "border-[#0369a1]" },
   { key: "Vacant", label: "Vacant", bgClass: "bg-[#5cb85c] hover:bg-[#4cae4c] text-white", borderClass: "border-[#4cae4c]" },
   { key: "Occupied", label: "Occupied", bgClass: "bg-[#d9534f] hover:bg-[#c9302c] text-white", borderClass: "border-[#d43f3a]" },
   { key: "House Keeping", label: "House Keeping", bgClass: "bg-[#f0ad4e] hover:bg-[#ec971f] text-white", borderClass: "border-[#eea236]" },
@@ -137,6 +140,33 @@ export default function AtdPage() {
     department: "Cardiology",
     remarks: "Cross-consultation required"
   });
+
+  const [dynamicDoctors, setDynamicDoctors] = useState<string[]>(DEFAULT_DOCTORS);
+  const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadDocs = async () => {
+      const docs = await fetchDoctorsFromSettings();
+      if (isMounted && docs && docs.length > 0) {
+        setDynamicDoctors(docs);
+      }
+    };
+    loadDocs();
+
+    const handleSettingsUpdate = (e: Event) => {
+      const customEvt = e as CustomEvent;
+      if (!customEvt.detail?.category || customEvt.detail.category === "doctors" || customEvt.detail.category === "providers") {
+        loadDocs();
+      }
+    };
+
+    window.addEventListener("cmk_settings_updated", handleSettingsUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("cmk_settings_updated", handleSettingsUpdate);
+    };
+  }, []);
 
   const [admissionUpdateForm, setAdmissionUpdateForm] = useState({
     billingCategory: "GENERAL",
@@ -757,6 +787,15 @@ export default function AtdPage() {
                 <Plus className="h-3.5 w-3.5" />
                 Add Bed
               </Button>
+
+              <Button
+                size="sm"
+                onClick={() => setIsAddDoctorModalOpen(true)}
+                className="h-7 text-xs font-black gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs ml-1 cursor-pointer"
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                + Create Doctor
+              </Button>
             </div>
           </div>
 
@@ -827,7 +866,16 @@ export default function AtdPage() {
           <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
             {STATUS_CONFIGS.map((cfg) => {
               let count = 0;
-              if (cfg.key === "Vacant") count = counts.vacant;
+              if (cfg.key === "All") {
+                count =
+                  counts.vacant +
+                  counts.occupied +
+                  counts.houseKeeping +
+                  counts.retain +
+                  counts.blocked +
+                  counts.underRepair +
+                  counts.stillOnBed;
+              } else if (cfg.key === "Vacant") count = counts.vacant;
               else if (cfg.key === "Occupied") count = counts.occupied;
               else if (cfg.key === "House Keeping") count = counts.houseKeeping;
               else if (cfg.key === "Retain") count = counts.retain;
@@ -1604,14 +1652,23 @@ export default function AtdPage() {
                       <span className="w-28 text-[11px] font-bold text-slate-600 whitespace-nowrap">Treating Consultant:</span>
                       <select
                         value={admitForm.treatingConsultant}
-                        onChange={(e) => setAdmitForm({ ...admitForm, treatingConsultant: e.target.value })}
+                        onChange={(e) => {
+                          if (e.target.value === "__CREATE_NEW_DOCTOR__") {
+                            setIsAddDoctorModalOpen(true);
+                          } else {
+                            setAdmitForm({ ...admitForm, treatingConsultant: e.target.value });
+                          }
+                        }}
                         className="h-7 flex-1 text-xs px-1.5 border border-slate-300 rounded bg-white font-semibold text-slate-800"
                       >
-                        {DOCTOR_OPTIONS.map((doc) => (
-                          <option key={doc.value} value={doc.value}>
-                            {doc.label}
+                        {dynamicDoctors.map((doc) => (
+                          <option key={doc} value={doc}>
+                            {doc}
                           </option>
                         ))}
+                        <option value="__CREATE_NEW_DOCTOR__" className="font-bold text-blue-600 bg-blue-50">
+                          + Create New Doctor...
+                        </option>
                       </select>
                     </div>
 
@@ -1619,14 +1676,23 @@ export default function AtdPage() {
                       <span className="w-28 text-[11px] font-bold text-slate-600 whitespace-nowrap">Admitting Doctor:</span>
                       <select
                         value={admitForm.admittingDoctor}
-                        onChange={(e) => setAdmitForm({ ...admitForm, admittingDoctor: e.target.value })}
+                        onChange={(e) => {
+                          if (e.target.value === "__CREATE_NEW_DOCTOR__") {
+                            setIsAddDoctorModalOpen(true);
+                          } else {
+                            setAdmitForm({ ...admitForm, admittingDoctor: e.target.value });
+                          }
+                        }}
                         className="h-7 flex-1 text-xs px-1.5 border border-slate-300 rounded bg-white font-semibold text-slate-800"
                       >
-                        {DOCTOR_OPTIONS.map((doc) => (
-                          <option key={doc.value} value={doc.value}>
-                            {doc.label}
+                        {dynamicDoctors.map((doc) => (
+                          <option key={doc} value={doc}>
+                            {doc}
                           </option>
                         ))}
+                        <option value="__CREATE_NEW_DOCTOR__" className="font-bold text-blue-600 bg-blue-50">
+                          + Create New Doctor...
+                        </option>
                       </select>
                     </div>
 
@@ -1634,15 +1700,24 @@ export default function AtdPage() {
                       <span className="w-28 text-[11px] font-bold text-slate-600 whitespace-nowrap">Secondary Doctor:</span>
                       <select
                         value={admitForm.secondaryDoctor}
-                        onChange={(e) => setAdmitForm({ ...admitForm, secondaryDoctor: e.target.value })}
+                        onChange={(e) => {
+                          if (e.target.value === "__CREATE_NEW_DOCTOR__") {
+                            setIsAddDoctorModalOpen(true);
+                          } else {
+                            setAdmitForm({ ...admitForm, secondaryDoctor: e.target.value });
+                          }
+                        }}
                         className="h-7 flex-1 text-xs px-1.5 border border-slate-300 rounded bg-white text-slate-600"
                       >
                         <option value="Select">-- Select Doctor --</option>
-                        {DOCTOR_OPTIONS.map((doc) => (
-                          <option key={doc.value} value={doc.value}>
-                            {doc.label}
+                        {dynamicDoctors.map((doc) => (
+                          <option key={doc} value={doc}>
+                            {doc}
                           </option>
                         ))}
+                        <option value="__CREATE_NEW_DOCTOR__" className="font-bold text-blue-600 bg-blue-50">
+                          + Create New Doctor...
+                        </option>
                       </select>
                     </div>
 
@@ -2660,17 +2735,26 @@ export default function AtdPage() {
                 <Label className="text-[11px] font-bold text-slate-700">New Primary Attending Doctor *</Label>
                 <Select
                   value={primaryDoctorForm.newDoctor}
-                  onValueChange={(val) => setPrimaryDoctorForm({ ...primaryDoctorForm, newDoctor: val })}
+                  onValueChange={(val) => {
+                    if (val === "__CREATE_NEW_DOCTOR__") {
+                      setIsAddDoctorModalOpen(true);
+                    } else {
+                      setPrimaryDoctorForm({ ...primaryDoctorForm, newDoctor: val });
+                    }
+                  }}
                 >
                   <SelectTrigger className="h-8 text-xs font-semibold text-slate-800 bg-white border-slate-300 mt-1">
                     <SelectValue placeholder="Select New Primary Doctor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DOCTOR_OPTIONS.map((doc) => (
-                      <SelectItem key={doc.value} value={doc.value}>
-                        {doc.label}
+                    {dynamicDoctors.map((doc) => (
+                      <SelectItem key={doc} value={doc}>
+                        {doc}
                       </SelectItem>
                     ))}
+                    <SelectItem value="__CREATE_NEW_DOCTOR__" className="font-bold text-blue-600 bg-blue-50 border-t border-slate-100">
+                      + Create New Doctor...
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2760,17 +2844,26 @@ export default function AtdPage() {
                 <Label className="text-[11px] font-bold text-slate-700">Secondary / Cross-Consultant Doctor *</Label>
                 <Select
                   value={secondaryDoctorForm.secondaryDoctor}
-                  onValueChange={(val) => setSecondaryDoctorForm({ ...secondaryDoctorForm, secondaryDoctor: val })}
+                  onValueChange={(val) => {
+                    if (val === "__CREATE_NEW_DOCTOR__") {
+                      setIsAddDoctorModalOpen(true);
+                    } else {
+                      setSecondaryDoctorForm({ ...secondaryDoctorForm, secondaryDoctor: val });
+                    }
+                  }}
                 >
                   <SelectTrigger className="h-8 text-xs font-semibold text-slate-800 bg-white border-slate-300 mt-1">
                     <SelectValue placeholder="Select Secondary Doctor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DOCTOR_OPTIONS.map((doc) => (
-                      <SelectItem key={doc.value} value={doc.value}>
-                        {doc.label}
+                    {dynamicDoctors.map((doc) => (
+                      <SelectItem key={doc} value={doc}>
+                        {doc}
                       </SelectItem>
                     ))}
+                    <SelectItem value="__CREATE_NEW_DOCTOR__" className="font-bold text-blue-600 bg-blue-50 border-t border-slate-100">
+                      + Create New Doctor...
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2870,17 +2963,26 @@ export default function AtdPage() {
                 <Label className="text-[11px] font-bold text-slate-700">Attending Doctor *</Label>
                 <Select
                   value={admissionUpdateForm.primaryDoctor}
-                  onValueChange={(val) => setAdmissionUpdateForm({ ...admissionUpdateForm, primaryDoctor: val })}
+                  onValueChange={(val) => {
+                    if (val === "__CREATE_NEW_DOCTOR__") {
+                      setIsAddDoctorModalOpen(true);
+                    } else {
+                      setAdmissionUpdateForm({ ...admissionUpdateForm, primaryDoctor: val });
+                    }
+                  }}
                 >
                   <SelectTrigger className="h-8 text-xs font-semibold text-slate-800 bg-white border-slate-300 mt-1">
                     <SelectValue placeholder="Select Attending Doctor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {DOCTOR_OPTIONS.map((doc) => (
-                      <SelectItem key={doc.value} value={doc.value}>
-                        {doc.label}
+                    {dynamicDoctors.map((doc) => (
+                      <SelectItem key={doc} value={doc}>
+                        {doc}
                       </SelectItem>
                     ))}
+                    <SelectItem value="__CREATE_NEW_DOCTOR__" className="font-bold text-blue-600 bg-blue-50 border-t border-slate-100">
+                      + Create New Doctor...
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2920,6 +3022,14 @@ export default function AtdPage() {
         </div>
       )}
 
+      {/* Quick Add Doctor Modal */}
+      <AddDoctorModal
+        isOpen={isAddDoctorModalOpen}
+        onClose={() => setIsAddDoctorModalOpen(false)}
+        onDoctorCreated={(newDoc) => {
+          setPrimaryDoctorForm((prev) => ({ ...prev, newDoctor: newDoc }));
+        }}
+      />
     </div>
   );
 }

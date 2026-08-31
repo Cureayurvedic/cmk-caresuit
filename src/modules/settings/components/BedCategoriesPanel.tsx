@@ -146,21 +146,21 @@ export default function BedCategoriesPanel() {
   };
 
   return (
-    <Card className="border border-slate-150 shadow-sm rounded-xl w-full">
-      <CardHeader className="p-6 pb-4 border-b border-slate-50 bg-slate-50/50 rounded-t-xl flex flex-row items-center justify-between">
+    <Card className="border border-slate-200/80 shadow-2xs rounded-xl w-full bg-white flex flex-col flex-1">
+      <CardHeader className="p-5 pb-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-base font-bold text-slate-800">Bed Categories</CardTitle>
           <CardDescription className="text-xs text-slate-500 mt-1">
             Manage ward types, daily tariffs, and auto-generate beds for the ATD module.
           </CardDescription>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} size="sm" className="h-9 text-xs gap-1.5 shadow-sm bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setIsAddModalOpen(true)} size="sm" className="h-9 text-xs gap-1.5 shadow-xs bg-blue-600 hover:bg-blue-700 font-bold">
           <Plus className="h-4 w-4" />
           Add Category
         </Button>
       </CardHeader>
 
-      <CardContent className="p-6 space-y-6">
+      <CardContent className="p-5 space-y-6 flex-1">
 
         {/* ── Error State ── */}
         {error && !loading && (

@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { Search, RefreshCw, HelpCircle, Settings, X, Loader2, User, Phone, Menu } from "lucide-react";
+import { Search, RefreshCw, HelpCircle, Settings, X, Loader2, User, Phone, Menu, Building2, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getPatients, PatientData } from "@/api/patientApi";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { useBranch } from "@/contexts/BranchContext";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/registration": { title: "Registration", subtitle: "Demographics — New Registration" },
@@ -23,6 +25,7 @@ export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toggleMobileSidebar } = useSidebar();
+  const { activeBranch, setActiveBranch, branchesList } = useBranch();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Global Header Search State
@@ -260,7 +263,48 @@ export default function Header() {
 
         <div className="w-px h-5 bg-slate-200 mx-1" />
 
-        <div className="flex items-center gap-2 cursor-pointer group">
+        {/* Global Active Branch Switcher */}
+        <div className="hidden sm:flex items-center gap-1.5 bg-blue-50/80 border border-blue-200/80 rounded-lg px-2.5 py-1">
+          <Building2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+          <div className="flex flex-col text-left">
+            <span className="text-[9px] font-extrabold uppercase text-blue-600 leading-none tracking-wider">Branch</span>
+            <Select
+              value={activeBranch}
+              onValueChange={(val) => {
+                if (val === "__create_branch__") {
+                  navigate("/settings?tab=branches");
+                } else {
+                  setActiveBranch(val);
+                }
+              }}
+            >
+              <SelectTrigger className="h-4 p-0 border-0 shadow-none bg-transparent text-xs font-black text-slate-800 focus:ring-0 gap-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end" className="bg-white border-slate-200 min-w-[200px]">
+                {branchesList.map((b) => (
+                  <SelectItem key={b} value={b} className="text-xs font-bold cursor-pointer">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                      <span>{b}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+                <SelectItem
+                  value="__create_branch__"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50/70 hover:bg-blue-100/90 cursor-pointer mt-1 border-t border-slate-100 rounded-b-md"
+                >
+                  <div className="flex items-center gap-1.5 py-0.5 text-blue-600 font-extrabold">
+                    <Plus className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                    <span>+ Create / Manage Branches</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 cursor-pointer group pl-1">
           <Avatar className="h-7 w-7">
             <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-bold">
               DR
@@ -268,7 +312,7 @@ export default function Header() {
           </Avatar>
           <div className="hidden md:block text-right">
             <p className="text-xs font-semibold text-slate-700 leading-none">Dr. Admin</p>
-            <p className="text-[10px] text-slate-400 leading-none mt-0.5">CMK Healthcare Pvt. Ltd.</p>
+            <p className="text-[10px] text-blue-600 font-bold leading-none mt-0.5">{activeBranch}</p>
           </div>
         </div>
       </div>

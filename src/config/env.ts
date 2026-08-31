@@ -11,7 +11,7 @@
 
 /** Base URL of the CMK CareSuite REST API (without trailing slash) */
 export const API_BASE_URL: string =
-  import.meta.env.VITE_API_URL ?? "http://192.168.31.18:5000/api/v1";
+  import.meta.env.VITE_API_URL ?? "http://localhost:5000/api/v1";
 
 /** App name shown in titles / branding */
 export const APP_NAME: string =

@@ -28,8 +28,10 @@ import {
   Phone,
   RefreshCw,
   Eye,
-  FileCheck
+  FileCheck,
+  UserPlus,
 } from "lucide-react";
+import AddDoctorModal from "@/components/AddDoctorModal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -76,8 +78,9 @@ import {
   AdvanceData,
   CreditNoteData,
   RefundData,
-  InsuranceIntimationData
+  InsuranceIntimationData,
 } from "@/api/billingApi";
+import { fetchDoctorsFromSettings, DEFAULT_DOCTORS } from "@/api/settingsApi";
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 interface BillingPatient {
@@ -117,7 +120,8 @@ const INITIAL_PATIENTS: BillingPatient[] = [
     type: "Registration",
     address: "JAI ESAR, UTTAR PRADESH",
     fatherName: "R P Yadav",
-    photoUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
+    photoUrl:
+      "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
   },
   {
     uhid: "222",
@@ -134,7 +138,8 @@ const INITIAL_PATIENTS: BillingPatient[] = [
     type: "Admission",
     address: "DELHI SECTOR 4",
     fatherName: "Dinesh Kumar",
-    photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
+    photoUrl:
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80",
   },
   {
     uhid: "105",
@@ -151,7 +156,8 @@ const INITIAL_PATIENTS: BillingPatient[] = [
     type: "Admission",
     address: "NOIDA SECTOR 62",
     fatherName: "S K Sharma",
-    photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80",
+    photoUrl:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80",
   },
   {
     uhid: "44",
@@ -169,7 +175,8 @@ const INITIAL_PATIENTS: BillingPatient[] = [
     address: "GURGAON SECTOR 14",
     fatherName: "Demo Father",
     isVip: true,
-    photoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
+    photoUrl:
+      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80",
   },
   {
     uhid: "303",
@@ -186,36 +193,117 @@ const INITIAL_PATIENTS: BillingPatient[] = [
     type: "Discharge",
     address: "DELHI LAXMI NAGAR",
     fatherName: "Suresh Verma",
-    photoUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
-  }
+    photoUrl:
+      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80",
+  },
 ];
 
 const SERVICE_CATALOG = [
-  { code: "CON-01", name: "OPD Consultation - Senior Specialist", dept: "General OPD", rate: 1000 },
-  { code: "CON-02", name: "Emergency Consultation", dept: "Emergency", rate: 1000 },
-  { code: "CON-03", name: "Super Specialist Consultation", dept: "Cardiology", rate: 1200 },
-  { code: "LAB-01", name: "Complete Blood Count (CBC)", dept: "Pathology", rate: 350 },
-  { code: "LAB-02", name: "Lipid Profile (Full Panel)", dept: "Biochemistry", rate: 750 },
-  { code: "LAB-03", name: "HbA1c Glycated Hemoglobin", dept: "Biochemistry", rate: 550 },
-  { code: "LAB-04", name: "Liver Function Test (LFT)", dept: "Biochemistry", rate: 650 },
-  { code: "LAB-05", name: "Kidney Function Test (KFT)", dept: "Biochemistry", rate: 600 },
-  { code: "LAB-06", name: "Thyroid Profile (T3, T4, TSH)", dept: "Pathology", rate: 700 },
+  {
+    code: "CON-01",
+    name: "OPD Consultation - Senior Specialist",
+    dept: "General OPD",
+    rate: 1000,
+  },
+  {
+    code: "CON-02",
+    name: "Emergency Consultation",
+    dept: "Emergency",
+    rate: 1000,
+  },
+  {
+    code: "CON-03",
+    name: "Super Specialist Consultation",
+    dept: "Cardiology",
+    rate: 1200,
+  },
+  {
+    code: "LAB-01",
+    name: "Complete Blood Count (CBC)",
+    dept: "Pathology",
+    rate: 350,
+  },
+  {
+    code: "LAB-02",
+    name: "Lipid Profile (Full Panel)",
+    dept: "Biochemistry",
+    rate: 750,
+  },
+  {
+    code: "LAB-03",
+    name: "HbA1c Glycated Hemoglobin",
+    dept: "Biochemistry",
+    rate: 550,
+  },
+  {
+    code: "LAB-04",
+    name: "Liver Function Test (LFT)",
+    dept: "Biochemistry",
+    rate: 650,
+  },
+  {
+    code: "LAB-05",
+    name: "Kidney Function Test (KFT)",
+    dept: "Biochemistry",
+    rate: 600,
+  },
+  {
+    code: "LAB-06",
+    name: "Thyroid Profile (T3, T4, TSH)",
+    dept: "Pathology",
+    rate: 700,
+  },
   { code: "RAD-01", name: "Chest X-Ray PA View", dept: "Radiology", rate: 450 },
-  { code: "RAD-02", name: "Ultrasound Whole Abdomen", dept: "Radiology", rate: 1200 },
-  { code: "RAD-03", name: "MRI Brain with Contrast", dept: "Radiology", rate: 6500 },
-  { code: "RAD-04", name: "CT Scan Chest High Resolution", dept: "Radiology", rate: 4500 },
+  {
+    code: "RAD-02",
+    name: "Ultrasound Whole Abdomen",
+    dept: "Radiology",
+    rate: 1200,
+  },
+  {
+    code: "RAD-03",
+    name: "MRI Brain with Contrast",
+    dept: "Radiology",
+    rate: 6500,
+  },
+  {
+    code: "RAD-04",
+    name: "CT Scan Chest High Resolution",
+    dept: "Radiology",
+    rate: 4500,
+  },
   { code: "CARD-01", name: "12-Lead ECG", dept: "Cardiology", rate: 300 },
-  { code: "CARD-02", name: "2D Echocardiography + Color Doppler", dept: "Cardiology", rate: 2200 },
-  { code: "CARD-03", name: "TMT Treadmill Stress Test", dept: "Cardiology", rate: 1800 },
-  { code: "PROC-01", name: "IV Cannulation & Infusion", dept: "Nursing", rate: 250 },
-  { code: "PROC-02", name: "Wound Dressing & Suturing", dept: "Minor OT", rate: 600 },
+  {
+    code: "CARD-02",
+    name: "2D Echocardiography + Color Doppler",
+    dept: "Cardiology",
+    rate: 2200,
+  },
+  {
+    code: "CARD-03",
+    name: "TMT Treadmill Stress Test",
+    dept: "Cardiology",
+    rate: 1800,
+  },
+  {
+    code: "PROC-01",
+    name: "IV Cannulation & Infusion",
+    dept: "Nursing",
+    rate: 250,
+  },
+  {
+    code: "PROC-02",
+    name: "Wound Dressing & Suturing",
+    dept: "Minor OT",
+    rate: 600,
+  },
   { code: "PROC-03", name: "Nebulization Session", dept: "OPD", rate: 150 },
 ];
 
 export default function BillingPage() {
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // Map tab URL params to tab names
   const tabParamMap: Record<string, string> = {
     "patient-lists": "Patient Lists",
@@ -224,11 +312,11 @@ export default function BillingPage() {
     "op-order": "OP Order",
     "op-billing": "OP Billing",
     "ip-billing": "IP Billing",
-    "refund": "Refund",
+    refund: "Refund",
     "advance-collection": "Advance Collection",
     "credit-note": "Credit Note",
-    "intimation": "Intimation",
-    "unbilled-orders": "UnBilled Orders"
+    intimation: "Intimation",
+    "unbilled-orders": "UnBilled Orders",
   };
 
   const paramTabMap: Record<string, string> = {
@@ -238,11 +326,11 @@ export default function BillingPage() {
     "OP Order": "op-order",
     "OP Billing": "op-billing",
     "IP Billing": "ip-billing",
-    "Refund": "refund",
+    Refund: "refund",
     "Advance Collection": "advance-collection",
     "Credit Note": "credit-note",
-    "Intimation": "intimation",
-    "UnBilled Orders": "unbilled-orders"
+    Intimation: "intimation",
+    "UnBilled Orders": "unbilled-orders",
   };
 
   const activeTabParam = searchParams.get("tab") || "patient-lists";
@@ -277,7 +365,8 @@ export default function BillingPage() {
   // Filters State
   const [patientSearch, setPatientSearch] = useState("");
   const [patientSearchOn, setPatientSearchOn] = useState("Patient Name");
-  const [patientTypeFilter, setPatientTypeFilter] = useState<string>("Admission");
+  const [patientTypeFilter, setPatientTypeFilter] =
+    useState<string>("Admission");
   const [patientStatusFilter, setPatientStatusFilter] = useState("all");
   const [patientPageSize, setPatientPageSize] = useState(10);
   const [patientCurrentPage, setPatientCurrentPage] = useState(1);
@@ -298,7 +387,8 @@ export default function BillingPage() {
   const [malSponsor, setMalSponsor] = useState("Select All");
   const [malPatientType, setMalPatientType] = useState("Both");
   const [malPrintAs, setMalPrintAs] = useState<"Summary" | "Detail">("Summary");
-  const [malPatientRefundableOnly, setMalPatientRefundableOnly] = useState(false);
+  const [malPatientRefundableOnly, setMalPatientRefundableOnly] =
+    useState(false);
   const [malSearchFor, setMalSearchFor] = useState("All Invoices");
 
   // In-table column filter inputs
@@ -312,16 +402,24 @@ export default function BillingPage() {
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
 
   // Selected for modals
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(null);
-  const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceData | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceData | null>(
+    null,
+  );
+  const [printInvoiceData, setPrintInvoiceData] = useState<InvoiceData | null>(
+    null,
+  );
   const printInvoiceRef = useRef<HTMLDivElement>(null);
   const handlePrintInvoice = useReactToPrint({
     contentRef: printInvoiceRef,
     documentTitle: `Invoice_${printInvoiceData?.invoiceNo || "Receipt"}`,
   });
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
-  const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] = useState(false);
+  const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] =
+    useState(false);
   const [modalSearchTerm, setModalSearchTerm] = useState("");
+  const [isInvoiceSearchModalOpen, setIsInvoiceSearchModalOpen] =
+    useState(false);
+  const [invoiceModalSearchTerm, setInvoiceModalSearchTerm] = useState("");
 
   // Advanced Search Modal States
   const [advSearchFields, setAdvSearchFields] = useState({
@@ -344,7 +442,7 @@ export default function BillingPage() {
     facility: "CMK HEALTHCARE PVT. LTD.",
     entrySite: "-- ALL --",
     searchType: "Search All (Date Range)",
-    typeFilter: "all"
+    typeFilter: "all",
   });
   const [advPatients, setAdvPatients] = useState<any[]>([]);
   const [advTotalCount, setAdvTotalCount] = useState(0);
@@ -352,18 +450,38 @@ export default function BillingPage() {
   const [advIsLoading, setAdvIsLoading] = useState(false);
 
   // Settlement & Refund Modal States
-  const [paymentRows, setPaymentRows] = useState<Array<{
-    mode: string;
-    amount: number;
-    balance: number;
-    date: string;
-    bankName: string;
-    beneficiaryName: string;
-    refNo: string;
-    description: string;
-    cardSwipingValue: number;
-  }>>([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
+  const [paymentRows, setPaymentRows] = useState<
+    Array<{
+      mode: string;
+      amount: number;
+      balance: number;
+      date: string;
+      bankName: string;
+      beneficiaryName: string;
+      refNo: string;
+      description: string;
+      cardSwipingValue: number;
+    }>
+  >([
+    {
+      mode: "Cash",
+      amount: 0,
+      balance: 0,
+      date: new Date().toLocaleDateString("en-GB"),
+      bankName: "",
+      beneficiaryName: "",
+      refNo: "",
+      description: "",
+      cardSwipingValue: 0,
+    },
+  ]);
   const [settlementNotes, setSettlementNotes] = useState("");
+  const [availableDoctors, setAvailableDoctors] =
+    useState<string[]>(DEFAULT_DOCTORS);
+  const [isAddDoctorModalOpen, setIsAddDoctorModalOpen] = useState(false);
+  const [doctorTargetField, setDoctorTargetField] = useState<
+    "prescribing" | "opDoctor" | "orderDoctor" | null
+  >(null);
 
   // ─── Create OP Visit Form State ──────────────────────────────────────────────
   const [opUhid, setOpUhid] = useState("");
@@ -375,7 +493,9 @@ export default function BillingPage() {
   const [opNetwork, setOpNetwork] = useState("Select");
   const [opDoctor, setOpDoctor] = useState("Dr. Abhishek Bansal 2273");
   const [opDepartment, setOpDepartment] = useState("General OPD");
-  const [opVisitType, setOpVisitType] = useState<"New" | "Follow-up" | "Emergency">("New");
+  const [opVisitType, setOpVisitType] = useState<
+    "New" | "Follow-up" | "Emergency"
+  >("New");
   const [opFee, setOpFee] = useState<number>(500);
 
   // ─── OP Billing Form State ───────────────────────────────────────────────────
@@ -386,39 +506,64 @@ export default function BillingPage() {
   const [opBillingInvoiceNo, setOpBillingInvoiceNo] = useState("");
   const [opBillingDate, setOpBillingDate] = useState(() => {
     const now = new Date();
-    return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
   });
-  const [opBillingPayerType, setOpBillingPayerType] = useState("Direct Patient");
+  const [opBillingPayerType, setOpBillingPayerType] =
+    useState("Direct Patient");
   const [opBillingPayer, setOpBillingPayer] = useState("CASH");
   const [opBillingSponsor, setOpBillingSponsor] = useState("CASH");
   const [opBillingNetwork, setOpBillingNetwork] = useState("");
-  const [opBillingPrescribingDoctor, setOpBillingPrescribingDoctor] = useState("");
+  const [opBillingPrescribingDoctor, setOpBillingPrescribingDoctor] =
+    useState("");
   const [opBillingDoctor, setOpBillingDoctor] = useState("Dr. Sameer Sen 3105");
   const [opBillingReferredType, setOpBillingReferredType] = useState("SELF");
   const [opBillingReferredName, setOpBillingReferredName] = useState("");
   const [opBillingSubTab, setOpBillingSubTab] = useState("Service");
   const [opBillingNarration, setOpBillingNarration] = useState("");
   const [opBillingCoPayBy, setOpBillingCoPayBy] = useState("Patient");
-  const [opBillingReportingDateTime, setOpBillingReportingDateTime] = useState(() => new Date().toISOString().slice(0, 16));
+  const [opBillingReportingDateTime, setOpBillingReportingDateTime] = useState(
+    () => new Date().toISOString().slice(0, 16),
+  );
   const [opBillingPanNo, setOpBillingPanNo] = useState("");
-  const [opBillingApprovalRequired, setOpBillingApprovalRequired] = useState(false);
-  const [opBillingExcludedService, setOpBillingExcludedService] = useState(false);
-  const [opBillingRefundedService, setOpBillingRefundedService] = useState(false);
+  const [opBillingApprovalRequired, setOpBillingApprovalRequired] =
+    useState(false);
+  const [opBillingExcludedService, setOpBillingExcludedService] =
+    useState(false);
+  const [opBillingRefundedService, setOpBillingRefundedService] =
+    useState(false);
   const [opBillingEmailResult, setOpBillingEmailResult] = useState(false);
-  const [opBillingAvailableDeposit, setOpBillingAvailableDeposit] = useState<number>(0);
-  const [opBillingAppliedDeposit, setOpBillingAppliedDeposit] = useState<number>(0);
+  const [opBillingAvailableDeposit, setOpBillingAvailableDeposit] =
+    useState<number>(0);
+  const [opBillingAppliedDeposit, setOpBillingAppliedDeposit] =
+    useState<number>(0);
   const [opBillingItems, setOpBillingItems] = useState<InvoiceItem[]>([]);
-  const [opBillingPaymentRows, setOpBillingPaymentRows] = useState<Array<{
-    mode: string;
-    amount: number;
-    balance: number;
-    date: string;
-    bankName: string;
-    beneficiaryName: string;
-    refNo: string;
-    description: string;
-    cardSwipingValue: number;
-  }>>([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
+  const [opBillingPaymentRows, setOpBillingPaymentRows] = useState<
+    Array<{
+      mode: string;
+      amount: number;
+      balance: number;
+      date: string;
+      bankName: string;
+      beneficiaryName: string;
+      refNo: string;
+      description: string;
+      cardSwipingValue: number;
+    }>
+  >([
+    {
+      mode: "Cash",
+      amount: 0,
+      balance: 0,
+      date: new Date().toLocaleDateString("en-GB"),
+      bankName: "",
+      beneficiaryName: "",
+      refNo: "",
+      description: "",
+      cardSwipingValue: 0,
+    },
+  ]);
 
   // ─── OP Order Form State ─────────────────────────────────────────────────────
   const [orderUhid, setOrderUhid] = useState("");
@@ -426,7 +571,17 @@ export default function BillingPage() {
   const [orderType, setOrderType] = useState("Lab");
   const [orderRemarks, setOrderRemarks] = useState("");
   const [orderItems, setOrderItems] = useState<InvoiceItem[]>([
-    { code: "LAB-01", name: "Complete Blood Count (CBC)", dept: "Pathology", doctor: "Dr. Sameer Sen", rate: 350, qty: 1, discountPercent: 0, discountAmt: 0, netAmt: 350 }
+    {
+      code: "LAB-01",
+      name: "Complete Blood Count (CBC)",
+      dept: "Pathology",
+      doctor: "Dr. Sameer Sen",
+      rate: 350,
+      qty: 1,
+      discountPercent: 0,
+      discountAmt: 0,
+      netAmt: 350,
+    },
   ]);
 
   // ─── IP Billing Form State ───────────────────────────────────────────────────
@@ -456,30 +611,66 @@ export default function BillingPage() {
 
   // ─── Patient Notes Modal States ──────────────────────────────────────────────
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-  const [newNoteCategory, setNewNoteCategory] = useState<"General Note" | "Billing Flag" | "Clinical Alert" | "Special Instruction">("Billing Flag");
+  const [newNoteCategory, setNewNoteCategory] = useState<
+    "General Note" | "Billing Flag" | "Clinical Alert" | "Special Instruction"
+  >("Billing Flag");
   const [newNoteText, setNewNoteText] = useState("");
-  const [patientNotesMap, setPatientNotesMap] = useState<Record<string, Array<{
-    id: string;
-    category: string;
-    text: string;
-    author: string;
-    createdAt: string;
-  }>>>({
+  const [patientNotesMap, setPatientNotesMap] = useState<
+    Record<
+      string,
+      Array<{
+        id: string;
+        category: string;
+        text: string;
+        author: string;
+        createdAt: string;
+      }>
+    >
+  >({
     "UHID-2026-00005-7210": [
-      { id: "1", category: "Billing Flag", text: "Insurance Pre-authorization approved for Niva Bupa Health Insurance.", author: "Dr. Admin", createdAt: "25/08/2026, 12:30" },
-      { id: "2", category: "Clinical Alert", text: "Patient has history of hypertension. Monitor BP before procedures.", author: "Dr. Sameer Sen", createdAt: "25/08/2026, 11:15" }
+      {
+        id: "1",
+        category: "Billing Flag",
+        text: "Insurance Pre-authorization approved for Niva Bupa Health Insurance.",
+        author: "Dr. Admin",
+        createdAt: "25/08/2026, 12:30",
+      },
+      {
+        id: "2",
+        category: "Clinical Alert",
+        text: "Patient has history of hypertension. Monitor BP before procedures.",
+        author: "Dr. Sameer Sen",
+        createdAt: "25/08/2026, 11:15",
+      },
     ],
     "UHID-2026-00001-2863": [
-      { id: "101", category: "Billing Flag", text: "Deluxe ward bed rate approved @ ₹4,500/day. Advance deposit of ₹5,000 adjusted.", author: "Dr. Admin", createdAt: "25/08/2026, 13:10" },
-      { id: "102", category: "Special Instruction", text: "Final IP settlement requires pharmacy clearance before discharge.", author: "Dr. Sameer Sen", createdAt: "25/08/2026, 09:30" }
-    ]
+      {
+        id: "101",
+        category: "Billing Flag",
+        text: "Deluxe ward bed rate approved @ ₹4,500/day. Advance deposit of ₹5,000 adjusted.",
+        author: "Dr. Admin",
+        createdAt: "25/08/2026, 13:10",
+      },
+      {
+        id: "102",
+        category: "Special Instruction",
+        text: "Final IP settlement requires pharmacy clearance before discharge.",
+        author: "Dr. Sameer Sen",
+        createdAt: "25/08/2026, 09:30",
+      },
+    ],
   });
 
-  const activePatientNotesUhid = (activeTab === "IP Billing" ? ipBillingUhid : opBillingUhid).trim();
+  const activePatientNotesUhid = (
+    activeTab === "IP Billing" ? ipBillingUhid : opBillingUhid
+  ).trim();
 
   const handleAddNote = () => {
     if (!activePatientNotesUhid) {
-      toast.error("No Patient Selected", "Please select a patient or IP No first.");
+      toast.error(
+        "No Patient Selected",
+        "Please select a patient or IP No first.",
+      );
       return;
     }
     if (!newNoteText.trim()) {
@@ -493,11 +684,14 @@ export default function BillingPage() {
       category: newNoteCategory,
       text: newNoteText.trim(),
       author: "Dr. Admin",
-      createdAt: new Date().toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })
+      createdAt: new Date().toLocaleString("en-GB", {
+        dateStyle: "short",
+        timeStyle: "short",
+      }),
     };
     setPatientNotesMap({
       ...patientNotesMap,
-      [currentUhid]: [newEntry, ...existing]
+      [currentUhid]: [newEntry, ...existing],
     });
     setNewNoteText("");
     toast.success("Note Added", "Patient note created successfully.");
@@ -507,7 +701,7 @@ export default function BillingPage() {
     const existing = patientNotesMap[uhid] || [];
     setPatientNotesMap({
       ...patientNotesMap,
-      [uhid]: existing.filter(n => n.id !== noteId)
+      [uhid]: existing.filter((n) => n.id !== noteId),
     });
     toast.info("Note Removed", "Patient note deleted.");
   };
@@ -520,10 +714,12 @@ export default function BillingPage() {
 
   // ─── IP Discharge Modal State ──────────────────────────────────────────────
   const [isIpDischargeModalOpen, setIsIpDischargeModalOpen] = useState(false);
-  const [ipDischargeMode, setIpDischargeMode] = useState<"pay_now" | "tpa_credit" | "credit_approval" | "refund">("pay_now");
-  const [ipDischargeSplitRows, setIpDischargeSplitRows] = useState<Array<{ mode: string; amount: number; refNo: string }>>([
-    { mode: "Cash", amount: 0, refNo: "" }
-  ]);
+  const [ipDischargeMode, setIpDischargeMode] = useState<
+    "pay_now" | "tpa_credit" | "credit_approval" | "refund"
+  >("pay_now");
+  const [ipDischargeSplitRows, setIpDischargeSplitRows] = useState<
+    Array<{ mode: string; amount: number; refNo: string }>
+  >([{ mode: "Cash", amount: 0, refNo: "" }]);
   const [ipDischargeRefNo, setIpDischargeRefNo] = useState("");
   const [ipDischargeNotes, setIpDischargeNotes] = useState("");
 
@@ -558,9 +754,40 @@ export default function BillingPage() {
   const [intCoPay, setIntCoPay] = useState<number>(2500);
 
   // ─── Unbilled Orders Selection State ─────────────────────────────────────────
-  const [selectedUnbilledOrders, setSelectedUnbilledOrders] = useState<string[]>([]);
+  const [selectedUnbilledOrders, setSelectedUnbilledOrders] = useState<
+    string[]
+  >([]);
 
   const [receiptsList, setReceiptsList] = useState<any[]>([]);
+
+  // ─── DOCTORS FROM SETTINGS ──────────────────────────────────────────────────
+  useEffect(() => {
+    let isMounted = true;
+    const loadDoctors = async () => {
+      const docs = await fetchDoctorsFromSettings();
+      if (isMounted && docs && docs.length > 0) {
+        setAvailableDoctors(docs);
+      }
+    };
+    loadDoctors();
+
+    const handleSettingsUpdate = (e: Event) => {
+      const customEvt = e as CustomEvent;
+      if (
+        !customEvt.detail?.category ||
+        customEvt.detail.category === "doctors" ||
+        customEvt.detail.category === "providers"
+      ) {
+        loadDoctors();
+      }
+    };
+
+    window.addEventListener("cmk_settings_updated", handleSettingsUpdate);
+    return () => {
+      isMounted = false;
+      window.removeEventListener("cmk_settings_updated", handleSettingsUpdate);
+    };
+  }, []);
 
   // ─── DATA FETCHING (FULL API-LEVEL FILTERING) ───────────────────────────────
   const loadAllBillingData = useCallback(async () => {
@@ -576,7 +803,7 @@ export default function BillingPage() {
         crRes,
         refRes,
         intRes,
-        patRes
+        patRes,
       ] = await Promise.allSettled([
         getBillingStats(),
         getInvoices({
@@ -597,7 +824,7 @@ export default function BillingPage() {
           colFilterEnc,
           colFilterInvoiceNo,
           search: invoiceSearch,
-          limit: 150
+          limit: 150,
         }),
         getReceipts({
           uhid: malUhid || colFilterUhid,
@@ -605,7 +832,7 @@ export default function BillingPage() {
           invoiceNo: malBillNo || colFilterInvoiceNo,
           fromDate: malFromDate,
           toDate: malToDate,
-          limit: 150
+          limit: 150,
         }),
         getOpVisits({
           uhid: opUhid,
@@ -636,25 +863,35 @@ export default function BillingPage() {
           searchOn: patientSearchOn,
           type: patientTypeFilter,
           status: patientStatusFilter,
-          limit: 150
-        })
+          limit: 150,
+        }),
       ]);
 
       if (statsRes.status === "fulfilled") setStats(statsRes.value);
-      if (invRes.status === "fulfilled") setInvoices(invRes.value.invoices || []);
-      if (recRes.status === "fulfilled") setReceiptsList(recRes.value.receipts || []);
+      if (invRes.status === "fulfilled")
+        setInvoices(invRes.value.invoices || []);
+      if (recRes.status === "fulfilled")
+        setReceiptsList(recRes.value.receipts || []);
       if (visRes.status === "fulfilled") setVisits(visRes.value || []);
       if (ordRes.status === "fulfilled") setOrders(ordRes.value || []);
       if (advRes.status === "fulfilled") setAdvances(advRes.value || []);
-      if (crRes.status === "fulfilled") setCreditNotes(crRes.value?.creditNotes || []);
+      if (crRes.status === "fulfilled")
+        setCreditNotes(crRes.value?.creditNotes || []);
       if (refRes.status === "fulfilled") setRefunds(refRes.value || []);
       if (intRes.status === "fulfilled") setIntimations(intRes.value || []);
 
       if (patRes.status === "fulfilled" && patRes.value) {
-        const patList = Array.isArray(patRes.value) ? patRes.value : (patRes.value.patients || []);
+        const patList = Array.isArray(patRes.value)
+          ? patRes.value
+          : patRes.value.patients || [];
         if (patList.length > 0) {
           setPatients(patList);
-        } else if (patList.length === 0 && (patientSearch || patientTypeFilter !== "Admission" || patientStatusFilter !== "all")) {
+        } else if (
+          patList.length === 0 &&
+          (patientSearch ||
+            patientTypeFilter !== "Admission" ||
+            patientStatusFilter !== "all")
+        ) {
           setPatients([]);
         } else {
           setPatients(INITIAL_PATIENTS);
@@ -696,63 +933,82 @@ export default function BillingPage() {
     patientSearch,
     patientSearchOn,
     patientTypeFilter,
-    patientStatusFilter
+    patientStatusFilter,
   ]);
 
   useEffect(() => {
     loadAllBillingData();
   }, [loadAllBillingData]);
 
-  const fetchAdvancedPatients = useCallback(async (pageNum: number = 1) => {
-    setAdvIsLoading(true);
-    setAdvPage(pageNum);
-    try {
-      const queryParams: any = {
-        page: pageNum,
-        limit: 10,
-        uhid: advSearchFields.uhid || undefined,
-        ipNo: advSearchFields.ipNo || undefined,
-        fullName: advSearchFields.patientName || undefined,
-        dateOfBirth: advSearchFields.dob || undefined,
-        mobile: advSearchFields.mobileNo || undefined,
-        email: advSearchFields.email || undefined,
-        address: advSearchFields.address || undefined,
-        payer: advSearchFields.company || undefined,
-        guardianName: advSearchFields.fatherName || undefined,
-      };
+  const fetchAdvancedPatients = useCallback(
+    async (pageNum: number = 1) => {
+      setAdvIsLoading(true);
+      setAdvPage(pageNum);
+      try {
+        const queryParams: any = {
+          page: pageNum,
+          limit: 10,
+          uhid: advSearchFields.uhid || undefined,
+          ipNo: advSearchFields.ipNo || undefined,
+          fullName: advSearchFields.patientName || undefined,
+          dateOfBirth: advSearchFields.dob || undefined,
+          mobile: advSearchFields.mobileNo || undefined,
+          email: advSearchFields.email || undefined,
+          address: advSearchFields.address || undefined,
+          payer: advSearchFields.company || undefined,
+          guardianName: advSearchFields.fatherName || undefined,
+        };
 
-      if (advSearchFields.typeFilter && advSearchFields.typeFilter !== "all") {
-        queryParams.type = advSearchFields.typeFilter;
+        if (
+          advSearchFields.typeFilter &&
+          advSearchFields.typeFilter !== "all"
+        ) {
+          queryParams.type = advSearchFields.typeFilter;
+        }
+
+        const res = await getBillingPatients(queryParams);
+        setAdvPatients(res.patients || []);
+        setAdvTotalCount(res.totalCount || 0);
+      } catch (err: any) {
+        console.error("Error fetching advanced patients:", err);
+        toast.error("Error", "Failed to fetch patients.");
+      } finally {
+        setAdvIsLoading(false);
       }
-
-      const res = await getBillingPatients(queryParams);
-      setAdvPatients(res.patients || []);
-      setAdvTotalCount(res.totalCount || 0);
-    } catch (err: any) {
-      console.error("Error fetching advanced patients:", err);
-      toast.error("Error", "Failed to fetch patients.");
-    } finally {
-      setAdvIsLoading(false);
-    }
-  }, [advSearchFields]);
+    },
+    [advSearchFields],
+  );
 
   useEffect(() => {
     if (isPatientSearchModalOpen) {
       if (activeTab === "IP Billing") {
-        setAdvSearchFields(prev => ({ ...prev, typeFilter: "Admission" }));
+        setAdvSearchFields((prev) => ({ ...prev, typeFilter: "Admission" }));
       } else if (activeTab === "OP Billing") {
-        setAdvSearchFields(prev => ({ ...prev, typeFilter: "all" }));
+        setAdvSearchFields((prev) => ({ ...prev, typeFilter: "all" }));
       }
       fetchAdvancedPatients(1);
     }
   }, [isPatientSearchModalOpen, activeTab]);
 
   const displayAdvPatients = useMemo(() => {
-    if (activeTab === "IP Billing" || advSearchFields.typeFilter === "Admission" || advSearchFields.typeFilter === "Discharge") {
+    if (
+      activeTab === "IP Billing" ||
+      advSearchFields.typeFilter === "Admission" ||
+      advSearchFields.typeFilter === "Discharge"
+    ) {
       return advPatients.filter((p: any) => {
         // Exclude pure OP-only patients when searching for Inpatients in IP Billing
-        const isPureOp = p.uhid === "UHID-2026-00005-7210" || p.uhid === "UHID-2026-00004-5812" || p.uhid === "UHID-2026-00003-4921" || p.uhid === "UHID-2026-00002-3183" || (p.registrationType === "OP" && !p.ipNo && !p.bedNo);
-        if (isPureOp && p.uhid !== "UHID-2026-00001-2863" && p.uhid !== "UHID-2026-00006-1889") {
+        const isPureOp =
+          p.uhid === "UHID-2026-00005-7210" ||
+          p.uhid === "UHID-2026-00004-5812" ||
+          p.uhid === "UHID-2026-00003-4921" ||
+          p.uhid === "UHID-2026-00002-3183" ||
+          (p.registrationType === "OP" && !p.ipNo && !p.bedNo);
+        if (
+          isPureOp &&
+          p.uhid !== "UHID-2026-00001-2863" &&
+          p.uhid !== "UHID-2026-00006-1889"
+        ) {
           return false;
         }
         return true;
@@ -762,9 +1018,137 @@ export default function BillingPage() {
   }, [advPatients, activeTab, advSearchFields.typeFilter]);
 
   // ─── PATIENT LOOKUPS ────────────────────────────────────────────────────────
+  // ─── PATIENT & INVOICE LOOKUPS ──────────────────────────────────────────────
   const findPatientByUhid = (uhid: string) => {
-    return patients.find(p => p.uhid.trim().toLowerCase() === uhid.trim().toLowerCase())
-      || advPatients.find(p => p.uhid.trim().toLowerCase() === uhid.trim().toLowerCase());
+    if (!uhid || !uhid.trim()) return null;
+    const key = uhid.trim().toLowerCase();
+    const foundInPatients =
+      patients.find((p) => p.uhid.trim().toLowerCase() === key) ||
+      advPatients.find((p) => p.uhid.trim().toLowerCase() === key) ||
+      INITIAL_PATIENTS.find((p) => p.uhid.trim().toLowerCase() === key);
+    if (foundInPatients) return foundInPatients;
+
+    const foundInInvoice = invoices.find(
+      (i) => i.uhid.trim().toLowerCase() === key,
+    );
+    if (foundInInvoice) {
+      return {
+        uhid: foundInInvoice.uhid,
+        patientName: foundInInvoice.patientName,
+        company: foundInInvoice.company,
+        doctor: foundInInvoice.doctorName || "Dr. Admin",
+        genderAge: "Male/30 Yr",
+        mobileNo: "",
+        type: "Admission" as const,
+        ipNo: foundInInvoice.encNo || "",
+        admissionDate: foundInInvoice.date || "",
+        bedNo: "",
+        billingCategory: foundInInvoice.type || "",
+      };
+    }
+    return null;
+  };
+
+  const findInvoiceByNo = (invoiceNo: string) => {
+    if (!invoiceNo || !invoiceNo.trim()) return null;
+    const key = invoiceNo.trim().toLowerCase();
+    return (
+      invoices.find((i) => i.invoiceNo.trim().toLowerCase() === key) ||
+      invoices.find((i) => i.invoiceNo.trim().toLowerCase().includes(key))
+    );
+  };
+
+  // ─── REFUND & CREDIT NOTE LIVE AVAILABILITY CHECKS ──────────────────────────
+  const refPatientMatch = useMemo(() => {
+    const trimmed = refUhid.trim();
+    if (!trimmed) return { status: "idle" as const, patient: null };
+    const patient = findPatientByUhid(trimmed);
+    if (patient) return { status: "found" as const, patient };
+    return { status: "not_found" as const, patient: null };
+  }, [refUhid, patients, advPatients, invoices]);
+
+  const refInvoiceMatch = useMemo(() => {
+    const trimmed = refInvoiceNo.trim();
+    if (!trimmed)
+      return { status: "idle" as const, invoice: null, uhidMatch: true };
+    const invoice = findInvoiceByNo(trimmed);
+    if (invoice) {
+      const uhidMatch =
+        !refUhid.trim() ||
+        invoice.uhid.trim().toLowerCase() === refUhid.trim().toLowerCase();
+      return { status: "found" as const, invoice, uhidMatch };
+    }
+    return { status: "not_found" as const, invoice: null, uhidMatch: false };
+  }, [refInvoiceNo, refUhid, invoices]);
+
+  const handleSelectRefundInvoice = (invNo: string) => {
+    setRefInvoiceNo(invNo);
+    const inv = findInvoiceByNo(invNo);
+    if (inv) {
+      if (
+        !refUhid ||
+        refUhid.trim().toLowerCase() !== inv.uhid.trim().toLowerCase()
+      ) {
+        setRefUhid(inv.uhid);
+      }
+      if (inv.netAmt > 0) {
+        setRefAmount(inv.refund > 0 ? inv.refund : inv.netAmt);
+      }
+    }
+  };
+
+  const cnInvoiceMatch = useMemo(() => {
+    const trimmed = cnInvoiceNo.trim();
+    if (!trimmed)
+      return { status: "idle" as const, invoice: null, uhidMatch: true };
+    const invoice = findInvoiceByNo(trimmed);
+    if (invoice) {
+      const uhidMatch =
+        !cnUhid.trim() ||
+        invoice.uhid.trim().toLowerCase() === cnUhid.trim().toLowerCase();
+      return { status: "found" as const, invoice, uhidMatch };
+    }
+    return { status: "not_found" as const, invoice: null, uhidMatch: false };
+  }, [cnInvoiceNo, cnUhid, invoices]);
+
+  const cnPatientMatch = useMemo(() => {
+    const trimmed = cnUhid.trim();
+    if (!trimmed) return { status: "idle" as const, patient: null };
+    const patient = findPatientByUhid(trimmed);
+    if (patient) return { status: "found" as const, patient };
+    return { status: "not_found" as const, patient: null };
+  }, [cnUhid, patients, advPatients, invoices]);
+
+  const advPatientMatch = useMemo(() => {
+    const trimmed = advUhid.trim();
+    if (!trimmed) return { status: "idle" as const, patient: null };
+    const patient = findPatientByUhid(trimmed);
+    if (patient) return { status: "found" as const, patient };
+    return { status: "not_found" as const, patient: null };
+  }, [advUhid, patients, advPatients, invoices]);
+
+  const intPatientMatch = useMemo(() => {
+    const trimmed = intUhid.trim();
+    if (!trimmed) return { status: "idle" as const, patient: null };
+    const patient = findPatientByUhid(trimmed);
+    if (patient) return { status: "found" as const, patient };
+    return { status: "not_found" as const, patient: null };
+  }, [intUhid, patients, advPatients, invoices]);
+
+  const handleSelectCreditNoteInvoice = (invNo: string) => {
+    setCnInvoiceNo(invNo);
+    const inv = findInvoiceByNo(invNo);
+    if (inv) {
+      if (
+        !cnUhid ||
+        cnUhid.trim().toLowerCase() !== inv.uhid.trim().toLowerCase()
+      ) {
+        setCnUhid(inv.uhid);
+      }
+      if (inv.netAmt > 0) {
+        setCnAmount(inv.balance > 0 ? inv.balance : inv.netAmt);
+      }
+    }
   };
 
   const opBillingPatientInfo = useMemo(() => {
@@ -776,12 +1160,16 @@ export default function BillingPage() {
         genderAge: found.genderAge,
         address: found.address || "NEW DELHI, INDIA",
         doctor: found.doctor,
-        payerType: found.company?.includes("Insurance") || found.company?.includes("Star") ? "Insurance" : "Direct Patient",
+        payerType:
+          found.company?.includes("Insurance") ||
+          found.company?.includes("Star")
+            ? "Insurance"
+            : "Direct Patient",
         payer: found.company || "CASH",
         sponsor: found.company || "CASH",
         image: found.photoUrl || found.image || null,
         network: "Select",
-        mobile: found.mobileNo
+        mobile: found.mobileNo,
       };
     }
     return {
@@ -793,7 +1181,7 @@ export default function BillingPage() {
       payer: "CASH",
       sponsor: "CASH",
       network: "Select",
-      mobile: "9876543210"
+      mobile: "9876543210",
     };
   }, [opBillingUhid, patients]);
 
@@ -812,7 +1200,7 @@ export default function BillingPage() {
         category: found.billingCategory,
         pan: "ABCDE1234F",
         image: found.photoUrl || found.image || null,
-        admissionDate: found.admissionDate
+        admissionDate: found.admissionDate,
       };
     }
     return null;
@@ -827,12 +1215,15 @@ export default function BillingPage() {
         genderAge: found.genderAge,
         address: found.address || "DELHI, INDIA",
         doctor: found.doctor || "Dr. Abhishek Bansal 2273",
-        payerType: found.company.includes("Insurance") || found.company.includes("Star") ? "Insurance" : "Direct Patient",
+        payerType:
+          found.company.includes("Insurance") || found.company.includes("Star")
+            ? "Insurance"
+            : "Direct Patient",
         payer: found.company || "CASH",
         sponsor: found.company || "CASH",
         network: "Select",
         mobile: found.mobileNo,
-        image: found.photoUrl || found.image || null
+        image: found.photoUrl || found.image || null,
       };
     }
     return null;
@@ -870,17 +1261,24 @@ export default function BillingPage() {
       setIpBillingPayer(ipBillingPatientInfo.payer);
       setIpBillingSponsor(ipBillingPatientInfo.sponsor);
       setIpBillingNetwork(ipBillingPatientInfo.network || "TPA Network");
-      setIpBillingConsultant(ipBillingPatientInfo.doctor || "Dr. Abhishek Bansal 2273");
-      setIpBillingCategory(ipBillingPatientInfo.category || "GENERAL WARD / REGULAR");
+      setIpBillingConsultant(
+        ipBillingPatientInfo.doctor || "Dr. Abhishek Bansal 2273",
+      );
+      setIpBillingCategory(
+        ipBillingPatientInfo.category || "GENERAL WARD / REGULAR",
+      );
 
       // Calculate days dynamically from admissionDate to today or dischargeDate
       if (ipBillingPatientInfo.admissionDate) {
         const admission = new Date(ipBillingPatientInfo.admissionDate);
-        const discharge = (ipBillingPatientInfo as any).dischargeDate 
-          ? new Date((ipBillingPatientInfo as any).dischargeDate) 
+        const discharge = (ipBillingPatientInfo as any).dischargeDate
+          ? new Date((ipBillingPatientInfo as any).dischargeDate)
           : new Date();
         const diffTime = discharge.getTime() - admission.getTime();
-        const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        const diffDays = Math.max(
+          1,
+          Math.ceil(diffTime / (1000 * 60 * 60 * 24)),
+        );
         setIpDays(diffDays);
       } else {
         setIpDays(1);
@@ -890,11 +1288,17 @@ export default function BillingPage() {
 
   // Calculate OP Billing Totals
   const opGrossTotal = useMemo(() => {
-    return opBillingItems.reduce((sum, it) => sum + (Number(it.rate || 0) * Number(it.qty || 1)), 0);
+    return opBillingItems.reduce(
+      (sum, it) => sum + Number(it.rate || 0) * Number(it.qty || 1),
+      0,
+    );
   }, [opBillingItems]);
 
   const opDiscountTotal = useMemo(() => {
-    return opBillingItems.reduce((sum, it) => sum + Number(it.discountAmt || 0), 0);
+    return opBillingItems.reduce(
+      (sum, it) => sum + Number(it.discountAmt || 0),
+      0,
+    );
   }, [opBillingItems]);
 
   const opNetPayable = useMemo(() => {
@@ -902,7 +1306,10 @@ export default function BillingPage() {
   }, [opGrossTotal, opDiscountTotal]);
 
   const opTotalPaid = useMemo(() => {
-    return opBillingPaymentRows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    return opBillingPaymentRows.reduce(
+      (sum, r) => sum + Number(r.amount || 0),
+      0,
+    );
   }, [opBillingPaymentRows]);
 
   const opBalance = useMemo(() => {
@@ -927,7 +1334,10 @@ export default function BillingPage() {
   }, [ipGrossTotal, ipDiscountOn, ipDiscountOnVal]);
 
   const ipNetPayable = useMemo(() => {
-    return Math.max(0, ipGrossTotal - Number(ipAdvanceAdjusted || 0) - ipDiscountAmt);
+    return Math.max(
+      0,
+      ipGrossTotal - Number(ipAdvanceAdjusted || 0) - ipDiscountAmt,
+    );
   }, [ipGrossTotal, ipAdvanceAdjusted, ipDiscountAmt]);
 
   // ─── ACTION HANDLERS ────────────────────────────────────────────────────────
@@ -942,7 +1352,8 @@ export default function BillingPage() {
       const patient = findPatientByUhid(opUhid);
       const visit = await createOpVisit({
         uhid: opUhid.trim(),
-        patientName: opPatientName || patient?.patientName || `Patient ${opUhid}`,
+        patientName:
+          opPatientName || patient?.patientName || `Patient ${opUhid}`,
         doctorName: opDoctor,
         department: opDepartment,
         payerType: opPayerType,
@@ -954,17 +1365,23 @@ export default function BillingPage() {
         status: opStatus,
       });
 
-      toast.success("OP Visit Created", `Generated Visit ${visit.visitNo} for UHID ${opUhid}.`);
+      toast.success(
+        "OP Visit Created",
+        `Generated Visit ${visit.visitNo} for UHID ${opUhid}.`,
+      );
       loadAllBillingData();
       setOpBillingUhid(opUhid);
       setActiveTab("OP Billing");
     } catch (err: any) {
-      toast.error("Visit Creation Failed", err.message || "Something went wrong.");
+      toast.error(
+        "Visit Creation Failed",
+        err.message || "Something went wrong.",
+      );
     }
   };
 
   // 2. Add / Remove OP Billing Item
-  const handleAddOpItem = (itemTemplate?: typeof SERVICE_CATALOG[0]) => {
+  const handleAddOpItem = (itemTemplate?: (typeof SERVICE_CATALOG)[0]) => {
     const item = itemTemplate || SERVICE_CATALOG[0];
     setOpBillingItems([
       ...opBillingItems,
@@ -978,8 +1395,8 @@ export default function BillingPage() {
         discountPercent: 0,
         discountAmt: 0,
         taxPercent: 0,
-        netAmt: item.rate
-      }
+        netAmt: item.rate,
+      },
     ]);
   };
 
@@ -988,14 +1405,20 @@ export default function BillingPage() {
     setOpBillingItems(opBillingItems.filter((_, idx) => idx !== index));
   };
 
-  const handleUpdateOpItem = (index: number, field: keyof InvoiceItem, val: any) => {
+  const handleUpdateOpItem = (
+    index: number,
+    field: keyof InvoiceItem,
+    val: any,
+  ) => {
     const updated = [...opBillingItems];
     const current = { ...updated[index], [field]: val };
-    
+
     if (field === "rate" || field === "qty" || field === "discountPercent") {
       const rate = Number(field === "rate" ? val : current.rate);
       const qty = Number(field === "qty" ? val : current.qty);
-      const discPct = Number(field === "discountPercent" ? val : current.discountPercent || 0);
+      const discPct = Number(
+        field === "discountPercent" ? val : current.discountPercent || 0,
+      );
       const gross = rate * qty;
       const discAmt = (gross * discPct) / 100;
       current.discountAmt = discAmt;
@@ -1008,7 +1431,10 @@ export default function BillingPage() {
   // 3. Save OP Billing Invoice
   const handleSaveOpBilling = async (printImmediately = false) => {
     if (!opBillingUhid.trim()) {
-      toast.error("Required Field", "Please enter or select a valid Patient UHID.");
+      toast.error(
+        "Required Field",
+        "Please enter or select a valid Patient UHID.",
+      );
       return;
     }
 
@@ -1016,7 +1442,10 @@ export default function BillingPage() {
       const patient = findPatientByUhid(opBillingUhid);
       const invoice = await createInvoice({
         uhid: opBillingUhid.trim(),
-        patientName: opBillingPatientInfo?.name || patient?.patientName || `Patient ${opBillingUhid}`,
+        patientName:
+          opBillingPatientInfo?.name ||
+          patient?.patientName ||
+          `Patient ${opBillingUhid}`,
         encNo: opBillingVisitNo || "1",
         type: "OP",
         company: opBillingPayer || "CASH / CASH",
@@ -1027,19 +1456,25 @@ export default function BillingPage() {
         taxAmt: 0,
         netAmt: opNetPayable,
         items: opBillingItems,
-        payments: opBillingPaymentRows.filter(p => Number(p.amount) > 0).map(p => ({
-          mode: p.mode,
-          amount: Number(p.amount),
-          bankName: p.bankName === "-Select-" ? undefined : p.bankName,
-          beneficiaryName: p.beneficiaryName === "-Select-" ? undefined : p.beneficiaryName,
-          refNo: p.refNo,
-          cardSwipingValue: p.cardSwipingValue,
-          description: p.description,
-        })),
+        payments: opBillingPaymentRows
+          .filter((p) => Number(p.amount) > 0)
+          .map((p) => ({
+            mode: p.mode,
+            amount: Number(p.amount),
+            bankName: p.bankName === "-Select-" ? undefined : p.bankName,
+            beneficiaryName:
+              p.beneficiaryName === "-Select-" ? undefined : p.beneficiaryName,
+            refNo: p.refNo,
+            cardSwipingValue: p.cardSwipingValue,
+            description: p.description,
+          })),
         remarks: opBillingNarration || "OPD Services Billed",
       });
 
-      toast.success("OP Invoice Generated", `Invoice ${invoice.invoiceNo} created successfully! Net: ₹${invoice.netAmt}`);
+      toast.success(
+        "OP Invoice Generated",
+        `Invoice ${invoice.invoiceNo} created successfully! Net: ₹${invoice.netAmt}`,
+      );
       loadAllBillingData();
 
       if (printImmediately) {
@@ -1048,29 +1483,66 @@ export default function BillingPage() {
         setActiveTab("Master Activity List");
       }
     } catch (err: any) {
-      toast.error("Invoice Generation Failed", err.message || "Failed to generate invoice.");
+      toast.error(
+        "Invoice Generation Failed",
+        err.message || "Failed to generate invoice.",
+      );
     }
   };
 
   // 4. Save IP Billing Invoice
   const handleSaveIpBilling = async (printImmediately = false) => {
     if (!ipBillingUhid.trim()) {
-      toast.error("Required Field", "Please select an admitted patient UHID or IP No.");
+      toast.error(
+        "Required Field",
+        "Please select an admitted patient UHID or IP No.",
+      );
       return;
     }
 
     try {
       const patient = findPatientByUhid(ipBillingUhid);
       const ipItems: InvoiceItem[] = [
-        { code: "BED-01", name: `Room & Bed Charges (${Number(ipDays || 0)} Days @ ₹${Number(ipRoomRate || 0)}/day)`, dept: "Ward", rate: Number(ipRoomRate || 0), qty: Number(ipDays || 0), netAmt: Number(ipDays || 0) * Number(ipRoomRate || 0) },
-        { code: "NUR-01", name: `Nursing & Care Charges (${Number(ipDays || 0)} Days @ ₹${Number(ipNursingRate || 0)}/day)`, dept: "Nursing", rate: Number(ipNursingRate || 0), qty: Number(ipDays || 0), netAmt: Number(ipDays || 0) * Number(ipNursingRate || 0) },
-        { code: "DOC-01", name: `Consultant Visiting Rounds (${Number(ipDays || 0)} Days @ ₹${Number(ipDoctorRoundRate || 0)}/day)`, dept: "Clinical", rate: Number(ipDoctorRoundRate || 0), qty: Number(ipDays || 0), netAmt: Number(ipDays || 0) * Number(ipDoctorRoundRate || 0) },
-        { code: "MED-01", name: "Inpatient Pharmacy & Consumables", dept: "Pharmacy", rate: 4500, qty: 1, netAmt: 4500 },
+        {
+          code: "BED-01",
+          name: `Room & Bed Charges (${Number(ipDays || 0)} Days @ ₹${Number(ipRoomRate || 0)}/day)`,
+          dept: "Ward",
+          rate: Number(ipRoomRate || 0),
+          qty: Number(ipDays || 0),
+          netAmt: Number(ipDays || 0) * Number(ipRoomRate || 0),
+        },
+        {
+          code: "NUR-01",
+          name: `Nursing & Care Charges (${Number(ipDays || 0)} Days @ ₹${Number(ipNursingRate || 0)}/day)`,
+          dept: "Nursing",
+          rate: Number(ipNursingRate || 0),
+          qty: Number(ipDays || 0),
+          netAmt: Number(ipDays || 0) * Number(ipNursingRate || 0),
+        },
+        {
+          code: "DOC-01",
+          name: `Consultant Visiting Rounds (${Number(ipDays || 0)} Days @ ₹${Number(ipDoctorRoundRate || 0)}/day)`,
+          dept: "Clinical",
+          rate: Number(ipDoctorRoundRate || 0),
+          qty: Number(ipDays || 0),
+          netAmt: Number(ipDays || 0) * Number(ipDoctorRoundRate || 0),
+        },
+        {
+          code: "MED-01",
+          name: "Inpatient Pharmacy & Consumables",
+          dept: "Pharmacy",
+          rate: 4500,
+          qty: 1,
+          netAmt: 4500,
+        },
       ];
 
       const invoice = await createInvoice({
         uhid: ipBillingUhid.trim(),
-        patientName: ipBillingPatientInfo?.name || patient?.patientName || `IP Patient ${ipBillingUhid}`,
+        patientName:
+          ipBillingPatientInfo?.name ||
+          patient?.patientName ||
+          `IP Patient ${ipBillingUhid}`,
         encNo: `IP-${ipBillingUhid}`,
         type: "IP",
         company: ipBillingPayer || "Star Health Insurance",
@@ -1083,12 +1555,19 @@ export default function BillingPage() {
         items: ipItems,
         advanceAdjusted: Number(ipAdvanceAdjusted || 0),
         payments: [
-          { mode: ipBillingType === "Cash" ? "Cash" : "Bank Transfer", amount: ipNetPayable, description: "Final Inpatient Clearance" }
+          {
+            mode: ipBillingType === "Cash" ? "Cash" : "Bank Transfer",
+            amount: ipNetPayable,
+            description: "Final Inpatient Clearance",
+          },
         ],
         remarks: ipRemarks || "Final Inpatient Discharge Settlement",
       });
 
-      toast.success("IP Invoice Generated", `Inpatient Bill ${invoice.invoiceNo} successfully generated!`);
+      toast.success(
+        "IP Invoice Generated",
+        `Inpatient Bill ${invoice.invoiceNo} successfully generated!`,
+      );
       loadAllBillingData();
 
       if (printImmediately) {
@@ -1097,7 +1576,10 @@ export default function BillingPage() {
         setActiveTab("Master Activity List");
       }
     } catch (err: any) {
-      toast.error("IP Billing Failed", err.message || "Failed to generate IP invoice.");
+      toast.error(
+        "IP Billing Failed",
+        err.message || "Failed to generate IP invoice.",
+      );
     }
   };
 
@@ -1106,29 +1588,38 @@ export default function BillingPage() {
     setSelectedInvoice(inv);
     const amount = Math.abs(inv.balance);
     setSettlementNotes("");
-    setPaymentRows([{
-      mode: "Cash",
-      amount,
-      balance: 0,
-      date: new Date().toLocaleDateString("en-GB"),
-      bankName: "",
-      beneficiaryName: "",
-      refNo: "",
-      description: "",
-      cardSwipingValue: 0
-    }]);
+    setPaymentRows([
+      {
+        mode: "Cash",
+        amount,
+        balance: 0,
+        date: new Date().toLocaleDateString("en-GB"),
+        bankName: "",
+        beneficiaryName: "",
+        refNo: "",
+        description: "",
+        cardSwipingValue: 0,
+      },
+    ]);
     setIsSettleModalOpen(true);
   };
 
   const handleSaveSettlement = async () => {
     if (!selectedInvoice) return;
-    const totalPaid = paymentRows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const totalPaid = paymentRows.reduce(
+      (sum, r) => sum + Number(r.amount || 0),
+      0,
+    );
     if (totalPaid <= 0) {
-      toast.error("Invalid Amount", "Please specify a payment amount greater than 0.");
+      toast.error(
+        "Invalid Amount",
+        "Please specify a payment amount greater than 0.",
+      );
       return;
     }
 
-    const isRefund = selectedInvoice.status === "Refundable" || selectedInvoice.balance < 0;
+    const isRefund =
+      selectedInvoice.status === "Refundable" || selectedInvoice.balance < 0;
     if (isRefund && !settlementNotes.trim()) {
       toast.error("Required Field", "Please fill in remarks for this refund.");
       return;
@@ -1141,9 +1632,14 @@ export default function BillingPage() {
           mode: r.mode,
           amount: Number(r.amount),
           bankName: r.bankName === "-Select-" ? undefined : r.bankName,
-          beneficiaryName: r.beneficiaryName === "-Select-" ? undefined : r.beneficiaryName,
+          beneficiaryName:
+            r.beneficiaryName === "-Select-" ? undefined : r.beneficiaryName,
           refNo: r.refNo,
-          type: isRefund ? "Refund" : (r.mode === "CreditNote" || r.mode === "TDS" ? r.mode : "Settlement"),
+          type: isRefund
+            ? "Refund"
+            : r.mode === "CreditNote" || r.mode === "TDS"
+              ? r.mode
+              : "Settlement",
           notes: isRefund ? settlementNotes : r.description,
           cardSwipingValue: r.cardSwipingValue,
         })),
@@ -1151,22 +1647,29 @@ export default function BillingPage() {
 
       toast.success(
         isRefund ? "Refund Processed" : "Receipt Processed",
-        `Successfully processed ₹${totalPaid} on Invoice ${selectedInvoice.invoiceNo}.`
+        `Successfully processed ₹${totalPaid} on Invoice ${selectedInvoice.invoiceNo}.`,
       );
       setIsSettleModalOpen(false);
       setSelectedInvoice(null);
       loadAllBillingData();
     } catch (err: any) {
-      toast.error("Settlement Failed", err.message || "Failed to process settlement.");
+      toast.error(
+        "Settlement Failed",
+        err.message || "Failed to process settlement.",
+      );
     }
   };
 
   // 6. Cancel Invoice
   const handleCancelInvoice = async (id: string) => {
-    if (!window.confirm("Are you sure you want to cancel this invoice?")) return;
+    if (!window.confirm("Are you sure you want to cancel this invoice?"))
+      return;
     try {
       await cancelInvoice(id);
-      toast.success("Invoice Cancelled", "Invoice status successfully marked as Cancelled.");
+      toast.success(
+        "Invoice Cancelled",
+        "Invoice status successfully marked as Cancelled.",
+      );
       loadAllBillingData();
     } catch (err: any) {
       toast.error("Cancel Failed", err.message || "Failed to cancel invoice.");
@@ -1190,24 +1693,40 @@ export default function BillingPage() {
         remarks: orderRemarks,
       });
 
-      toast.success("Order Created", `Doctor order ${order.orderNo} created successfully!`);
+      toast.success(
+        "Order Created",
+        `Doctor order ${order.orderNo} created successfully!`,
+      );
 
       if (billImmediately) {
-        const inv = await billOrder(order.id, { company: patient?.company || "CASH / CASH" });
-        toast.success("Order Billed", `Converted Order ${order.orderNo} to Invoice ${inv.invoiceNo}!`);
+        const inv = await billOrder(order.id, {
+          company: patient?.company || "CASH / CASH",
+        });
+        toast.success(
+          "Order Billed",
+          `Converted Order ${order.orderNo} to Invoice ${inv.invoiceNo}!`,
+        );
       }
 
       loadAllBillingData();
-      setActiveTab(billImmediately ? "Master Activity List" : "UnBilled Orders");
+      setActiveTab(
+        billImmediately ? "Master Activity List" : "UnBilled Orders",
+      );
     } catch (err: any) {
-      toast.error("Order Creation Failed", err.message || "Failed to create order.");
+      toast.error(
+        "Order Creation Failed",
+        err.message || "Failed to create order.",
+      );
     }
   };
 
   // 8. Collect Advance
   const handleSaveAdvance = async () => {
     if (!advUhid.trim() || Number(advAmount) <= 0) {
-      toast.error("Required Fields", "Please provide a valid UHID and advance amount.");
+      toast.error(
+        "Required Fields",
+        "Please provide a valid UHID and advance amount.",
+      );
       return;
     }
     try {
@@ -1222,57 +1741,131 @@ export default function BillingPage() {
         purpose: advPurpose,
       });
 
-      toast.success("Advance Collected", `Generated Advance Receipt Voucher ${adv.advanceNo} for ₹${adv.amount}!`);
+      toast.success(
+        "Advance Collected",
+        `Generated Advance Receipt Voucher ${adv.advanceNo} for ₹${adv.amount}!`,
+      );
       setAdvUhid("");
       setAdvAmount(5000);
       loadAllBillingData();
     } catch (err: any) {
-      toast.error("Advance Failed", err.message || "Failed to collect advance.");
+      toast.error(
+        "Advance Failed",
+        err.message || "Failed to collect advance.",
+      );
     }
   };
 
   // 9. Issue Credit Note
   const handleSaveCreditNote = async () => {
     if (!cnInvoiceNo.trim() || Number(cnAmount) <= 0 || !cnReason.trim()) {
-      toast.error("Required Fields", "Please enter Invoice No, Amount, and Reason.");
+      toast.error(
+        "Required Fields",
+        "Please enter Invoice No, Amount, and Reason.",
+      );
       return;
     }
+
+    const invObj = findInvoiceByNo(cnInvoiceNo);
+    if (!invObj) {
+      toast.error(
+        "Invoice Not Available",
+        `Invoice Number "${cnInvoiceNo}" was not found in the system database.`,
+      );
+      return;
+    }
+
+    if (
+      cnUhid.trim() &&
+      invObj.uhid.trim().toLowerCase() !== cnUhid.trim().toLowerCase()
+    ) {
+      toast.error(
+        "Invoice Mismatch",
+        `Invoice ${invObj.invoiceNo} belongs to Patient UHID ${invObj.uhid} (${invObj.patientName}), not ${cnUhid}.`,
+      );
+      return;
+    }
+
     try {
       const cn = await createCreditNote({
-        invoiceNo: cnInvoiceNo.trim(),
-        uhid: cnUhid || "222",
-        patientName: findPatientByUhid(cnUhid)?.patientName || "Mr. Somesh Kumar",
+        invoiceId: invObj.id,
+        invoiceNo: invObj.invoiceNo,
+        uhid: invObj.uhid,
+        patientName: invObj.patientName,
         amount: Number(cnAmount),
         reason: cnReason,
         authorizedBy: "Dr. Admin",
       });
 
-      toast.success("Credit Note Issued", `Credit Note ${cn.creditNoteNo} of ₹${cn.amount} applied to ${cn.invoiceNo}!`);
+      toast.success(
+        "Credit Note Issued",
+        `Credit Note ${cn.creditNoteNo} of ₹${cn.amount} applied to ${cn.invoiceNo}!`,
+      );
       setCnInvoiceNo("");
+      setCnUhid("");
       loadAllBillingData();
     } catch (err: any) {
-      toast.error("Credit Note Failed", err.message || "Failed to issue credit note.");
+      toast.error(
+        "Credit Note Failed",
+        err.message || "Failed to issue credit note.",
+      );
     }
   };
 
   // 10. Process Refund
   const handleSaveRefund = async () => {
     if (!refUhid.trim() || Number(refAmount) <= 0 || !refReason.trim()) {
-      toast.error("Required Fields", "Please enter UHID, refund amount, and reason.");
+      toast.error(
+        "Required Fields",
+        "Please enter UHID, refund amount, and reason.",
+      );
       return;
     }
+
+    // Verify UHID Availability
+    const patientObj = findPatientByUhid(refUhid);
+    if (!patientObj) {
+      toast.error(
+        "UHID Not Available",
+        `Patient UHID "${refUhid}" was not found in the system database.`,
+      );
+      return;
+    }
+
+    // Verify Invoice Availability & Match if provided
+    if (refInvoiceNo.trim()) {
+      const invObj = findInvoiceByNo(refInvoiceNo);
+      if (!invObj) {
+        toast.error(
+          "Invoice Not Available",
+          `Invoice Number "${refInvoiceNo}" was not found in the system database.`,
+        );
+        return;
+      }
+      if (invObj.uhid.trim().toLowerCase() !== refUhid.trim().toLowerCase()) {
+        toast.error(
+          "Invoice Mismatch",
+          `Invoice ${invObj.invoiceNo} belongs to Patient UHID ${invObj.uhid} (${invObj.patientName}), not ${refUhid}.`,
+        );
+        return;
+      }
+    }
+
     try {
       const ref = await createRefund({
         uhid: refUhid.trim(),
-        patientName: findPatientByUhid(refUhid)?.patientName || `Patient ${refUhid}`,
-        invoiceNo: refInvoiceNo || undefined,
+        patientName: patientObj.patientName || `Patient ${refUhid}`,
+        invoiceNo: refInvoiceNo.trim() || undefined,
         amount: Number(refAmount),
         mode: refMode,
         reason: refReason,
         authorizedBy: "Dr. Admin",
       });
 
-      toast.success("Refund Processed", `Refund Voucher ${ref.refundNo} of ₹${ref.amount} generated.`);
+      toast.success(
+        "Refund Processed",
+        `Refund Voucher ${ref.refundNo} of ₹${ref.amount} generated for ${patientObj.patientName}.`,
+      );
       setRefUhid("");
       setRefInvoiceNo("");
       loadAllBillingData();
@@ -1284,7 +1877,10 @@ export default function BillingPage() {
   // 11. Create / Update Intimation
   const handleSaveIntimation = async () => {
     if (!intUhid.trim() || !intTpa.trim() || !intClaimNo.trim()) {
-      toast.error("Required Fields", "Please enter UHID, TPA Name, and Claim Number.");
+      toast.error(
+        "Required Fields",
+        "Please enter UHID, TPA Name, and Claim Number.",
+      );
       return;
     }
     try {
@@ -1302,18 +1898,27 @@ export default function BillingPage() {
         remarks: "Pre-authorization approved by TPA portal",
       });
 
-      toast.success("TPA Claim Registered", `Claim Intimation ${intObj.claimNo} saved with approved limit ₹${intObj.approvedAmt}.`);
+      toast.success(
+        "TPA Claim Registered",
+        `Claim Intimation ${intObj.claimNo} saved with approved limit ₹${intObj.approvedAmt}.`,
+      );
       setIntUhid("");
       loadAllBillingData();
     } catch (err: any) {
-      toast.error("Intimation Failed", err.message || "Failed to save intimation.");
+      toast.error(
+        "Intimation Failed",
+        err.message || "Failed to save intimation.",
+      );
     }
   };
 
   // 12. Convert Selected Unbilled Orders to Combined Bill
   const handleBillSelectedOrders = async () => {
     if (selectedUnbilledOrders.length === 0) {
-      toast.error("No Orders Selected", "Please select at least one pending order.");
+      toast.error(
+        "No Orders Selected",
+        "Please select at least one pending order.",
+      );
       return;
     }
     try {
@@ -1322,7 +1927,10 @@ export default function BillingPage() {
         await billOrder(ordId, { company: "CASH / CASH" });
         billedCount++;
       }
-      toast.success("Orders Billed", `Successfully converted ${billedCount} orders into invoices!`);
+      toast.success(
+        "Orders Billed",
+        `Successfully converted ${billedCount} orders into invoices!`,
+      );
       setSelectedUnbilledOrders([]);
       loadAllBillingData();
       setActiveTab("Master Activity List");
@@ -1334,24 +1942,37 @@ export default function BillingPage() {
   // ─── FILTERED DATA ───────────────────────────────────────────────────────────
   const filteredPatients = patients.filter((p) => {
     if (patientTypeFilter && p.type !== patientTypeFilter) return false;
-    if (patientStatusFilter !== "all" && p.encounterStatus !== patientStatusFilter) return false;
+    if (
+      patientStatusFilter !== "all" &&
+      p.encounterStatus !== patientStatusFilter
+    )
+      return false;
     if (patientSearch) {
       const term = patientSearch.toLowerCase();
-      if (patientSearchOn === "Patient Name") return p.patientName.toLowerCase().includes(term);
-      if (patientSearchOn === "UHID") return p.uhid.toLowerCase().includes(term);
-      if (patientSearchOn === "IP No.") return p.ipNo.toLowerCase().includes(term);
+      if (patientSearchOn === "Patient Name")
+        return p.patientName.toLowerCase().includes(term);
+      if (patientSearchOn === "UHID")
+        return p.uhid.toLowerCase().includes(term);
+      if (patientSearchOn === "IP No.")
+        return p.ipNo.toLowerCase().includes(term);
       if (patientSearchOn === "Mobile #") return p.mobileNo.includes(term);
-      if (patientSearchOn === "Bed No") return p.bedNo.toLowerCase().includes(term);
-      if (patientSearchOn === "Doctor Name") return p.doctor.toLowerCase().includes(term);
-      if (patientSearchOn === "Company") return p.company.toLowerCase().includes(term);
+      if (patientSearchOn === "Bed No")
+        return p.bedNo.toLowerCase().includes(term);
+      if (patientSearchOn === "Doctor Name")
+        return p.doctor.toLowerCase().includes(term);
+      if (patientSearchOn === "Company")
+        return p.company.toLowerCase().includes(term);
     }
     return true;
   });
 
-  const patientTotalPages = Math.max(1, Math.ceil(filteredPatients.length / patientPageSize));
+  const patientTotalPages = Math.max(
+    1,
+    Math.ceil(filteredPatients.length / patientPageSize),
+  );
   const paginatedPatients = filteredPatients.slice(
     (patientCurrentPage - 1) * patientPageSize,
-    patientCurrentPage * patientPageSize
+    patientCurrentPage * patientPageSize,
   );
 
   // ─── Master Activity List Preset and Reset Handlers ─────────────────────────
@@ -1403,20 +2024,26 @@ export default function BillingPage() {
     setColFilterEnc("");
     setColFilterInvoiceNo("");
     setSelectedInvoiceIds([]);
-    toast.success("Filters Cleared", "All master activity filters have been reset.");
+    toast.success(
+      "Filters Cleared",
+      "All master activity filters have been reset.",
+    );
   };
 
   const toggleSelectAllInvoices = () => {
-    if (selectedInvoiceIds.length === filteredInvoices.length && filteredInvoices.length > 0) {
+    if (
+      selectedInvoiceIds.length === filteredInvoices.length &&
+      filteredInvoices.length > 0
+    ) {
       setSelectedInvoiceIds([]);
     } else {
-      setSelectedInvoiceIds(filteredInvoices.map(inv => inv.id));
+      setSelectedInvoiceIds(filteredInvoices.map((inv) => inv.id));
     }
   };
 
   const toggleSelectInvoice = (id: string) => {
     if (selectedInvoiceIds.includes(id)) {
-      setSelectedInvoiceIds(selectedInvoiceIds.filter(i => i !== id));
+      setSelectedInvoiceIds(selectedInvoiceIds.filter((i) => i !== id));
     } else {
       setSelectedInvoiceIds([...selectedInvoiceIds, id]);
     }
@@ -1425,21 +2052,53 @@ export default function BillingPage() {
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
       // Top Filter Panel criteria
-      if (malUhid.trim() && !inv.uhid.toLowerCase().includes(malUhid.trim().toLowerCase())) return false;
-      if (malBillNo.trim() && !inv.invoiceNo.toLowerCase().includes(malBillNo.trim().toLowerCase())) return false;
-      if (malPatientType !== "Both" && inv.type !== malPatientType) return false;
-      
+      if (
+        malUhid.trim() &&
+        !inv.uhid.toLowerCase().includes(malUhid.trim().toLowerCase())
+      )
+        return false;
+      if (
+        malBillNo.trim() &&
+        !inv.invoiceNo.toLowerCase().includes(malBillNo.trim().toLowerCase())
+      )
+        return false;
+      if (malPatientType !== "Both" && inv.type !== malPatientType)
+        return false;
+
       if (malPayerType !== "Select All") {
-        const isIns = inv.company.toLowerCase().includes("insurance") || inv.company.toLowerCase().includes("star") || inv.company.toLowerCase().includes("hdfc") || inv.company.toLowerCase().includes("tpa");
+        const isIns =
+          inv.company.toLowerCase().includes("insurance") ||
+          inv.company.toLowerCase().includes("star") ||
+          inv.company.toLowerCase().includes("hdfc") ||
+          inv.company.toLowerCase().includes("tpa");
         if (malPayerType === "Direct Patient" && isIns) return false;
         if (malPayerType === "Insurance" && !isIns) return false;
-        if (malPayerType === "Corporate" && !inv.company.toLowerCase().includes("corporate") && !inv.company.toLowerCase().includes("sponsor")) return false;
+        if (
+          malPayerType === "Corporate" &&
+          !inv.company.toLowerCase().includes("corporate") &&
+          !inv.company.toLowerCase().includes("sponsor")
+        )
+          return false;
       }
-      
-      if (malPayer !== "Select All" && !inv.company.toLowerCase().includes(malPayer.toLowerCase())) return false;
-      if (malSponsor !== "Select All" && !inv.company.toLowerCase().includes(malSponsor.toLowerCase())) return false;
 
-      if (malPatientRefundableOnly && inv.status !== "Refundable" && inv.refund <= 0 && inv.balance >= 0) return false;
+      if (
+        malPayer !== "Select All" &&
+        !inv.company.toLowerCase().includes(malPayer.toLowerCase())
+      )
+        return false;
+      if (
+        malSponsor !== "Select All" &&
+        !inv.company.toLowerCase().includes(malSponsor.toLowerCase())
+      )
+        return false;
+
+      if (
+        malPatientRefundableOnly &&
+        inv.status !== "Refundable" &&
+        inv.refund <= 0 &&
+        inv.balance >= 0
+      )
+        return false;
 
       if (malSearchFor === "UnSettled") {
         if (inv.status !== "Outstanding") return false;
@@ -1465,11 +2124,39 @@ export default function BillingPage() {
       }
 
       // Column-level search filters
-      if (colFilterCompany.trim() && !inv.company.toLowerCase().includes(colFilterCompany.trim().toLowerCase())) return false;
-      if (colFilterUhid.trim() && !inv.uhid.toLowerCase().includes(colFilterUhid.trim().toLowerCase())) return false;
-      if (colFilterPatient.trim() && !inv.patientName.toLowerCase().includes(colFilterPatient.trim().toLowerCase())) return false;
-      if (colFilterEnc.trim() && !String(inv.encNo || "").toLowerCase().includes(colFilterEnc.trim().toLowerCase())) return false;
-      if (colFilterInvoiceNo.trim() && !inv.invoiceNo.toLowerCase().includes(colFilterInvoiceNo.trim().toLowerCase())) return false;
+      if (
+        colFilterCompany.trim() &&
+        !inv.company
+          .toLowerCase()
+          .includes(colFilterCompany.trim().toLowerCase())
+      )
+        return false;
+      if (
+        colFilterUhid.trim() &&
+        !inv.uhid.toLowerCase().includes(colFilterUhid.trim().toLowerCase())
+      )
+        return false;
+      if (
+        colFilterPatient.trim() &&
+        !inv.patientName
+          .toLowerCase()
+          .includes(colFilterPatient.trim().toLowerCase())
+      )
+        return false;
+      if (
+        colFilterEnc.trim() &&
+        !String(inv.encNo || "")
+          .toLowerCase()
+          .includes(colFilterEnc.trim().toLowerCase())
+      )
+        return false;
+      if (
+        colFilterInvoiceNo.trim() &&
+        !inv.invoiceNo
+          .toLowerCase()
+          .includes(colFilterInvoiceNo.trim().toLowerCase())
+      )
+        return false;
 
       return true;
     });
@@ -1489,11 +2176,13 @@ export default function BillingPage() {
     colFilterUhid,
     colFilterPatient,
     colFilterEnc,
-    colFilterInvoiceNo
+    colFilterInvoiceNo,
   ]);
 
   const selectedInvoicesList = useMemo(() => {
-    return filteredInvoices.filter(inv => selectedInvoiceIds.includes(inv.id));
+    return filteredInvoices.filter((inv) =>
+      selectedInvoiceIds.includes(inv.id),
+    );
   }, [filteredInvoices, selectedInvoiceIds]);
 
   const selectedTotalAmount = useMemo(() => {
@@ -1501,7 +2190,9 @@ export default function BillingPage() {
   }, [selectedInvoicesList]);
 
   const totalAdvanceAvailable = useMemo(() => {
-    return advances.filter(a => a.status === "Active").reduce((sum, a) => sum + a.balanceAmount, 0);
+    return advances
+      .filter((a) => a.status === "Active")
+      .reduce((sum, a) => sum + a.balanceAmount, 0);
   }, [advances]);
 
   const opPatientOutstandingInvoices = useMemo(() => {
@@ -1510,8 +2201,13 @@ export default function BillingPage() {
     const patName = opBillingPatientInfo?.name?.trim().toLowerCase() || "";
     return invoices.filter((inv) => {
       const matchesUhid = termUhid && inv.uhid.toLowerCase().includes(termUhid);
-      const matchesName = patName && inv.patientName.toLowerCase().includes(patName);
-      return (matchesUhid || matchesName) && inv.balance > 0 && inv.status === "Outstanding";
+      const matchesName =
+        patName && inv.patientName.toLowerCase().includes(patName);
+      return (
+        (matchesUhid || matchesName) &&
+        inv.balance > 0 &&
+        inv.status === "Outstanding"
+      );
     });
   }, [invoices, opBillingUhid, opBillingPatientInfo]);
 
@@ -1519,17 +2215,25 @@ export default function BillingPage() {
     if (!advUhid.trim()) return advances;
     const term = advUhid.trim().toLowerCase();
     return advances.filter(
-      a =>
+      (a) =>
         a.uhid.toLowerCase().includes(term) ||
         a.patientName.toLowerCase().includes(term) ||
-        a.advanceNo.toLowerCase().includes(term)
+        a.advanceNo.toLowerCase().includes(term),
     );
   }, [advances, advUhid]);
 
   const ledgerAdvances = useMemo(() => {
     return advances.filter((adv) => {
-      if (malUhid.trim() && !adv.uhid.toLowerCase().includes(malUhid.trim().toLowerCase())) return false;
-      if (malBillNo.trim() && !adv.advanceNo.toLowerCase().includes(malBillNo.trim().toLowerCase())) return false;
+      if (
+        malUhid.trim() &&
+        !adv.uhid.toLowerCase().includes(malUhid.trim().toLowerCase())
+      )
+        return false;
+      if (
+        malBillNo.trim() &&
+        !adv.advanceNo.toLowerCase().includes(malBillNo.trim().toLowerCase())
+      )
+        return false;
       if (malFromDate) {
         const advDate = new Date(adv.createdAt);
         const fromD = new Date(malFromDate);
@@ -1550,9 +2254,12 @@ export default function BillingPage() {
     if (!opBillingUhid.trim()) return 0;
     const term = opBillingUhid.trim().toLowerCase();
     const patientAdvs = advances.filter(
-      a => a.uhid.trim().toLowerCase() === term
+      (a) => a.uhid.trim().toLowerCase() === term,
     );
-    return patientAdvs.reduce((sum, a) => sum + Number(a.balanceAmount ?? a.amount ?? 0), 0);
+    return patientAdvs.reduce(
+      (sum, a) => sum + Number(a.balanceAmount ?? a.amount ?? 0),
+      0,
+    );
   }, [opBillingUhid, advances]);
 
   useEffect(() => {
@@ -1563,9 +2270,12 @@ export default function BillingPage() {
   const ipActiveAdvanceBalance = useMemo(() => {
     if (!ipBillingUhid) return 0;
     const patientAdvs = advances.filter(
-      a => a.uhid.trim().toLowerCase() === ipBillingUhid.trim().toLowerCase()
+      (a) => a.uhid.trim().toLowerCase() === ipBillingUhid.trim().toLowerCase(),
     );
-    return patientAdvs.reduce((sum, a) => sum + Number(a.balanceAmount || 0), 0);
+    return patientAdvs.reduce(
+      (sum, a) => sum + Number(a.balanceAmount || 0),
+      0,
+    );
   }, [ipBillingUhid, advances]);
 
   const allReceiptsList = useMemo(() => {
@@ -1587,7 +2297,7 @@ export default function BillingPage() {
       notes?: string;
     }> = [];
 
-    invoices.forEach(inv => {
+    invoices.forEach((inv) => {
       if (inv.receipts && Array.isArray(inv.receipts)) {
         inv.receipts.forEach((rc: any, idx: number) => {
           list.push({
@@ -1604,7 +2314,7 @@ export default function BillingPage() {
             refNo: rc.refNo,
             amount: rc.amount || 0,
             type: rc.type || "Settlement",
-            notes: rc.notes || rc.remarks
+            notes: rc.notes || rc.remarks,
           });
         });
       }
@@ -1613,66 +2323,96 @@ export default function BillingPage() {
     return list;
   }, [receiptsList, invoices]);
 
-  const unbilledOrders = orders.filter(o => o.status === "Unbilled");
+  const unbilledOrders = orders.filter((o) => o.status === "Unbilled");
 
   // ─── RENDER UI ───────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-[calc(100vh-56px)] bg-slate-50/70 p-4 space-y-3.5 overflow-y-auto">
-      
       {/* Top Header Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 flex-shrink-0">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black text-slate-800 tracking-tight">Billing & Payments</h2>
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-bold">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight">
+              Billing & Payments
+            </h2>
+            <Badge
+              variant="outline"
+              className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-bold"
+            >
               CMK CareSuite Core
             </Badge>
           </div>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Comprehensive hospital accounting, OPD/IPD invoices, split receipts, deposits & TPA claims
+            Comprehensive hospital accounting, OPD/IPD invoices, split receipts,
+            deposits & TPA claims
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={loadAllBillingData} 
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={loadAllBillingData}
             className="h-8 gap-1 text-xs font-bold bg-white text-slate-700 hover:bg-slate-50 border-slate-300 shadow-2xs"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-blue-600" : ""}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isLoading ? "animate-spin text-blue-600" : ""}`}
+            />
             Refresh
           </Button>
 
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             onClick={() => {
               setOpUhid("");
               setActiveTab("Create OP Visit");
-            }} 
+            }}
             className="h-8 gap-1 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-2xs"
           >
             <Plus className="h-3.5 w-3.5" />
             New OP Visit
           </Button>
+
+          <Button
+            size="sm"
+            onClick={() => {
+              setDoctorTargetField("prescribing");
+              setIsAddDoctorModalOpen(true);
+            }}
+            className="h-8 gap-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs cursor-pointer"
+          >
+            <UserPlus className="h-3.5 w-3.5" />+ Create Doctor
+          </Button>
         </div>
       </div>
-
 
       {/* 11 Horizontal Navigation Tabs */}
       <div className="border-b border-slate-200 bg-white px-3 pt-2 rounded-t-xl flex-shrink-0 flex items-center overflow-x-auto gap-1 shadow-2xs scrollbar-none">
         {[
           { id: "Patient Lists", label: "Patient Lists", icon: User },
-          { id: "Master Activity List", label: "Master Activity List", icon: ReceiptText },
+          {
+            id: "Master Activity List",
+            label: "Master Activity List",
+            icon: ReceiptText,
+          },
           { id: "Create OP Visit", label: "Create OP Visit", icon: Calendar },
-          { id: "OP Order", label: "OP Order", icon: ClipboardList },
           { id: "OP Billing", label: "OP Billing", icon: FileText },
           { id: "IP Billing", label: "IP Billing", icon: Building2 },
+          { id: "OP Order", label: "OP Order", icon: ClipboardList },
           { id: "Refund", label: "Refund", icon: RotateCcw },
-          { id: "Advance Collection", label: "Advance Collection", icon: Wallet },
+          {
+            id: "Advance Collection",
+            label: "Advance Collection",
+            icon: Wallet,
+          },
           { id: "Credit Note", label: "Credit Note", icon: CreditCard },
           { id: "Intimation", label: "Intimation", icon: ShieldCheck },
-          { id: "UnBilled Orders", label: "Unbilled Orders", icon: FileCheck, count: unbilledOrders.length },
+          {
+            id: "UnBilled Orders",
+            label: "Unbilled Orders",
+            icon: FileCheck,
+            count: unbilledOrders.length,
+          },
         ].map((tab) => {
           const Icon = tab.icon;
           const isSelected = activeTab === tab.id;
@@ -1686,7 +2426,9 @@ export default function BillingPage() {
                   : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-blue-600" : "text-slate-400"}`} />
+              <Icon
+                className={`w-3.5 h-3.5 ${isSelected ? "text-blue-600" : "text-slate-400"}`}
+              />
               <span>{tab.label}</span>
               {tab.count !== undefined && tab.count > 0 && (
                 <span className="ml-0.5 px-1.5 py-0.2 text-[9px] bg-red-500 text-white rounded-full font-bold">
@@ -1700,15 +2442,18 @@ export default function BillingPage() {
 
       {/* Main Dynamic View Content */}
       <div className="flex-1 min-h-0 flex flex-col">
-
         {/* ─── TAB 1: PATIENT LISTS ────────────────────────────────────────── */}
         {activeTab === "Patient Lists" && (
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             {/* Header / Actions Bar */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-700 flex-shrink-0">
-              <span className="font-extrabold text-slate-800">Inpatient & Outpatient Census List</span>
+              <span className="font-extrabold text-slate-800">
+                Inpatient & Outpatient Census List
+              </span>
               <div className="flex items-center gap-3 text-[11px] font-semibold">
-                <span className="text-red-500 font-bold">Total Found: {filteredPatients.length}</span>
+                <span className="text-red-500 font-bold">
+                  Total Found: {filteredPatients.length}
+                </span>
                 <div className="flex items-center gap-1.5 ml-2">
                   <Button
                     size="xs"
@@ -1737,26 +2482,44 @@ export default function BillingPage() {
             <div className="p-3 border-b border-slate-100 bg-white flex-shrink-0 flex items-center justify-between flex-wrap gap-4 text-xs font-medium text-slate-700">
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-500 font-bold">Encounter Status:</span>
-                  <Select value={patientStatusFilter} onValueChange={setPatientStatusFilter}>
+                  <span className="text-slate-500 font-bold">
+                    Encounter Status:
+                  </span>
+                  <Select
+                    value={patientStatusFilter}
+                    onValueChange={setPatientStatusFilter}
+                  >
                     <SelectTrigger className="h-7 text-xs w-44 bg-white border-slate-200">
                       <SelectValue placeholder="Select All" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Select All</SelectItem>
                       <SelectItem value="Open">Open</SelectItem>
-                      <SelectItem value="Marked For Discharged">Marked for Discharge</SelectItem>
-                      <SelectItem value="Sent For Billing">Sent For Billing</SelectItem>
-                      <SelectItem value="Pharmacy Clearance">Pharmacy Clearance</SelectItem>
-                      <SelectItem value="File Received">File Received</SelectItem>
-                      <SelectItem value="Bill Prepared">Bill Prepared</SelectItem>
+                      <SelectItem value="Marked For Discharged">
+                        Marked for Discharge
+                      </SelectItem>
+                      <SelectItem value="Sent For Billing">
+                        Sent For Billing
+                      </SelectItem>
+                      <SelectItem value="Pharmacy Clearance">
+                        Pharmacy Clearance
+                      </SelectItem>
+                      <SelectItem value="File Received">
+                        File Received
+                      </SelectItem>
+                      <SelectItem value="Bill Prepared">
+                        Bill Prepared
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <span className="text-slate-500 font-bold">Search On:</span>
-                  <Select value={patientSearchOn} onValueChange={setPatientSearchOn}>
+                  <Select
+                    value={patientSearchOn}
+                    onValueChange={setPatientSearchOn}
+                  >
                     <SelectTrigger className="h-7 text-xs w-36 bg-white border-slate-200">
                       <SelectValue />
                     </SelectTrigger>
@@ -1781,7 +2544,12 @@ export default function BillingPage() {
 
               {/* Patient Category Tabs */}
               <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg overflow-x-auto scrollbar-none max-w-full">
-                {["Registration", "Admission", "Discharge But Not Bill", "Discharge"].map((t) => (
+                {[
+                  "Registration",
+                  "Admission",
+                  "Discharge But Not Bill",
+                  "Discharge",
+                ].map((t) => (
                   <button
                     key={t}
                     onClick={() => setPatientTypeFilter(t)}
@@ -1791,7 +2559,11 @@ export default function BillingPage() {
                         : "text-slate-500 hover:text-slate-800"
                     }`}
                   >
-                    {t === "Discharge But Not Bill" ? "Discharged - Bill Pending" : t === "Discharge" ? "Discharged" : t}
+                    {t === "Discharge But Not Bill"
+                      ? "Discharged - Bill Pending"
+                      : t === "Discharge"
+                        ? "Discharged"
+                        : t}
                   </button>
                 ))}
               </div>
@@ -1803,43 +2575,77 @@ export default function BillingPage() {
                 <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white uppercase text-[10px] font-bold sticky top-0 z-10">
                   <tr>
                     <th className="px-3 py-2.5 tracking-wider">UHID</th>
-                    <th className="px-3 py-2.5 tracking-wider">IP / Visit No</th>
+                    <th className="px-3 py-2.5 tracking-wider">
+                      IP / Visit No
+                    </th>
                     <th className="px-3 py-2.5 tracking-wider">Patient Name</th>
                     <th className="px-3 py-2.5 tracking-wider">Gender / Age</th>
                     <th className="px-3 py-2.5 tracking-wider">Bed / Room</th>
                     <th className="px-3 py-2.5 tracking-wider">Category</th>
                     <th className="px-3 py-2.5 tracking-wider">Doctor</th>
                     <th className="px-3 py-2.5 tracking-wider">Status</th>
-                    <th className="px-3 py-2.5 tracking-wider">Company / Payer</th>
+                    <th className="px-3 py-2.5 tracking-wider">
+                      Company / Payer
+                    </th>
                     <th className="px-3 py-2.5 tracking-wider">Mobile</th>
-                    <th className="px-3 py-2.5 text-center tracking-wider">Fast Actions</th>
+                    <th className="px-3 py-2.5 text-center tracking-wider">
+                      Fast Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {paginatedPatients.map((p) => (
                     <tr key={p.uhid} className="hover:bg-blue-50/40 group">
-                      <td className="px-3 py-2.5 font-mono font-bold text-blue-600 whitespace-nowrap" title={p.uhid}>{p.uhid}</td>
-                      <td className="px-3 py-2.5 font-mono text-slate-600">{p.ipNo}</td>
+                      <td
+                        className="px-3 py-2.5 font-mono font-bold text-blue-600 whitespace-nowrap"
+                        title={p.uhid}
+                      >
+                        {p.uhid}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">
+                        {p.ipNo}
+                      </td>
                       <td className="px-3 py-2.5 font-bold text-slate-800">
                         {p.patientName}
-                        {p.isVip && <Badge className="ml-1.5 bg-amber-500 text-[9px] h-4">VIP</Badge>}
+                        {p.isVip && (
+                          <Badge className="ml-1.5 bg-amber-500 text-[9px] h-4">
+                            VIP
+                          </Badge>
+                        )}
                       </td>
-                      <td className="px-3 py-2.5 text-slate-500">{p.genderAge}</td>
-                      <td className="px-3 py-2.5 font-semibold text-slate-700">{p.bedNo}</td>
-                      <td className="px-3 py-2.5 text-[10px] text-slate-500 font-bold">{p.billingCategory}</td>
-                      <td className="px-3 py-2.5 text-slate-700 font-semibold">{p.doctor}</td>
+                      <td className="px-3 py-2.5 text-slate-500">
+                        {p.genderAge}
+                      </td>
+                      <td className="px-3 py-2.5 font-semibold text-slate-700">
+                        {p.bedNo}
+                      </td>
+                      <td className="px-3 py-2.5 text-[10px] text-slate-500 font-bold">
+                        {p.billingCategory}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-700 font-semibold">
+                        {p.doctor}
+                      </td>
                       <td className="px-3 py-2.5">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          p.encounterStatus === "Open" ? "bg-blue-50 text-blue-700" :
-                          p.encounterStatus === "Bill Prepared" ? "bg-purple-50 text-purple-700" :
-                          p.encounterStatus === "Marked For Discharged" ? "bg-amber-50 text-amber-700" :
-                          "bg-emerald-50 text-emerald-700"
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            p.encounterStatus === "Open"
+                              ? "bg-blue-50 text-blue-700"
+                              : p.encounterStatus === "Bill Prepared"
+                                ? "bg-purple-50 text-purple-700"
+                                : p.encounterStatus === "Marked For Discharged"
+                                  ? "bg-amber-50 text-amber-700"
+                                  : "bg-emerald-50 text-emerald-700"
+                          }`}
+                        >
                           {p.encounterStatus}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-slate-600">{p.company}</td>
-                      <td className="px-3 py-2.5 text-slate-500 font-mono">{p.mobileNo}</td>
+                      <td className="px-3 py-2.5 text-slate-600">
+                        {p.company}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-500 font-mono">
+                        {p.mobileNo}
+                      </td>
                       <td className="px-3 py-2.5 text-center">
                         <div className="flex items-center justify-center gap-1 opacity-90 group-hover:opacity-100">
                           <Button
@@ -1881,7 +2687,10 @@ export default function BillingPage() {
                   ))}
                   {filteredPatients.length === 0 && (
                     <tr>
-                      <td colSpan={11} className="px-3 py-10 text-center text-slate-400 font-bold">
+                      <td
+                        colSpan={11}
+                        className="px-3 py-10 text-center text-slate-400 font-bold"
+                      >
                         No patients matching filter criteria.
                       </td>
                     </tr>
@@ -1904,7 +2713,9 @@ export default function BillingPage() {
                   className="h-7 px-2 text-xs border border-slate-200 rounded-md bg-white text-slate-700 font-bold cursor-pointer focus:outline-none focus:ring-1 focus:ring-teal-500"
                 >
                   {[5, 10, 20, 50, 100].map((n) => (
-                    <option key={n} value={n}>{n}</option>
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -1915,15 +2726,22 @@ export default function BillingPage() {
                 <span className="text-xs text-slate-500 font-semibold">
                   Showing{" "}
                   <span className="font-bold text-slate-800">
-                    {filteredPatients.length === 0 ? 0 : (patientCurrentPage - 1) * patientPageSize + 1}
-                  </span>
-                  {" "}–{" "}
+                    {filteredPatients.length === 0
+                      ? 0
+                      : (patientCurrentPage - 1) * patientPageSize + 1}
+                  </span>{" "}
+                  –{" "}
                   <span className="font-bold text-slate-800">
-                    {Math.min(patientCurrentPage * patientPageSize, filteredPatients.length)}
-                  </span>
-                  {" "}of{" "}
-                  <span className="font-bold text-slate-800">{filteredPatients.length}</span>
-                  {" "}results
+                    {Math.min(
+                      patientCurrentPage * patientPageSize,
+                      filteredPatients.length,
+                    )}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-bold text-slate-800">
+                    {filteredPatients.length}
+                  </span>{" "}
+                  results
                 </span>
 
                 {/* Pagination buttons */}
@@ -1937,7 +2755,9 @@ export default function BillingPage() {
                     «
                   </button>
                   <button
-                    onClick={() => setPatientCurrentPage((p) => Math.max(1, p - 1))}
+                    onClick={() =>
+                      setPatientCurrentPage((p) => Math.max(1, p - 1))
+                    }
                     disabled={patientCurrentPage === 1}
                     className="h-7 w-7 flex items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold"
                     title="Previous page"
@@ -1946,19 +2766,29 @@ export default function BillingPage() {
                   </button>
 
                   {Array.from({ length: patientTotalPages }, (_, i) => i + 1)
-                    .filter((page) =>
-                      page === 1 ||
-                      page === patientTotalPages ||
-                      Math.abs(page - patientCurrentPage) <= 1
+                    .filter(
+                      (page) =>
+                        page === 1 ||
+                        page === patientTotalPages ||
+                        Math.abs(page - patientCurrentPage) <= 1,
                     )
                     .reduce((acc: (number | string)[], page, idx, arr) => {
-                      if (idx > 0 && (page as number) - (arr[idx - 1] as number) > 1) acc.push("…");
+                      if (
+                        idx > 0 &&
+                        (page as number) - (arr[idx - 1] as number) > 1
+                      )
+                        acc.push("…");
                       acc.push(page);
                       return acc;
                     }, [])
                     .map((item, idx) =>
                       item === "…" ? (
-                        <span key={`ellipsis-${idx}`} className="h-7 w-7 flex items-center justify-center text-slate-400 text-xs">…</span>
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="h-7 w-7 flex items-center justify-center text-slate-400 text-xs"
+                        >
+                          …
+                        </span>
                       ) : (
                         <button
                           key={item}
@@ -1971,12 +2801,15 @@ export default function BillingPage() {
                         >
                           {item}
                         </button>
-                      )
-                    )
-                  }
+                      ),
+                    )}
 
                   <button
-                    onClick={() => setPatientCurrentPage((p) => Math.min(patientTotalPages, p + 1))}
+                    onClick={() =>
+                      setPatientCurrentPage((p) =>
+                        Math.min(patientTotalPages, p + 1),
+                      )
+                    }
                     disabled={patientCurrentPage === patientTotalPages}
                     className="h-7 w-7 flex items-center justify-center rounded-md border border-slate-200 bg-white text-slate-600 hover:bg-teal-600 hover:text-white hover:border-teal-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-bold"
                     title="Next page"
@@ -2002,7 +2835,9 @@ export default function BillingPage() {
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             {/* Header Title & Top Quick Action */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
-              <span className="text-sm font-bold text-slate-800">Master Activity List</span>
+              <span className="text-sm font-bold text-slate-800">
+                Master Activity List
+              </span>
               <div className="flex items-center gap-2">
                 <Button
                   size="xs"
@@ -2027,12 +2862,13 @@ export default function BillingPage() {
 
             {/* Filter Panel (Matching EMR Reference Layout) */}
             <div className="p-3 border-b border-slate-200 bg-white flex-shrink-0 text-xs font-medium text-slate-700 space-y-2.5">
-              
               {/* Row 1: UHID, Bill No, Date Range, From, To */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
                 {/* UHID */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">UHID</span>
+                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    UHID
+                  </span>
                   <div className="flex items-center gap-1 flex-1">
                     <Input
                       placeholder="Enter UHID..."
@@ -2063,7 +2899,9 @@ export default function BillingPage() {
 
                 {/* Bill No */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-14 text-slate-500 font-bold text-[11px] flex-shrink-0">Bill No</span>
+                  <span className="w-14 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    Bill No
+                  </span>
                   <Input
                     placeholder="Invoice / Bill No..."
                     className="h-7 text-xs bg-white border-slate-300 font-mono"
@@ -2074,9 +2912,16 @@ export default function BillingPage() {
 
                 {/* Date Range Preset */}
                 <div className="md:col-span-2 flex items-center gap-1.5">
-                  <span className="w-20 text-slate-500 font-bold text-[11px] flex-shrink-0">Date Range</span>
-                  <Select value={malDateRangePreset} onValueChange={handleDateRangePresetChange}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                  <span className="w-20 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    Date Range
+                  </span>
+                  <Select
+                    value={malDateRangePreset}
+                    onValueChange={handleDateRangePresetChange}
+                  >
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Date Range">Date Range</SelectItem>
                       <SelectItem value="Today">Today</SelectItem>
@@ -2090,7 +2935,9 @@ export default function BillingPage() {
 
                 {/* From Date */}
                 <div className="md:col-span-2 flex items-center gap-1.5">
-                  <span className="w-10 text-slate-500 font-bold text-[11px] flex-shrink-0">From</span>
+                  <span className="w-10 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    From
+                  </span>
                   <Input
                     type="date"
                     className="h-7 text-xs bg-white border-slate-300 font-mono"
@@ -2104,7 +2951,9 @@ export default function BillingPage() {
 
                 {/* To Date */}
                 <div className="md:col-span-2 flex items-center gap-1.5">
-                  <span className="w-6 text-slate-500 font-bold text-[11px] flex-shrink-0">To</span>
+                  <span className="w-6 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    To
+                  </span>
                   <Input
                     type="date"
                     className="h-7 text-xs bg-white border-slate-300 font-mono"
@@ -2121,24 +2970,38 @@ export default function BillingPage() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
                 {/* Facility */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">Facility</span>
+                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    Facility
+                  </span>
                   <Select value={malFacility} onValueChange={setMalFacility}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300 font-bold text-slate-800"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300 font-bold text-slate-800">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CMK HEALTHCARE PVT. LTD.">CMK HEALTHCARE PVT. LTD.</SelectItem>
-                      <SelectItem value="Main Branch Hospital">Main Branch Hospital</SelectItem>
+                      <SelectItem value="CMK HEALTHCARE PVT. LTD.">
+                        CMK HEALTHCARE PVT. LTD.
+                      </SelectItem>
+                      <SelectItem value="Main Branch Hospital">
+                        Main Branch Hospital
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Payer Type */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-16 text-slate-500 font-bold text-[11px] flex-shrink-0">Payer Type</span>
+                  <span className="w-16 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    Payer Type
+                  </span>
                   <Select value={malPayerType} onValueChange={setMalPayerType}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Select All">Select All</SelectItem>
-                      <SelectItem value="Direct Patient">Direct Patient (Cash)</SelectItem>
+                      <SelectItem value="Direct Patient">
+                        Direct Patient (Cash)
+                      </SelectItem>
                       <SelectItem value="Insurance">Insurance / TPA</SelectItem>
                       <SelectItem value="Corporate">Corporate</SelectItem>
                     </SelectContent>
@@ -2147,24 +3010,38 @@ export default function BillingPage() {
 
                 {/* Payer */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">Payer</span>
+                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    Payer
+                  </span>
                   <Select value={malPayer} onValueChange={setMalPayer}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Select All">Select All</SelectItem>
                       <SelectItem value="CASH">CASH</SelectItem>
-                      <SelectItem value="Star Health">Star Health & Allied Insurance</SelectItem>
-                      <SelectItem value="HDFC ERGO">HDFC ERGO General Insurance</SelectItem>
-                      <SelectItem value="ICICI Lombard">ICICI Lombard</SelectItem>
+                      <SelectItem value="Star Health">
+                        Star Health & Allied Insurance
+                      </SelectItem>
+                      <SelectItem value="HDFC ERGO">
+                        HDFC ERGO General Insurance
+                      </SelectItem>
+                      <SelectItem value="ICICI Lombard">
+                        ICICI Lombard
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 {/* Sponsor */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-14 text-slate-500 font-bold text-[11px] flex-shrink-0">Sponsor</span>
+                  <span className="w-14 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    Sponsor
+                  </span>
                   <Select value={malSponsor} onValueChange={setMalSponsor}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Select All">Select All</SelectItem>
                       <SelectItem value="CASH">CASH</SelectItem>
@@ -2179,9 +3056,16 @@ export default function BillingPage() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
                 {/* Patient Type */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-20 text-slate-500 font-bold text-[11px] flex-shrink-0">Patient Type</span>
-                  <Select value={malPatientType} onValueChange={setMalPatientType}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300"><SelectValue /></SelectTrigger>
+                  <span className="w-20 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    Patient Type
+                  </span>
+                  <Select
+                    value={malPatientType}
+                    onValueChange={setMalPatientType}
+                  >
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Both">Both (OP + IP)</SelectItem>
                       <SelectItem value="OP">Outpatient (OP)</SelectItem>
@@ -2192,7 +3076,9 @@ export default function BillingPage() {
 
                 {/* Print As Radio Buttons */}
                 <div className="md:col-span-2 flex items-center gap-3 text-xs font-semibold text-slate-700">
-                  <span className="text-slate-500 font-bold text-[11px]">Print As</span>
+                  <span className="text-slate-500 font-bold text-[11px]">
+                    Print As
+                  </span>
                   <label className="flex items-center gap-1 cursor-pointer">
                     <input
                       type="radio"
@@ -2223,7 +3109,9 @@ export default function BillingPage() {
                     <input
                       type="checkbox"
                       checked={malPatientRefundableOnly}
-                      onChange={(e) => setMalPatientRefundableOnly(e.target.checked)}
+                      onChange={(e) =>
+                        setMalPatientRefundableOnly(e.target.checked)
+                      }
                       className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600"
                     />
                     <span>Patient Refundable</span>
@@ -2232,12 +3120,18 @@ export default function BillingPage() {
 
                 {/* Search For */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-18 text-slate-500 font-bold text-[11px] flex-shrink-0">Search For</span>
+                  <span className="w-18 text-slate-500 font-bold text-[11px] flex-shrink-0">
+                    Search For
+                  </span>
                   <Select value={malSearchFor} onValueChange={setMalSearchFor}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300 font-bold text-blue-900"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300 font-bold text-blue-900">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All Invoices">All Invoices</SelectItem>
-                      <SelectItem value="UnSettled">Unsettled / Pending</SelectItem>
+                      <SelectItem value="UnSettled">
+                        Unsettled / Pending
+                      </SelectItem>
                       <SelectItem value="Settled">Settled</SelectItem>
                       <SelectItem value="Refundable">Refundable</SelectItem>
                       <SelectItem value="Cancelled">Cancelled</SelectItem>
@@ -2261,7 +3155,12 @@ export default function BillingPage() {
             {/* Sub-tabs & Real-time Live Summary Bar */}
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-1 flex-shrink-0">
               <div className="flex items-center gap-1">
-                {["Invoice Details", "Receipt Details", "Advance Details", "Selected Invoice"].map((st) => (
+                {[
+                  "Invoice Details",
+                  "Receipt Details",
+                  "Advance Details",
+                  "Selected Invoice",
+                ].map((st) => (
                   <button
                     key={st}
                     onClick={() => setActiveSubTab(st)}
@@ -2272,11 +3171,12 @@ export default function BillingPage() {
                     }`}
                   >
                     <span>{st}</span>
-                    {st === "Selected Invoice" && selectedInvoiceIds.length > 0 && (
-                      <span className="ml-1 px-1.5 py-0.2 bg-white text-blue-700 rounded-full text-[10px] font-black">
-                        {selectedInvoiceIds.length}
-                      </span>
-                    )}
+                    {st === "Selected Invoice" &&
+                      selectedInvoiceIds.length > 0 && (
+                        <span className="ml-1 px-1.5 py-0.2 bg-white text-blue-700 rounded-full text-[10px] font-black">
+                          {selectedInvoiceIds.length}
+                        </span>
+                      )}
                   </button>
                 ))}
               </div>
@@ -2284,19 +3184,27 @@ export default function BillingPage() {
               {/* Right Side Live Totals (Matching Reference Screenshot) */}
               <div className="flex items-center gap-4 text-xs font-semibold text-slate-700">
                 <div>
-                  <span className="text-slate-500 font-bold">Total Advance Available: </span>
-                  <span className="font-mono font-black text-emerald-600">₹{totalAdvanceAvailable.toFixed(2)}</span>
+                  <span className="text-slate-500 font-bold">
+                    Total Advance Available:{" "}
+                  </span>
+                  <span className="font-mono font-black text-emerald-600">
+                    ₹{totalAdvanceAvailable.toFixed(2)}
+                  </span>
                 </div>
                 <div className="border-l pl-3 border-slate-300">
-                  <span className="text-slate-500 font-bold">Selected Invoice Amount: </span>
-                  <span className="font-mono font-black text-blue-700">₹{selectedTotalAmount.toFixed(2)} ({selectedInvoiceIds.length})</span>
+                  <span className="text-slate-500 font-bold">
+                    Selected Invoice Amount:{" "}
+                  </span>
+                  <span className="font-mono font-black text-blue-700">
+                    ₹{selectedTotalAmount.toFixed(2)} (
+                    {selectedInvoiceIds.length})
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Data Table with In-Table Column Filters */}
             <div className="flex-1 overflow-auto bg-white flex flex-col justify-between">
-              
               {/* SUBTAB 1: INVOICE DETAILS */}
               {activeSubTab === "Invoice Details" && (
                 <div className="flex-1 overflow-auto">
@@ -2307,7 +3215,11 @@ export default function BillingPage() {
                         <th className="px-2 py-2 text-center w-8">
                           <input
                             type="checkbox"
-                            checked={selectedInvoiceIds.length === filteredInvoices.length && filteredInvoices.length > 0}
+                            checked={
+                              selectedInvoiceIds.length ===
+                                filteredInvoices.length &&
+                              filteredInvoices.length > 0
+                            }
                             onChange={toggleSelectAllInvoices}
                             className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 cursor-pointer"
                           />
@@ -2327,7 +3239,9 @@ export default function BillingPage() {
                         <th className="px-2.5 py-2 text-right">Cr. Note</th>
                         <th className="px-2.5 py-2 text-right">Balance</th>
                         <th className="px-2.5 py-2 text-center">Status</th>
-                        <th className="px-2.5 py-2 text-center">Cancel / Actions</th>
+                        <th className="px-2.5 py-2 text-center">
+                          Cancel / Actions
+                        </th>
                       </tr>
 
                       {/* Header Row 2: In-Table Search Inputs (as in legacy reference screenshot) */}
@@ -2336,7 +3250,9 @@ export default function BillingPage() {
                         <th className="px-1 py-1">
                           <Input
                             value={colFilterCompany}
-                            onChange={(e) => setColFilterCompany(e.target.value)}
+                            onChange={(e) =>
+                              setColFilterCompany(e.target.value)
+                            }
                             placeholder="Filter..."
                             className="h-5 text-[10px] px-1 py-0 w-full bg-slate-50 border-slate-200"
                           />
@@ -2352,7 +3268,9 @@ export default function BillingPage() {
                         <th className="px-1 py-1">
                           <Input
                             value={colFilterPatient}
-                            onChange={(e) => setColFilterPatient(e.target.value)}
+                            onChange={(e) =>
+                              setColFilterPatient(e.target.value)
+                            }
                             placeholder="Filter..."
                             className="h-5 text-[10px] px-1 py-0 w-full bg-slate-50 border-slate-200"
                           />
@@ -2369,7 +3287,9 @@ export default function BillingPage() {
                         <th className="px-1 py-1">
                           <Input
                             value={colFilterInvoiceNo}
-                            onChange={(e) => setColFilterInvoiceNo(e.target.value)}
+                            onChange={(e) =>
+                              setColFilterInvoiceNo(e.target.value)
+                            }
                             placeholder="Filter..."
                             className="h-5 text-[10px] px-1 py-0 w-full bg-slate-50 border-slate-200 font-mono"
                           />
@@ -2395,7 +3315,10 @@ export default function BillingPage() {
                             key={inv.id}
                             className={`hover:bg-blue-50/40 transition-colors ${isChecked ? "bg-blue-50/60" : ""}`}
                           >
-                            <td className="px-2 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                            <td
+                              className="px-2 py-2 text-center"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <input
                                 type="checkbox"
                                 checked={isChecked}
@@ -2403,7 +3326,9 @@ export default function BillingPage() {
                                 className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 cursor-pointer"
                               />
                             </td>
-                            <td className="px-2.5 py-2 text-[10px] font-bold text-slate-600">{inv.company}</td>
+                            <td className="px-2.5 py-2 text-[10px] font-bold text-slate-600">
+                              {inv.company}
+                            </td>
                             <td className="px-2.5 py-2 font-mono text-blue-600 font-bold whitespace-nowrap">
                               <button
                                 type="button"
@@ -2417,43 +3342,88 @@ export default function BillingPage() {
                                 {inv.uhid}
                               </button>
                             </td>
-                            <td className="px-2.5 py-2 font-bold text-slate-800">{inv.patientName}</td>
-                            <td className="px-2.5 py-2 font-mono text-slate-500">{inv.encNo || "-"}</td>
+                            <td className="px-2.5 py-2 font-bold text-slate-800">
+                              {inv.patientName}
+                            </td>
+                            <td className="px-2.5 py-2 font-mono text-slate-500">
+                              {inv.encNo || "-"}
+                            </td>
                             <td className="px-2.5 py-2 text-center">
-                              <Badge variant="outline" className={inv.type === "IP" ? "bg-purple-50 text-purple-700 border-purple-200 text-[10px]" : "bg-blue-50 text-blue-700 border-blue-200 text-[10px]"}>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  inv.type === "IP"
+                                    ? "bg-purple-50 text-purple-700 border-purple-200 text-[10px]"
+                                    : "bg-blue-50 text-blue-700 border-blue-200 text-[10px]"
+                                }
+                              >
                                 {inv.type}
                               </Badge>
                             </td>
-                            <td className="px-2.5 py-2 font-mono font-bold text-slate-800">{inv.invoiceNo}</td>
-                            <td className="px-2.5 py-2 text-slate-500 font-mono">{new Date(inv.date).toLocaleDateString("en-GB")}</td>
-                            <td className="px-2.5 py-2 text-right font-mono font-bold text-slate-900">₹{inv.netAmt.toFixed(2)}</td>
-                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">₹{(inv as any).patientPayable ? (inv as any).patientPayable.toFixed(2) : (inv.company.includes("Insurance") ? "0.00" : inv.netAmt.toFixed(2))}</td>
-                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">₹{(inv as any).companyPayable ? (inv as any).companyPayable.toFixed(2) : (inv.company.includes("Insurance") ? inv.netAmt.toFixed(2) : "0.00")}</td>
-                            <td className="px-2.5 py-2 text-right font-mono text-emerald-600 font-semibold">₹{inv.adjusted.toFixed(2)}</td>
-                            <td className="px-2.5 py-2 text-right font-mono text-amber-600 font-semibold">₹{inv.refund.toFixed(2)}</td>
-                            <td className="px-2.5 py-2 text-right font-mono text-purple-600 font-semibold">₹{inv.creditNote.toFixed(2)}</td>
-                            <td className="px-2.5 py-2 text-right font-mono font-black text-slate-900">₹{Math.abs(inv.balance).toFixed(2)}</td>
+                            <td className="px-2.5 py-2 font-mono font-bold text-slate-800">
+                              {inv.invoiceNo}
+                            </td>
+                            <td className="px-2.5 py-2 text-slate-500 font-mono">
+                              {new Date(inv.date).toLocaleDateString("en-GB")}
+                            </td>
+                            <td className="px-2.5 py-2 text-right font-mono font-bold text-slate-900">
+                              ₹{inv.netAmt.toFixed(2)}
+                            </td>
+                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">
+                              ₹
+                              {(inv as any).patientPayable
+                                ? (inv as any).patientPayable.toFixed(2)
+                                : inv.company.includes("Insurance")
+                                  ? "0.00"
+                                  : inv.netAmt.toFixed(2)}
+                            </td>
+                            <td className="px-2.5 py-2 text-right font-mono text-slate-700">
+                              ₹
+                              {(inv as any).companyPayable
+                                ? (inv as any).companyPayable.toFixed(2)
+                                : inv.company.includes("Insurance")
+                                  ? inv.netAmt.toFixed(2)
+                                  : "0.00"}
+                            </td>
+                            <td className="px-2.5 py-2 text-right font-mono text-emerald-600 font-semibold">
+                              ₹{inv.adjusted.toFixed(2)}
+                            </td>
+                            <td className="px-2.5 py-2 text-right font-mono text-amber-600 font-semibold">
+                              ₹{inv.refund.toFixed(2)}
+                            </td>
+                            <td className="px-2.5 py-2 text-right font-mono text-purple-600 font-semibold">
+                              ₹{inv.creditNote.toFixed(2)}
+                            </td>
+                            <td className="px-2.5 py-2 text-right font-mono font-black text-slate-900">
+                              ₹{Math.abs(inv.balance).toFixed(2)}
+                            </td>
                             <td className="px-2.5 py-2 text-center">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black ${
-                                inv.status === "Settled" ? "bg-emerald-100 text-emerald-800" :
-                                inv.status === "Refundable" ? "bg-amber-100 text-amber-800" :
-                                inv.status === "Cancelled" ? "bg-slate-100 text-slate-600" :
-                                "bg-red-100 text-red-800"
-                              }`}>
+                              <span
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black ${
+                                  inv.status === "Settled"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : inv.status === "Refundable"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : inv.status === "Cancelled"
+                                        ? "bg-slate-100 text-slate-600"
+                                        : "bg-red-100 text-red-800"
+                                }`}
+                              >
                                 {inv.status}
                               </span>
                             </td>
                             <td className="px-2.5 py-2 text-center">
                               <div className="flex items-center justify-center gap-1">
-                                {inv.status !== "Settled" && inv.status !== "Cancelled" && (
-                                  <Button
-                                    size="xs"
-                                    className="h-5 px-1.5 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                                    onClick={() => handleOpenSettlement(inv)}
-                                  >
-                                    Settle
-                                  </Button>
-                                )}
+                                {inv.status !== "Settled" &&
+                                  inv.status !== "Cancelled" && (
+                                    <Button
+                                      size="xs"
+                                      className="h-5 px-1.5 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                                      onClick={() => handleOpenSettlement(inv)}
+                                    >
+                                      Settle
+                                    </Button>
+                                  )}
                                 <Button
                                   size="xs"
                                   variant="outline"
@@ -2482,7 +3452,10 @@ export default function BillingPage() {
 
                       {filteredInvoices.length === 0 && (
                         <tr>
-                          <td colSpan={17} className="px-3 py-16 text-center text-red-600 font-bold text-xs">
+                          <td
+                            colSpan={17}
+                            className="px-3 py-16 text-center text-red-600 font-bold text-xs"
+                          >
                             No Record Found.
                           </td>
                         </tr>
@@ -2513,17 +3486,38 @@ export default function BillingPage() {
                     <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                       {allReceiptsList.map((rc) => (
                         <tr key={rc.id} className="hover:bg-slate-50">
-                          <td className="px-3 py-2.5 font-mono font-bold text-blue-700">{rc.receiptNo}</td>
-                          <td className="px-3 py-2.5 font-mono font-bold text-slate-800">{rc.invoiceNo}</td>
-                          <td className="px-3 py-2.5 font-mono text-blue-600">{rc.uhid}</td>
-                          <td className="px-3 py-2.5 font-bold text-slate-800">{rc.patientName}</td>
-                          <td className="px-3 py-2.5 font-mono text-slate-500">{rc.encNo}</td>
-                          <td className="px-3 py-2.5 text-slate-500 font-mono">{new Date(rc.date).toLocaleDateString("en-GB")}</td>
-                          <td className="px-3 py-2.5 font-semibold text-slate-700">{rc.mode}</td>
-                          <td className="px-3 py-2.5 text-slate-500 font-mono">{rc.bankName || rc.refNo || "-"}</td>
-                          <td className="px-3 py-2.5 text-right font-mono font-black text-emerald-600">₹{rc.amount.toFixed(2)}</td>
+                          <td className="px-3 py-2.5 font-mono font-bold text-blue-700">
+                            {rc.receiptNo}
+                          </td>
+                          <td className="px-3 py-2.5 font-mono font-bold text-slate-800">
+                            {rc.invoiceNo}
+                          </td>
+                          <td className="px-3 py-2.5 font-mono text-blue-600">
+                            {rc.uhid}
+                          </td>
+                          <td className="px-3 py-2.5 font-bold text-slate-800">
+                            {rc.patientName}
+                          </td>
+                          <td className="px-3 py-2.5 font-mono text-slate-500">
+                            {rc.encNo}
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-500 font-mono">
+                            {new Date(rc.date).toLocaleDateString("en-GB")}
+                          </td>
+                          <td className="px-3 py-2.5 font-semibold text-slate-700">
+                            {rc.mode}
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-500 font-mono">
+                            {rc.bankName || rc.refNo || "-"}
+                          </td>
+                          <td className="px-3 py-2.5 text-right font-mono font-black text-emerald-600">
+                            ₹{rc.amount.toFixed(2)}
+                          </td>
                           <td className="px-3 py-2.5 text-center">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">
+                            <Badge
+                              variant="outline"
+                              className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]"
+                            >
                               {rc.type}
                             </Badge>
                           </td>
@@ -2531,7 +3525,10 @@ export default function BillingPage() {
                       ))}
                       {allReceiptsList.length === 0 && (
                         <tr>
-                          <td colSpan={10} className="px-3 py-16 text-center text-red-600 font-bold text-xs">
+                          <td
+                            colSpan={10}
+                            className="px-3 py-16 text-center text-red-600 font-bold text-xs"
+                          >
                             No Record Found.
                           </td>
                         </tr>
@@ -2552,7 +3549,9 @@ export default function BillingPage() {
                         <th className="px-3 py-2.5">Patient Name</th>
                         <th className="px-3 py-2.5">Enc#</th>
                         <th className="px-3 py-2.5">Date</th>
-                        <th className="px-3 py-2.5 text-right">Advance Amount</th>
+                        <th className="px-3 py-2.5 text-right">
+                          Advance Amount
+                        </th>
                         <th className="px-3 py-2.5 text-right">Adjusted</th>
                         <th className="px-3 py-2.5 text-right">Refund</th>
                         <th className="px-3 py-2.5 text-right">Balance</th>
@@ -2563,18 +3562,47 @@ export default function BillingPage() {
                     <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                       {ledgerAdvances.map((adv) => (
                         <tr key={adv.id} className="hover:bg-slate-50/50">
-                          <td className="px-3 py-2.5 font-mono font-bold text-blue-700">{adv.advanceNo}</td>
-                          <td className="px-3 py-2.5 font-mono text-slate-600">{adv.uhid}</td>
-                          <td className="px-3 py-2.5 font-bold text-slate-800">{adv.patientName}</td>
-                          <td className="px-3 py-2.5 font-mono">{adv.encNo || "-"}</td>
-                          <td className="px-3 py-2.5 text-slate-500">{new Date(adv.createdAt).toLocaleDateString("en-GB")}</td>
-                          <td className="px-3 py-2.5 text-right font-mono font-bold">₹{adv.amount.toFixed(2)}</td>
-                          <td className="px-3 py-2.5 text-right font-mono text-emerald-600">₹{adv.adjustedAmount.toFixed(2)}</td>
-                          <td className="px-3 py-2.5 text-right font-mono text-amber-600">₹{adv.refundAmount.toFixed(2)}</td>
-                          <td className="px-3 py-2.5 text-right font-mono font-black text-slate-800">₹{adv.balanceAmount.toFixed(2)}</td>
-                          <td className="px-3 py-2.5 text-slate-600">{adv.purpose}</td>
+                          <td className="px-3 py-2.5 font-mono font-bold text-blue-700">
+                            {adv.advanceNo}
+                          </td>
+                          <td className="px-3 py-2.5 font-mono text-slate-600">
+                            {adv.uhid}
+                          </td>
+                          <td className="px-3 py-2.5 font-bold text-slate-800">
+                            {adv.patientName}
+                          </td>
+                          <td className="px-3 py-2.5 font-mono">
+                            {adv.encNo || "-"}
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-500">
+                            {new Date(adv.createdAt).toLocaleDateString(
+                              "en-GB",
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 text-right font-mono font-bold">
+                            ₹{adv.amount.toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2.5 text-right font-mono text-emerald-600">
+                            ₹{adv.adjustedAmount.toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2.5 text-right font-mono text-amber-600">
+                            ₹{adv.refundAmount.toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2.5 text-right font-mono font-black text-slate-800">
+                            ₹{adv.balanceAmount.toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2.5 text-slate-600">
+                            {adv.purpose}
+                          </td>
                           <td className="px-3 py-2.5 text-center">
-                            <Badge variant="outline" className={adv.status === "Active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600"}>
+                            <Badge
+                              variant="outline"
+                              className={
+                                adv.status === "Active"
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : "bg-slate-50 text-slate-600"
+                              }
+                            >
                               {adv.status}
                             </Badge>
                           </td>
@@ -2582,7 +3610,10 @@ export default function BillingPage() {
                       ))}
                       {ledgerAdvances.length === 0 && (
                         <tr>
-                          <td colSpan={11} className="px-3 py-16 text-center text-red-600 font-bold text-xs">
+                          <td
+                            colSpan={11}
+                            className="px-3 py-16 text-center text-red-600 font-bold text-xs"
+                          >
                             No Record Found.
                           </td>
                         </tr>
@@ -2597,8 +3628,12 @@ export default function BillingPage() {
                 <div className="flex-1 overflow-auto p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-sm font-bold text-slate-800">Selected Invoices Summary</h4>
-                      <p className="text-xs text-slate-500">Showing {selectedInvoicesList.length} checked invoice(s)</p>
+                      <h4 className="text-sm font-bold text-slate-800">
+                        Selected Invoices Summary
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        Showing {selectedInvoicesList.length} checked invoice(s)
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -2638,15 +3673,27 @@ export default function BillingPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                      {selectedInvoicesList.map(inv => (
+                      {selectedInvoicesList.map((inv) => (
                         <tr key={inv.id} className="hover:bg-slate-50">
-                          <td className="px-3 py-2 font-mono font-bold text-blue-700">{inv.invoiceNo}</td>
+                          <td className="px-3 py-2 font-mono font-bold text-blue-700">
+                            {inv.invoiceNo}
+                          </td>
                           <td className="px-3 py-2 font-mono">{inv.uhid}</td>
-                          <td className="px-3 py-2 font-bold text-slate-800">{inv.patientName}</td>
-                          <td className="px-3 py-2 font-mono text-slate-500">{new Date(inv.date).toLocaleDateString("en-GB")}</td>
-                          <td className="px-3 py-2 text-right font-mono font-bold">₹{inv.netAmt.toFixed(2)}</td>
-                          <td className="px-3 py-2 text-right font-mono text-emerald-600">₹{inv.adjusted.toFixed(2)}</td>
-                          <td className="px-3 py-2 text-right font-mono font-black text-slate-900">₹{Math.abs(inv.balance).toFixed(2)}</td>
+                          <td className="px-3 py-2 font-bold text-slate-800">
+                            {inv.patientName}
+                          </td>
+                          <td className="px-3 py-2 font-mono text-slate-500">
+                            {new Date(inv.date).toLocaleDateString("en-GB")}
+                          </td>
+                          <td className="px-3 py-2 text-right font-mono font-bold">
+                            ₹{inv.netAmt.toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2 text-right font-mono text-emerald-600">
+                            ₹{inv.adjusted.toFixed(2)}
+                          </td>
+                          <td className="px-3 py-2 text-right font-mono font-black text-slate-900">
+                            ₹{Math.abs(inv.balance).toFixed(2)}
+                          </td>
                           <td className="px-3 py-2 text-center">
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-50 text-blue-700">
                               {inv.status}
@@ -2656,8 +3703,12 @@ export default function BillingPage() {
                       ))}
                       {selectedInvoicesList.length === 0 && (
                         <tr>
-                          <td colSpan={8} className="px-3 py-12 text-center text-slate-400 font-bold">
-                            No invoices currently selected. Check boxes in the "Invoice Details" tab to select.
+                          <td
+                            colSpan={8}
+                            className="px-3 py-12 text-center text-slate-400 font-bold"
+                          >
+                            No invoices currently selected. Check boxes in the
+                            "Invoice Details" tab to select.
                           </td>
                         </tr>
                       )}
@@ -2669,7 +3720,11 @@ export default function BillingPage() {
               {/* Table Footer & Legend Bar (Matching Legacy Bottom Right Badges) */}
               <div className="border-t border-slate-200 bg-slate-50/80 px-4 py-2 flex items-center justify-between text-xs flex-shrink-0">
                 <div className="text-slate-500 font-semibold text-[11px]">
-                  Showing <span className="font-bold text-slate-800">{filteredInvoices.length}</span> record(s)
+                  Showing{" "}
+                  <span className="font-bold text-slate-800">
+                    {filteredInvoices.length}
+                  </span>{" "}
+                  record(s)
                 </div>
                 <div className="flex items-center gap-2 font-bold text-[10px]">
                   <span className="px-2.5 py-0.5 rounded bg-emerald-600 text-white font-bold tracking-wide shadow-2xs">
@@ -2683,7 +3738,6 @@ export default function BillingPage() {
                   </span>
                 </div>
               </div>
-
             </div>
           </Card>
         )}
@@ -2693,7 +3747,9 @@ export default function BillingPage() {
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             {/* Header bar */}
             <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
-              <span className="text-sm font-bold text-slate-800">Create Outpatient (OP) Visit</span>
+              <span className="text-sm font-bold text-slate-800">
+                Create Outpatient (OP) Visit
+              </span>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -2705,17 +3761,19 @@ export default function BillingPage() {
                   <span>Patient UHID:</span>
                 </button>
                 <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
-                  <Input 
-                    type="text" 
-                    value={opUhid} 
-                    onChange={(e) => setOpUhid(e.target.value)} 
-                    onClick={() => { if (!opUhid) setIsPatientSearchModalOpen(true); }}
-                    className="h-6 text-xs w-36 border-0 p-0 shadow-none font-mono font-bold cursor-pointer" 
+                  <Input
+                    type="text"
+                    value={opUhid}
+                    onChange={(e) => setOpUhid(e.target.value)}
+                    onClick={() => {
+                      if (!opUhid) setIsPatientSearchModalOpen(true);
+                    }}
+                    className="h-6 text-xs w-36 border-0 p-0 shadow-none font-mono font-bold cursor-pointer"
                     placeholder="Enter or select UHID..."
                   />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer"
                     onClick={() => setIsPatientSearchModalOpen(true)}
                     title="Open Patient Lookup Dialog"
@@ -2726,20 +3784,20 @@ export default function BillingPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => {
                     setOpUhid("");
                     setOpPatientName("");
-                  }} 
+                  }}
                   className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3"
                 >
                   New
                 </Button>
-                <Button 
+                <Button
                   onClick={handleSaveOpVisit}
-                  size="sm" 
+                  size="sm"
                   className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4"
                 >
                   Save & Proceed to OP Bill
@@ -2753,7 +3811,8 @@ export default function BillingPage() {
               <div className="border border-slate-200 rounded-xl p-5 space-y-4 bg-white shadow-2xs">
                 <div className="flex items-center justify-between border-b pb-2">
                   <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wide flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-blue-600" /> Patient Details
+                    <User className="w-3.5 h-3.5 text-blue-600" /> Patient
+                    Details
                   </h4>
                   <Button
                     type="button"
@@ -2767,27 +3826,35 @@ export default function BillingPage() {
                 </div>
 
                 <div className="flex flex-col items-center justify-center py-2 space-y-4">
-                  <div className={`w-24 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center shadow-inner overflow-hidden p-2 text-center ${opVisitPatientInfo ? 'border-blue-400 bg-blue-50/50 text-blue-800' : 'border-blue-200 bg-blue-50/50 text-blue-500'}`}>
+                  <div
+                    className={`w-24 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center shadow-inner overflow-hidden p-2 text-center ${opVisitPatientInfo ? "border-blue-400 bg-blue-50/50 text-blue-800" : "border-blue-200 bg-blue-50/50 text-blue-500"}`}
+                  >
                     {opVisitPatientInfo ? (
                       <>
                         {opVisitPatientInfo.image ? (
-                          <img 
+                          <img
                             src={opVisitPatientInfo.image}
                             alt={opVisitPatientInfo.name}
                             className="w-16 h-16 rounded-full object-cover shadow-sm"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                              const parent = (e.target as HTMLImageElement).parentElement!;
-                              const nameInitials = parent.querySelector('.initials-fallback');
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
+                              const parent = (e.target as HTMLImageElement)
+                                .parentElement!;
+                              const nameInitials =
+                                parent.querySelector(".initials-fallback");
                               if (nameInitials) {
-                                (nameInitials as HTMLElement).style.display = 'flex';
+                                (nameInitials as HTMLElement).style.display =
+                                  "flex";
                               }
                             }}
                           />
                         ) : null}
-                        <div 
+                        <div
                           className="w-11 h-11 rounded-full bg-blue-600 text-white font-bold text-base flex items-center justify-center shadow-xs initials-fallback"
-                          style={{ display: opVisitPatientInfo.image ? 'none' : 'flex' }}
+                          style={{
+                            display: opVisitPatientInfo.image ? "none" : "flex",
+                          }}
                         >
                           {opVisitPatientInfo.name.charAt(0)}
                         </div>
@@ -2798,14 +3865,18 @@ export default function BillingPage() {
                     ) : (
                       <>
                         <User className="w-10 h-10 text-blue-400/80" />
-                        <span className="text-[9px] text-slate-400 mt-1">No Patient</span>
+                        <span className="text-[9px] text-slate-400 mt-1">
+                          No Patient
+                        </span>
                       </>
                     )}
                   </div>
-                  
+
                   <div className="w-full space-y-2.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500 font-medium">Patient Name:</span>
+                      <span className="text-slate-500 font-medium">
+                        Patient Name:
+                      </span>
                       <Input
                         value={opPatientName || opVisitPatientInfo?.name || ""}
                         onChange={(e) => setOpPatientName(e.target.value)}
@@ -2817,41 +3888,55 @@ export default function BillingPage() {
                     {opVisitPatientInfo && (
                       <>
                         <div className="flex items-center justify-between text-slate-600">
-                          <span className="text-slate-500 font-medium">Gender / Age:</span>
-                          <span className="font-bold text-slate-800">{opVisitPatientInfo.genderAge}</span>
+                          <span className="text-slate-500 font-medium">
+                            Gender / Age:
+                          </span>
+                          <span className="font-bold text-slate-800">
+                            {opVisitPatientInfo.genderAge}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between text-slate-600">
-                          <span className="text-slate-500 font-medium">Mobile:</span>
-                          <span className="font-mono font-bold text-slate-800">{opVisitPatientInfo.mobile || "N/A"}</span>
+                          <span className="text-slate-500 font-medium">
+                            Mobile:
+                          </span>
+                          <span className="font-mono font-bold text-slate-800">
+                            {opVisitPatientInfo.mobile || "N/A"}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between text-slate-600">
-                          <span className="text-slate-500 font-medium">Address:</span>
-                          <span className="font-medium text-slate-700 text-right truncate max-w-[150px]">{opVisitPatientInfo.address}</span>
+                          <span className="text-slate-500 font-medium">
+                            Address:
+                          </span>
+                          <span className="font-medium text-slate-700 text-right truncate max-w-[150px]">
+                            {opVisitPatientInfo.address}
+                          </span>
                         </div>
                       </>
                     )}
 
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-slate-500 font-medium">Encounter State:</span>
+                      <span className="text-slate-500 font-medium">
+                        Encounter State:
+                      </span>
                       <div className="flex items-center gap-3 text-xs font-bold text-slate-700">
                         <label className="flex items-center gap-1 cursor-pointer">
-                          <input 
-                            type="radio" 
-                            name="op-status" 
-                            value="Open" 
-                            checked={opStatus === "Open"} 
-                            onChange={() => setOpStatus("Open")} 
+                          <input
+                            type="radio"
+                            name="op-status"
+                            value="Open"
+                            checked={opStatus === "Open"}
+                            onChange={() => setOpStatus("Open")}
                             className="h-3.5 w-3.5 text-blue-600"
                           />
                           <span>Open</span>
                         </label>
                         <label className="flex items-center gap-1 cursor-pointer">
-                          <input 
-                            type="radio" 
-                            name="op-status" 
-                            value="Closed" 
-                            checked={opStatus === "Closed"} 
-                            onChange={() => setOpStatus("Closed")} 
+                          <input
+                            type="radio"
+                            name="op-status"
+                            value="Closed"
+                            checked={opStatus === "Closed"}
+                            onChange={() => setOpStatus("Closed")}
                             className="h-3.5 w-3.5 text-blue-600"
                           />
                           <span>Closed</span>
@@ -2865,15 +3950,20 @@ export default function BillingPage() {
               {/* Payer Details */}
               <div className="border border-slate-200 rounded-xl p-5 space-y-3.5 bg-white shadow-2xs">
                 <h4 className="text-xs font-bold text-blue-900 border-b pb-2 uppercase tracking-wide flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Payer Details
+                  <CreditCard className="w-3.5 h-3.5 text-blue-600" /> Payer
+                  Details
                 </h4>
                 <div className="space-y-3 text-xs font-semibold text-slate-600">
                   <div className="flex items-center gap-2">
                     <span className="w-20 text-slate-500">Payer Type:</span>
                     <Select value={opPayerType} onValueChange={setOpPayerType}>
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Direct Patient">Direct Patient</SelectItem>
+                        <SelectItem value="Direct Patient">
+                          Direct Patient
+                        </SelectItem>
                         <SelectItem value="Insurance">Insurance</SelectItem>
                         <SelectItem value="Corporate">Corporate</SelectItem>
                       </SelectContent>
@@ -2881,15 +3971,27 @@ export default function BillingPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-20 text-slate-500">Payer Name:</span>
-                    <Input value={opPayer} onChange={(e) => setOpPayer(e.target.value)} className="h-7 text-xs flex-1 bg-white border-slate-200" />
+                    <Input
+                      value={opPayer}
+                      onChange={(e) => setOpPayer(e.target.value)}
+                      className="h-7 text-xs flex-1 bg-white border-slate-200"
+                    />
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-20 text-slate-500">Sponsor:</span>
-                    <Input value={opSponsor} onChange={(e) => setOpSponsor(e.target.value)} className="h-7 text-xs flex-1 bg-white border-slate-200" />
+                    <Input
+                      value={opSponsor}
+                      onChange={(e) => setOpSponsor(e.target.value)}
+                      className="h-7 text-xs flex-1 bg-white border-slate-200"
+                    />
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-20 text-slate-500">Network:</span>
-                    <Input value={opNetwork} onChange={(e) => setOpNetwork(e.target.value)} className="h-7 text-xs flex-1 bg-white border-slate-200" />
+                    <Input
+                      value={opNetwork}
+                      onChange={(e) => setOpNetwork(e.target.value)}
+                      className="h-7 text-xs flex-1 bg-white border-slate-200"
+                    />
                   </div>
                 </div>
               </div>
@@ -2897,30 +3999,56 @@ export default function BillingPage() {
               {/* Doctor Details */}
               <div className="border border-slate-200 rounded-xl p-5 space-y-3.5 bg-white shadow-2xs">
                 <h4 className="text-xs font-bold text-blue-900 border-b pb-2 uppercase tracking-wide flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-blue-600" /> Doctor & Consultation
+                  <Building2 className="w-3.5 h-3.5 text-blue-600" /> Doctor &
+                  Consultation
                 </h4>
                 <div className="space-y-3 text-xs font-semibold text-slate-600">
                   <div className="flex items-center gap-2">
                     <span className="w-24 text-slate-500">Doctor*:</span>
-                    <Select value={opDoctor} onValueChange={setOpDoctor}>
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                    <Select
+                      value={opDoctor}
+                      onValueChange={(val) => {
+                        if (val === "__CREATE_NEW_DOCTOR__") {
+                          setDoctorTargetField("opDoctor");
+                          setIsAddDoctorModalOpen(true);
+                        } else {
+                          setOpDoctor(val);
+                        }
+                      }}
+                    >
+                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</SelectItem>
-                        <SelectItem value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</SelectItem>
-                        <SelectItem value="Dr. Rajesh Malhotra 1104">Dr. Rajesh Malhotra 1104</SelectItem>
-                        <SelectItem value="Dr. D K DAS 2268">Dr. D K DAS 2268</SelectItem>
-                        <SelectItem value="Dr. Sania Mirza 2231">Dr. Sania Mirza 2231</SelectItem>
+                        {availableDoctors.map((doc) => (
+                          <SelectItem key={doc} value={doc}>
+                            {doc}
+                          </SelectItem>
+                        ))}
+                        <SelectItem
+                          value="__CREATE_NEW_DOCTOR__"
+                          className="font-bold text-blue-600 bg-blue-50 border-t border-slate-100"
+                        >
+                          + Create New Doctor...
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-24 text-slate-500">Department:</span>
-                    <Select value={opDepartment} onValueChange={setOpDepartment}>
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                    <Select
+                      value={opDepartment}
+                      onValueChange={setOpDepartment}
+                    >
+                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="General OPD">General OPD</SelectItem>
                         <SelectItem value="Cardiology">Cardiology</SelectItem>
-                        <SelectItem value="Orthopaedics">Orthopaedics</SelectItem>
+                        <SelectItem value="Orthopaedics">
+                          Orthopaedics
+                        </SelectItem>
                         <SelectItem value="Paediatrics">Paediatrics</SelectItem>
                         <SelectItem value="Neurology">Neurology</SelectItem>
                       </SelectContent>
@@ -2928,8 +4056,13 @@ export default function BillingPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-24 text-slate-500">Visit Type:</span>
-                    <Select value={opVisitType} onValueChange={(val: any) => setOpVisitType(val)}>
-                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                    <Select
+                      value={opVisitType}
+                      onValueChange={(val: any) => setOpVisitType(val)}
+                    >
+                      <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-200">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="New">New Consultation</SelectItem>
                         <SelectItem value="Follow-up">Follow-up</SelectItem>
@@ -2939,11 +4072,11 @@ export default function BillingPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="w-24 text-slate-500">Fee (₹):</span>
-                    <Input 
-                      type="number" 
-                      value={opFee} 
-                      onChange={(e) => setOpFee(Number(e.target.value))} 
-                      className="h-7 text-xs flex-1 bg-white border-slate-200 font-mono font-bold" 
+                    <Input
+                      type="number"
+                      value={opFee}
+                      onChange={(e) => setOpFee(Number(e.target.value))}
+                      className="h-7 text-xs flex-1 bg-white border-slate-200 font-mono font-bold"
                     />
                   </div>
                 </div>
@@ -2957,7 +4090,9 @@ export default function BillingPage() {
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             {/* Header bar */}
             <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
-              <span className="text-sm font-bold text-slate-800">Doctor / Outpatient Order Entry</span>
+              <span className="text-sm font-bold text-slate-800">
+                Doctor / Outpatient Order Entry
+              </span>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -2969,17 +4104,19 @@ export default function BillingPage() {
                   <span>Patient UHID:</span>
                 </button>
                 <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
-                  <Input 
-                    type="text" 
-                    value={orderUhid} 
-                    onChange={(e) => setOrderUhid(e.target.value)} 
-                    onClick={() => { if (!orderUhid) setIsPatientSearchModalOpen(true); }}
-                    className="h-6 text-xs w-36 border-0 p-0 shadow-none font-mono font-bold cursor-pointer" 
+                  <Input
+                    type="text"
+                    value={orderUhid}
+                    onChange={(e) => setOrderUhid(e.target.value)}
+                    onClick={() => {
+                      if (!orderUhid) setIsPatientSearchModalOpen(true);
+                    }}
+                    className="h-6 text-xs w-36 border-0 p-0 shadow-none font-mono font-bold cursor-pointer"
                     placeholder="Select UHID..."
                   />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer"
                     onClick={() => setIsPatientSearchModalOpen(true)}
                     title="Open Patient Lookup Dialog"
@@ -2990,17 +4127,17 @@ export default function BillingPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button 
+                <Button
                   onClick={() => handleSaveOrder(false)}
-                  size="sm" 
+                  size="sm"
                   variant="outline"
                   className="h-7 text-xs bg-white text-slate-700 border-slate-300 font-bold px-3"
                 >
                   Save as Unbilled Order
                 </Button>
-                <Button 
+                <Button
                   onClick={() => handleSaveOrder(true)}
-                  size="sm" 
+                  size="sm"
                   className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-4"
                 >
                   Save & Bill Immediately
@@ -3011,43 +4148,86 @@ export default function BillingPage() {
             {/* Body */}
             <div className="p-4 grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border-b flex-shrink-0">
               <div className="space-y-1">
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Doctor</Label>
-                <Select value={orderDoctor} onValueChange={setOrderDoctor}>
-                  <SelectTrigger className="h-7 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Doctor
+                </Label>
+                <Select
+                  value={orderDoctor}
+                  onValueChange={(val) => {
+                    if (val === "__CREATE_NEW_DOCTOR__") {
+                      setDoctorTargetField("orderDoctor");
+                      setIsAddDoctorModalOpen(true);
+                    } else {
+                      setOrderDoctor(val);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs bg-white border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</SelectItem>
-                    <SelectItem value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</SelectItem>
-                    <SelectItem value="Dr. Sania Mirza 2231">Dr. Sania Mirza 2231</SelectItem>
+                    {availableDoctors.map((doc) => (
+                      <SelectItem key={doc} value={doc}>
+                        {doc}
+                      </SelectItem>
+                    ))}
+                    <SelectItem
+                      value="__CREATE_NEW_DOCTOR__"
+                      className="font-bold text-blue-600 bg-blue-50 border-t border-slate-100"
+                    >
+                      + Create New Doctor...
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1">
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Order Category</Label>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Order Category
+                </Label>
                 <Select value={orderType} onValueChange={setOrderType}>
-                  <SelectTrigger className="h-7 text-xs bg-white border-slate-200"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-7 text-xs bg-white border-slate-200">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Lab">Laboratory Tests</SelectItem>
                     <SelectItem value="Radiology">Radiology & Scans</SelectItem>
-                    <SelectItem value="Procedure">Procedures & Nursing</SelectItem>
+                    <SelectItem value="Procedure">
+                      Procedures & Nursing
+                    </SelectItem>
                     <SelectItem value="Pharmacy">Pharmacy Medicines</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1 md:col-span-2">
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Quick Add Service</Label>
-                <Select onValueChange={(val) => {
-                  const s = SERVICE_CATALOG.find(c => c.code === val);
-                  if (s) {
-                    setOrderItems([...orderItems, { code: s.code, name: s.name, dept: s.dept, doctor: orderDoctor, rate: s.rate, qty: 1, netAmt: s.rate }]);
-                  }
-                }}>
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Quick Add Service
+                </Label>
+                <Select
+                  onValueChange={(val) => {
+                    const s = SERVICE_CATALOG.find((c) => c.code === val);
+                    if (s) {
+                      setOrderItems([
+                        ...orderItems,
+                        {
+                          code: s.code,
+                          name: s.name,
+                          dept: s.dept,
+                          doctor: orderDoctor,
+                          rate: s.rate,
+                          qty: 1,
+                          netAmt: s.rate,
+                        },
+                      ]);
+                    }
+                  }}
+                >
                   <SelectTrigger className="h-7 text-xs bg-white border-slate-200">
                     <SelectValue placeholder="+ Select and Add Service from Catalog" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SERVICE_CATALOG.map(s => (
+                    {SERVICE_CATALOG.map((s) => (
                       <SelectItem key={s.code} value={s.code}>
                         {s.code} - {s.name} (₹{s.rate})
                       </SelectItem>
@@ -3074,15 +4254,29 @@ export default function BillingPage() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {orderItems.map((item, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50">
-                      <td className="px-3 py-2 font-mono font-bold text-blue-600">{item.code}</td>
-                      <td className="px-3 py-2 font-bold text-slate-800">{item.name}</td>
+                      <td className="px-3 py-2 font-mono font-bold text-blue-600">
+                        {item.code}
+                      </td>
+                      <td className="px-3 py-2 font-bold text-slate-800">
+                        {item.name}
+                      </td>
                       <td className="px-3 py-2 text-slate-500">{item.dept}</td>
-                      <td className="px-3 py-2 text-right font-mono">₹{item.rate}</td>
-                      <td className="px-3 py-2 text-center font-mono">{item.qty}</td>
-                      <td className="px-3 py-2 text-right font-mono font-bold text-slate-900">₹{(item.rate * item.qty).toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right font-mono">
+                        ₹{item.rate}
+                      </td>
+                      <td className="px-3 py-2 text-center font-mono">
+                        {item.qty}
+                      </td>
+                      <td className="px-3 py-2 text-right font-mono font-bold text-slate-900">
+                        ₹{(item.rate * item.qty).toFixed(2)}
+                      </td>
                       <td className="px-3 py-2 text-center">
-                        <button 
-                          onClick={() => setOrderItems(orderItems.filter((_, i) => i !== idx))} 
+                        <button
+                          onClick={() =>
+                            setOrderItems(
+                              orderItems.filter((_, i) => i !== idx),
+                            )
+                          }
                           className="text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -3094,9 +4288,14 @@ export default function BillingPage() {
               </table>
 
               <div className="flex justify-end items-center gap-6 mt-4 p-3 bg-slate-50 rounded-lg border">
-                <div className="text-xs text-slate-500 font-bold">Total Order Value:</div>
+                <div className="text-xs text-slate-500 font-bold">
+                  Total Order Value:
+                </div>
                 <div className="text-base font-black text-slate-900 font-mono">
-                  ₹{orderItems.reduce((sum, it) => sum + it.rate * it.qty, 0).toFixed(2)}
+                  ₹
+                  {orderItems
+                    .reduce((sum, it) => sum + it.rate * it.qty, 0)
+                    .toFixed(2)}
                 </div>
               </div>
             </div>
@@ -3109,10 +4308,18 @@ export default function BillingPage() {
             {/* Header bar */}
             <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-slate-800 whitespace-nowrap">OP Invoice</span>
+                <span className="text-sm font-bold text-slate-800 whitespace-nowrap">
+                  OP Invoice
+                </span>
                 {/* UHID field */}
                 <div className="flex items-center gap-1 bg-white rounded border border-slate-300 px-1.5 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
-                  <button type="button" onClick={() => setIsPatientSearchModalOpen(true)} className="text-[10px] text-blue-700 font-bold hover:underline">UHID</button>
+                  <button
+                    type="button"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    className="text-[10px] text-blue-700 font-bold hover:underline"
+                  >
+                    UHID
+                  </button>
                   <Input
                     type="text"
                     value={opBillingUhid}
@@ -3120,16 +4327,24 @@ export default function BillingPage() {
                     className="h-5 text-xs w-24 border-0 p-0 shadow-none font-mono font-bold"
                     placeholder="Enter UHID..."
                   />
-                  <Button variant="ghost" size="icon" className="h-4 w-4 text-slate-400" onClick={() => setIsPatientSearchModalOpen(true)}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 text-slate-400"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                  >
                     <Search className="h-3 w-3" />
                   </Button>
                 </div>
                 {/* Notes Button matching screenshot */}
-                <Button 
+                <Button
                   type="button"
                   onClick={() => {
                     if (!opBillingUhid.trim()) {
-                      toast.error("No Patient Selected", "Please select a patient (UHID) first to view or add notes.");
+                      toast.error(
+                        "No Patient Selected",
+                        "Please select a patient (UHID) first to view or add notes.",
+                      );
                       setIsPatientSearchModalOpen(true);
                       return;
                     }
@@ -3141,7 +4356,9 @@ export default function BillingPage() {
                 </Button>
                 {/* Visit No */}
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-slate-600 font-bold">Visit No</span>
+                  <span className="text-[10px] text-slate-600 font-bold">
+                    Visit No
+                  </span>
                   <select
                     value={opBillingVisitNo}
                     onChange={(e) => setOpBillingVisitNo(e.target.value)}
@@ -3173,7 +4390,19 @@ export default function BillingPage() {
                     setOpBillingAvailableDeposit(3000);
                     setOpBillingAppliedDeposit(0);
                     setOpBillingItems([]);
-                    setOpBillingPaymentRows([{ mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }]);
+                    setOpBillingPaymentRows([
+                      {
+                        mode: "Cash",
+                        amount: 0,
+                        balance: 0,
+                        date: new Date().toLocaleDateString("en-GB"),
+                        bankName: "",
+                        beneficiaryName: "",
+                        refNo: "",
+                        description: "",
+                        cardSwipingValue: 0,
+                      },
+                    ]);
                   }}
                   className="h-6 text-[11px] bg-white text-slate-700 border-slate-300 font-bold px-2"
                 >
@@ -3199,47 +4428,86 @@ export default function BillingPage() {
 
             {/* 4-Column Details — matching reference layout */}
             <div className="grid grid-cols-4 border-b border-slate-200 bg-white flex-shrink-0 text-[11px]">
-
               {/* Col 1: Patient Details (photo) */}
               <div className="border-r border-slate-200 p-2 space-y-1">
-                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1">Patient Details</div>
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1">
+                  Patient Details
+                </div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-16 h-16 rounded-lg border-2 flex items-center justify-center flex-shrink-0 overflow-hidden ${opBillingPatientInfo ? 'border-blue-400 bg-blue-50' : 'border-slate-300 bg-slate-100'}`}>
+                  <div
+                    className={`w-16 h-16 rounded-lg border-2 flex items-center justify-center flex-shrink-0 overflow-hidden ${opBillingPatientInfo ? "border-blue-400 bg-blue-50" : "border-slate-300 bg-slate-100"}`}
+                  >
                     {opBillingPatientInfo?.image ? (
                       <img
                         src={opBillingPatientInfo.image}
                         alt={opBillingPatientInfo.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          (e.target as HTMLImageElement).parentElement!.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+                          (e.target as HTMLImageElement).style.display = "none";
+                          (
+                            e.target as HTMLImageElement
+                          ).parentElement!.innerHTML =
+                            `<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
                         }}
                       />
                     ) : (
                       // Scrubs hair-cap default placeholder avatar using SVG matching screenshot
-                      <svg viewBox="0 0 100 100" className="w-12 h-12 text-slate-400" fill="currentColor">
-                        <circle cx="50" cy="50" r="45" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="2" />
+                      <svg
+                        viewBox="0 0 100 100"
+                        className="w-12 h-12 text-slate-400"
+                        fill="currentColor"
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="#f1f5f9"
+                          stroke="#cbd5e1"
+                          strokeWidth="2"
+                        />
                         {/* Scrubs head cap */}
-                        <path d="M25,45 C25,25 75,25 75,45 C75,48 25,48 25,45 Z" fill="#94a3b8" />
+                        <path
+                          d="M25,45 C25,25 75,25 75,45 C75,48 25,48 25,45 Z"
+                          fill="#94a3b8"
+                        />
                         <circle cx="50" cy="38" r="10" fill="#94a3b8" />
                         {/* Face */}
                         <circle cx="50" cy="53" r="12" fill="#e2e8f0" />
-                        <path d="M38,53 C38,53 50,56 62,53" fill="none" stroke="#94a3b8" strokeWidth="1.5" />
+                        <path
+                          d="M38,53 C38,53 50,56 62,53"
+                          fill="none"
+                          stroke="#94a3b8"
+                          strokeWidth="1.5"
+                        />
                         {/* Neck & Shoulders */}
-                        <path d="M45,65 L55,65 L58,80 L42,80 Z" fill="#cbd5e1" />
-                        <path d="M30,80 L70,80 L65,95 L35,95 Z" fill="#64748b" />
+                        <path
+                          d="M45,65 L55,65 L58,80 L42,80 Z"
+                          fill="#cbd5e1"
+                        />
+                        <path
+                          d="M30,80 L70,80 L65,95 L35,95 Z"
+                          fill="#64748b"
+                        />
                       </svg>
                     )}
                   </div>
                   <div className="min-w-0">
                     {opBillingPatientInfo ? (
                       <>
-                        <div className="font-extrabold text-slate-800 truncate text-[11px]">{opBillingPatientInfo.name}</div>
-                        <div className="text-[10px] text-slate-500">{opBillingPatientInfo.genderAge}</div>
-                        <div className="text-[10px] text-blue-600 truncate">{opBillingPatientInfo.address}</div>
+                        <div className="font-extrabold text-slate-800 truncate text-[11px]">
+                          {opBillingPatientInfo.name}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          {opBillingPatientInfo.genderAge}
+                        </div>
+                        <div className="text-[10px] text-blue-600 truncate">
+                          {opBillingPatientInfo.address}
+                        </div>
                       </>
                     ) : (
-                      <div className="text-slate-400 italic text-[10px] py-2">Select patient via UHID</div>
+                      <div className="text-slate-400 italic text-[10px] py-2">
+                        Select patient via UHID
+                      </div>
                     )}
                   </div>
                 </div>
@@ -3247,32 +4515,56 @@ export default function BillingPage() {
 
               {/* Col 2: Invoice Details */}
               <div className="border-r border-slate-200 p-2 space-y-1">
-                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1">Invoice Details</div>
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1">
+                  Invoice Details
+                </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">Year</span>
-                  <select value={opBillingYear} onChange={(e) => setOpBillingYear(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Year
+                  </span>
+                  <select
+                    value={opBillingYear}
+                    onChange={(e) => setOpBillingYear(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
                     <option value="26-27">26-27</option>
                     <option value="25-26">25-26</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">Type</span>
-                  <select value={opBillingType} onChange={(e) => setOpBillingType(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Type
+                  </span>
+                  <select
+                    value={opBillingType}
+                    onChange={(e) => setOpBillingType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
                     <option value="Cash">Cash</option>
                     <option value="Credit">Credit</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 text-blue-600 font-bold">Invoice#</span>
-                  <Input value={opBillingInvoiceNo} onChange={(e) => setOpBillingInvoiceNo(e.target.value)}
-                    placeholder="" className="flex-1 h-5 text-[10px] px-1" />
+                  <span className="text-slate-500 w-16 shrink-0 text-blue-600 font-bold">
+                    Invoice#
+                  </span>
+                  <Input
+                    value={opBillingInvoiceNo}
+                    onChange={(e) => setOpBillingInvoiceNo(e.target.value)}
+                    placeholder=""
+                    className="flex-1 h-5 text-[10px] px-1"
+                  />
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">Date</span>
-                  <Input type="text" value="22/08/2026 13:36" readOnly
-                    className="flex-1 h-5 text-[10px] px-1 bg-white cursor-not-allowed border-slate-200" />
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Date
+                  </span>
+                  <Input
+                    type="text"
+                    value="22/08/2026 13:36"
+                    readOnly
+                    className="flex-1 h-5 text-[10px] px-1 bg-white cursor-not-allowed border-slate-200"
+                  />
                 </div>
               </div>
 
@@ -3280,12 +4572,19 @@ export default function BillingPage() {
               <div className="border-r border-slate-200 p-2 space-y-1">
                 <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1 flex justify-between items-center">
                   <span>Payer Details</span>
-                  <span className="text-[9.5px] text-red-600 font-extrabold uppercase tracking-tight">Payer validity : 31/12/2099</span>
+                  <span className="text-[9.5px] text-red-600 font-extrabold uppercase tracking-tight">
+                    Payer validity : 31/12/2099
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">Type *</span>
-                  <select value={opBillingPayerType} onChange={(e) => setOpBillingPayerType(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Type *
+                  </span>
+                  <select
+                    value={opBillingPayerType}
+                    onChange={(e) => setOpBillingPayerType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
                     <option>Direct Patient</option>
                     <option>Company</option>
                     <option>Insurance</option>
@@ -3293,9 +4592,14 @@ export default function BillingPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">Payer *</span>
-                  <select value={opBillingPayer} onChange={(e) => setOpBillingPayer(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Payer *
+                  </span>
+                  <select
+                    value={opBillingPayer}
+                    onChange={(e) => setOpBillingPayer(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
                     <option>CASH</option>
                     <option>Star Health Insurance</option>
                     <option>HDFC ERGO Health</option>
@@ -3303,18 +4607,28 @@ export default function BillingPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">Sponsor *</span>
-                  <select value={opBillingSponsor} onChange={(e) => setOpBillingSponsor(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Sponsor *
+                  </span>
+                  <select
+                    value={opBillingSponsor}
+                    onChange={(e) => setOpBillingSponsor(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
                     <option>CASH</option>
                     <option>Star Health</option>
                     <option>HDFC ERGO</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">Network</span>
-                  <select value={opBillingNetwork} onChange={(e) => setOpBillingNetwork(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Network
+                  </span>
+                  <select
+                    value={opBillingNetwork}
+                    onChange={(e) => setOpBillingNetwork(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
                     <option value="">Select Network</option>
                     <option value="TPA Network">TPA Network</option>
                     <option value="Corporate Direct">Corporate Direct</option>
@@ -3328,27 +4642,80 @@ export default function BillingPage() {
                   <span>Other Details</span>
                   <div className="flex items-center gap-1">
                     {/* Render exact icons from screenshot */}
-                    <svg className="w-3.5 h-3.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                    <svg className="w-3.5 h-3.5 text-red-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
+                    <svg
+                      className="w-3.5 h-3.5 text-red-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <svg
+                      className="w-3.5 h-3.5 text-blue-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+                      />
+                    </svg>
+                    <svg
+                      className="w-3.5 h-3.5 text-red-500"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                    </svg>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-24 shrink-0 font-bold">Prescribing Doctor *</span>
-                  <select value={opBillingPrescribingDoctor} onChange={(e) => setOpBillingPrescribingDoctor(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-24 shrink-0 font-bold">
+                    Prescribing Doctor *
+                  </span>
+                  <select
+                    value={opBillingPrescribingDoctor}
+                    onChange={(e) => {
+                      if (e.target.value === "__CREATE_NEW_DOCTOR__") {
+                        setDoctorTargetField("prescribing");
+                        setIsAddDoctorModalOpen(true);
+                      } else {
+                        setOpBillingPrescribingDoctor(e.target.value);
+                      }
+                    }}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1 font-medium"
+                  >
                     <option value="">Select Doctor</option>
-                    <option value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</option>
-                    <option value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</option>
-                    <option value="Dr. Rajesh Malhotra 1104">Dr. Rajesh Malhotra 1104</option>
-                    <option value="Dr. D K DAS 2268">Dr. D K DAS 2268</option>
-                    <option value="Dr. Sania Mirza 2231">Dr. Sania Mirza 2231</option>
+                    {availableDoctors.map((doc) => (
+                      <option key={doc} value={doc}>
+                        {doc}
+                      </option>
+                    ))}
+                    <option
+                      value="__CREATE_NEW_DOCTOR__"
+                      className="font-bold text-blue-600 bg-blue-50"
+                    >
+                      + Create New Doctor...
+                    </option>
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-24 shrink-0 font-bold">Referred Type</span>
-                  <select value={opBillingReferredType} onChange={(e) => setOpBillingReferredType(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-24 shrink-0 font-bold">
+                    Referred Type
+                  </span>
+                  <select
+                    value={opBillingReferredType}
+                    onChange={(e) => setOpBillingReferredType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
                     <option>SELF</option>
                     <option>Doctor</option>
                     <option>Hospital</option>
@@ -3356,17 +4723,33 @@ export default function BillingPage() {
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-24 shrink-0 font-bold">Referred by Name</span>
-                  <select value={opBillingReferredName} onChange={(e) => setOpBillingReferredName(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1">
+                  <span className="text-slate-500 w-24 shrink-0 font-bold">
+                    Referred by Name
+                  </span>
+                  <select
+                    value={opBillingReferredName}
+                    onChange={(e) => {
+                      if (e.target.value === "__CREATE_NEW_DOCTOR__") {
+                        setDoctorTargetField("prescribing");
+                        setIsAddDoctorModalOpen(true);
+                      } else {
+                        setOpBillingReferredName(e.target.value);
+                      }
+                    }}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1 font-medium"
+                  >
                     <option value="">Select</option>
-                    <option value="Dr. Abhishek Bansal 2273">Dr. Abhishek Bansal 2273</option>
-                    <option value="Dr. Sameer Sen 3105">Dr. Sameer Sen 3105</option>
-                    <option value="Dr. Rajesh Malhotra 1104">Dr. Rajesh Malhotra 1104</option>
-                    <option value="Dr. D K DAS 2268">Dr. D K DAS 2268</option>
-                    <option value="Dr. Sania Mirza 2231">Dr. Sania Mirza 2231</option>
-                    <option value="Dr. Ramesh Kumar">Dr. Ramesh Kumar</option>
-                    <option value="Dr. Priya Sharma">Dr. Priya Sharma</option>
+                    {availableDoctors.map((doc) => (
+                      <option key={doc} value={doc}>
+                        {doc}
+                      </option>
+                    ))}
+                    <option
+                      value="__CREATE_NEW_DOCTOR__"
+                      className="font-bold text-blue-600 bg-blue-50"
+                    >
+                      + Create New Doctor...
+                    </option>
                   </select>
                 </div>
               </div>
@@ -3375,7 +4758,14 @@ export default function BillingPage() {
             {/* Sub-tab navigation */}
             <div className="flex items-center justify-between px-2 bg-[#cee6f8] border-b border-slate-200 flex-shrink-0">
               <div className="flex items-center gap-0.5 pt-1.5">
-                {["Service", "Payment", "Adjustment", "Outstanding", "Checklist", "Patient Diagnosis Entry"].map((st) => (
+                {[
+                  "Service",
+                  "Payment",
+                  "Adjustment",
+                  "Outstanding",
+                  "Checklist",
+                  "Patient Diagnosis Entry",
+                ].map((st) => (
                   <button
                     key={st}
                     onClick={() => setOpBillingSubTab(st)}
@@ -3397,10 +4787,21 @@ export default function BillingPage() {
                     if (val === "custom") {
                       setOpBillingItems([
                         ...opBillingItems,
-                        { code: `SRV-0${opBillingItems.length + 1}`, name: "New Custom Service Item", dept: "General", doctor: opBillingDoctor, rate: 500, qty: 1, discountPercent: 0, discountAmt: 0, taxPercent: 0, netAmt: 500 }
+                        {
+                          code: `SRV-0${opBillingItems.length + 1}`,
+                          name: "New Custom Service Item",
+                          dept: "General",
+                          doctor: opBillingDoctor,
+                          rate: 500,
+                          qty: 1,
+                          discountPercent: 0,
+                          discountAmt: 0,
+                          taxPercent: 0,
+                          netAmt: 500,
+                        },
                       ]);
                     } else if (val) {
-                      const s = SERVICE_CATALOG.find(c => c.code === val);
+                      const s = SERVICE_CATALOG.find((c) => c.code === val);
                       if (s) handleAddOpItem(s);
                     }
                     e.target.value = "";
@@ -3409,33 +4810,71 @@ export default function BillingPage() {
                 >
                   <option value="">+ Add Service from Catalog...</option>
                   <optgroup label="Consultations">
-                    <option value="CON-01">CON-01 - OPD Consultation - Senior Specialist (₹1000)</option>
-                    <option value="CON-02">CON-02 - Emergency Consultation (₹1000)</option>
-                    <option value="CON-03">CON-03 - Super Specialist Consultation (₹1200)</option>
+                    <option value="CON-01">
+                      CON-01 - OPD Consultation - Senior Specialist (₹1000)
+                    </option>
+                    <option value="CON-02">
+                      CON-02 - Emergency Consultation (₹1000)
+                    </option>
+                    <option value="CON-03">
+                      CON-03 - Super Specialist Consultation (₹1200)
+                    </option>
                   </optgroup>
                   <optgroup label="Lab Tests">
-                    <option value="LAB-01">LAB-01 - Complete Blood Count (CBC) (₹350)</option>
-                    <option value="LAB-02">LAB-02 - Lipid Profile (Full Panel) (₹750)</option>
-                    <option value="LAB-03">LAB-03 - HbA1c Glycated Hemoglobin (₹550)</option>
-                    <option value="LAB-04">LAB-04 - Liver Function Test (LFT) (₹650)</option>
-                    <option value="LAB-05">LAB-05 - Kidney Function Test (KFT) (₹600)</option>
-                    <option value="LAB-06">LAB-06 - Thyroid Profile (T3, T4, TSH) (₹700)</option>
+                    <option value="LAB-01">
+                      LAB-01 - Complete Blood Count (CBC) (₹350)
+                    </option>
+                    <option value="LAB-02">
+                      LAB-02 - Lipid Profile (Full Panel) (₹750)
+                    </option>
+                    <option value="LAB-03">
+                      LAB-03 - HbA1c Glycated Hemoglobin (₹550)
+                    </option>
+                    <option value="LAB-04">
+                      LAB-04 - Liver Function Test (LFT) (₹650)
+                    </option>
+                    <option value="LAB-05">
+                      LAB-05 - Kidney Function Test (KFT) (₹600)
+                    </option>
+                    <option value="LAB-06">
+                      LAB-06 - Thyroid Profile (T3, T4, TSH) (₹700)
+                    </option>
                   </optgroup>
                   <optgroup label="Radiology & Imaging">
-                    <option value="RAD-01">RAD-01 - Chest X-Ray PA View (₹450)</option>
-                    <option value="RAD-02">RAD-02 - Ultrasound Whole Abdomen (₹1200)</option>
-                    <option value="RAD-03">RAD-03 - MRI Brain with Contrast (₹6500)</option>
-                    <option value="RAD-04">RAD-04 - CT Scan Chest High Resolution (₹4500)</option>
+                    <option value="RAD-01">
+                      RAD-01 - Chest X-Ray PA View (₹450)
+                    </option>
+                    <option value="RAD-02">
+                      RAD-02 - Ultrasound Whole Abdomen (₹1200)
+                    </option>
+                    <option value="RAD-03">
+                      RAD-03 - MRI Brain with Contrast (₹6500)
+                    </option>
+                    <option value="RAD-04">
+                      RAD-04 - CT Scan Chest High Resolution (₹4500)
+                    </option>
                   </optgroup>
                   <optgroup label="Cardiology">
-                    <option value="CARD-01">CARD-01 - 12-Lead ECG (₹300)</option>
-                    <option value="CARD-02">CARD-02 - 2D Echocardiography + Color Doppler (₹2200)</option>
-                    <option value="CARD-03">CARD-03 - TMT Treadmill Stress Test (₹1800)</option>
+                    <option value="CARD-01">
+                      CARD-01 - 12-Lead ECG (₹300)
+                    </option>
+                    <option value="CARD-02">
+                      CARD-02 - 2D Echocardiography + Color Doppler (₹2200)
+                    </option>
+                    <option value="CARD-03">
+                      CARD-03 - TMT Treadmill Stress Test (₹1800)
+                    </option>
                   </optgroup>
                   <optgroup label="Procedures & Nursing">
-                    <option value="PROC-01">PROC-01 - IV Cannulation & Infusion (₹250)</option>
-                    <option value="PROC-02">PROC-02 - Wound Dressing & Suturing (₹600)</option>
-                    <option value="PROC-03">PROC-03 - Nebulization Session (₹150)</option>
+                    <option value="PROC-01">
+                      PROC-01 - IV Cannulation & Infusion (₹250)
+                    </option>
+                    <option value="PROC-02">
+                      PROC-02 - Wound Dressing & Suturing (₹600)
+                    </option>
+                    <option value="PROC-03">
+                      PROC-03 - Nebulization Session (₹150)
+                    </option>
                   </optgroup>
                   <option value="custom">+ Add Custom Service...</option>
                 </select>
@@ -3461,25 +4900,43 @@ export default function BillingPage() {
                     <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold uppercase text-[10px] sticky top-0 z-10">
                       <tr>
                         <th className="px-2 py-2 tracking-wider w-28">Code</th>
-                        <th className="px-2 py-2 tracking-wider">Service Description</th>
+                        <th className="px-2 py-2 tracking-wider">
+                          Service Description
+                        </th>
                         <th className="px-2 py-2 tracking-wider w-32">Dept</th>
-                        <th className="px-2 py-2 text-right tracking-wider w-24">Rate (₹)</th>
-                        <th className="px-2 py-2 text-center tracking-wider w-16">Qty</th>
-                        <th className="px-2 py-2 text-right tracking-wider w-20">Disc %</th>
-                        <th className="px-2 py-2 text-right tracking-wider w-28">Net Amt (₹)</th>
+                        <th className="px-2 py-2 text-right tracking-wider w-24">
+                          Rate (₹)
+                        </th>
+                        <th className="px-2 py-2 text-center tracking-wider w-16">
+                          Qty
+                        </th>
+                        <th className="px-2 py-2 text-right tracking-wider w-20">
+                          Disc %
+                        </th>
+                        <th className="px-2 py-2 text-right tracking-wider w-28">
+                          Net Amt (₹)
+                        </th>
                         <th className="px-2 py-2 text-center w-10"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                       {opBillingItems.length === 0 ? (
                         <tr>
-                          <td colSpan={8} className="py-10 text-center text-slate-500 bg-slate-50/40">
+                          <td
+                            colSpan={8}
+                            className="py-10 text-center text-slate-500 bg-slate-50/40"
+                          >
                             <div className="flex flex-col items-center justify-center space-y-2">
-                              <span className="text-xs font-semibold text-slate-600">No service items added yet. Click below to add OPD Consultation or choose from catalog.</span>
+                              <span className="text-xs font-semibold text-slate-600">
+                                No service items added yet. Click below to add
+                                OPD Consultation or choose from catalog.
+                              </span>
                               <Button
                                 type="button"
                                 size="sm"
-                                onClick={() => handleAddOpItem(SERVICE_CATALOG[0])}
+                                onClick={() =>
+                                  handleAddOpItem(SERVICE_CATALOG[0])
+                                }
                                 className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 gap-1 shadow-2xs"
                               >
                                 + Add OPD Consultation Service
@@ -3492,15 +4949,24 @@ export default function BillingPage() {
                           <tr key={idx} className="hover:bg-teal-50/20">
                             <td className="px-2 py-1.5">
                               <select
-                                value={SERVICE_CATALOG.some(s => s.code === it.code) ? it.code : "custom"}
+                                value={
+                                  SERVICE_CATALOG.some(
+                                    (s) => s.code === it.code,
+                                  )
+                                    ? it.code
+                                    : "custom"
+                                }
                                 onChange={(e) => {
                                   const selectedCode = e.target.value;
                                   if (selectedCode === "custom") return;
-                                  const found = SERVICE_CATALOG.find(s => s.code === selectedCode);
+                                  const found = SERVICE_CATALOG.find(
+                                    (s) => s.code === selectedCode,
+                                  );
                                   if (found) {
                                     const updated = [...opBillingItems];
                                     const qty = updated[idx].qty || 1;
-                                    const discPct = updated[idx].discountPercent || 0;
+                                    const discPct =
+                                      updated[idx].discountPercent || 0;
                                     const gross = found.rate * qty;
                                     const discAmt = (gross * discPct) / 100;
                                     updated[idx] = {
@@ -3510,26 +4976,34 @@ export default function BillingPage() {
                                       dept: found.dept,
                                       rate: found.rate,
                                       discountAmt: discAmt,
-                                      netAmt: Math.max(0, gross - discAmt)
+                                      netAmt: Math.max(0, gross - discAmt),
                                     };
                                     setOpBillingItems(updated);
                                   }
                                 }}
                                 className="h-6 w-full text-[11px] font-mono font-bold text-blue-700 bg-white border border-slate-200 rounded px-1"
                               >
-                                {SERVICE_CATALOG.map(s => (
-                                  <option key={s.code} value={s.code}>{s.code}</option>
+                                {SERVICE_CATALOG.map((s) => (
+                                  <option key={s.code} value={s.code}>
+                                    {s.code}
+                                  </option>
                                 ))}
-                                {!SERVICE_CATALOG.some(s => s.code === it.code) && (
-                                  <option value="custom">{it.code}</option>
-                                )}
+                                {!SERVICE_CATALOG.some(
+                                  (s) => s.code === it.code,
+                                ) && <option value="custom">{it.code}</option>}
                               </select>
                             </td>
                             <td className="px-2 py-1.5">
                               <Input
                                 type="text"
                                 value={it.name}
-                                onChange={(e) => handleUpdateOpItem(idx, "name", e.target.value)}
+                                onChange={(e) =>
+                                  handleUpdateOpItem(
+                                    idx,
+                                    "name",
+                                    e.target.value,
+                                  )
+                                }
                                 className="h-6 text-xs bg-white font-bold border-slate-200"
                                 placeholder="Select or enter service description..."
                               />
@@ -3538,7 +5012,13 @@ export default function BillingPage() {
                               <Input
                                 type="text"
                                 value={it.dept}
-                                onChange={(e) => handleUpdateOpItem(idx, "dept", e.target.value)}
+                                onChange={(e) =>
+                                  handleUpdateOpItem(
+                                    idx,
+                                    "dept",
+                                    e.target.value,
+                                  )
+                                }
                                 className="h-6 text-xs bg-white text-slate-600 border-slate-200"
                                 placeholder="Dept..."
                               />
@@ -3547,7 +5027,13 @@ export default function BillingPage() {
                               <Input
                                 type="number"
                                 value={it.rate}
-                                onChange={(e) => handleUpdateOpItem(idx, "rate", Number(e.target.value))}
+                                onChange={(e) =>
+                                  handleUpdateOpItem(
+                                    idx,
+                                    "rate",
+                                    Number(e.target.value),
+                                  )
+                                }
                                 className="h-6 w-full text-xs text-right bg-white font-mono font-bold"
                               />
                             </td>
@@ -3555,7 +5041,13 @@ export default function BillingPage() {
                               <Input
                                 type="number"
                                 value={it.qty}
-                                onChange={(e) => handleUpdateOpItem(idx, "qty", Number(e.target.value))}
+                                onChange={(e) =>
+                                  handleUpdateOpItem(
+                                    idx,
+                                    "qty",
+                                    Number(e.target.value),
+                                  )
+                                }
                                 className="h-6 w-full text-xs text-center bg-white font-mono"
                               />
                             </td>
@@ -3563,7 +5055,13 @@ export default function BillingPage() {
                               <Input
                                 type="number"
                                 value={it.discountPercent || 0}
-                                onChange={(e) => handleUpdateOpItem(idx, "discountPercent", Number(e.target.value))}
+                                onChange={(e) =>
+                                  handleUpdateOpItem(
+                                    idx,
+                                    "discountPercent",
+                                    Number(e.target.value),
+                                  )
+                                }
                                 className="h-6 w-full text-xs text-right bg-white font-mono"
                               />
                             </td>
@@ -3571,7 +5069,10 @@ export default function BillingPage() {
                               ₹{it.netAmt?.toFixed(2)}
                             </td>
                             <td className="px-2 py-1.5 text-center">
-                              <button onClick={() => handleRemoveOpItem(idx)} className="text-red-500 hover:text-red-700">
+                              <button
+                                onClick={() => handleRemoveOpItem(idx)}
+                                className="text-red-500 hover:text-red-700"
+                              >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </td>
@@ -3605,20 +5106,41 @@ export default function BillingPage() {
                       <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold uppercase text-[10px]">
                         <tr>
                           <th className="px-2 py-2 tracking-wider">Mode</th>
-                          <th className="px-2 py-2 text-right tracking-wider">Amount</th>
-                          <th className="px-2 py-2 text-right tracking-wider">Balance</th>
-                          <th className="px-2 py-2 tracking-wider">Date (dd/MM/YYYY)</th>
-                          <th className="px-2 py-2 tracking-wider">Bank Name</th>
-                          <th className="px-2 py-2 tracking-wider">Beneficiary Name</th>
-                          <th className="px-2 py-2 tracking-wider">Reference No</th>
-                          <th className="px-2 py-2 tracking-wider">Card Holder / Description</th>
-                          <th className="px-2 py-2 text-right tracking-wider">Card Swiping Value</th>
+                          <th className="px-2 py-2 text-right tracking-wider">
+                            Amount
+                          </th>
+                          <th className="px-2 py-2 text-right tracking-wider">
+                            Balance
+                          </th>
+                          <th className="px-2 py-2 tracking-wider">
+                            Date (dd/MM/YYYY)
+                          </th>
+                          <th className="px-2 py-2 tracking-wider">
+                            Bank Name
+                          </th>
+                          <th className="px-2 py-2 tracking-wider">
+                            Beneficiary Name
+                          </th>
+                          <th className="px-2 py-2 tracking-wider">
+                            Reference No
+                          </th>
+                          <th className="px-2 py-2 tracking-wider">
+                            Card Holder / Description
+                          </th>
+                          <th className="px-2 py-2 text-right tracking-wider">
+                            Card Swiping Value
+                          </th>
                           <th className="px-2 py-2 w-8"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {opBillingPaymentRows.map((r, idx) => {
-                          const cumulativePaid = opBillingPaymentRows.slice(0, idx + 1).reduce((sum, row) => sum + Number(row.amount || 0), 0);
+                          const cumulativePaid = opBillingPaymentRows
+                            .slice(0, idx + 1)
+                            .reduce(
+                              (sum, row) => sum + Number(row.amount || 0),
+                              0,
+                            );
                           const rawBalance = opNetPayable - cumulativePaid;
                           const rowBalance = rawBalance.toFixed(2);
                           return (
@@ -3630,7 +5152,10 @@ export default function BillingPage() {
                                     const u = [...opBillingPaymentRows];
                                     const newMode = e.target.value;
                                     u[idx].mode = newMode;
-                                    if (newMode === "Credit Card" || newMode === "Debit Card") {
+                                    if (
+                                      newMode === "Credit Card" ||
+                                      newMode === "Debit Card"
+                                    ) {
                                       u[idx].cardSwipingValue = u[idx].amount;
                                     }
                                     setOpBillingPaymentRows(u);
@@ -3639,12 +5164,18 @@ export default function BillingPage() {
                                 >
                                   <option value="Cash">Cash</option>
                                   <option value="Cheque/DD">Cheque/DD</option>
-                                  <option value="Credit Card">Credit Card</option>
+                                  <option value="Credit Card">
+                                    Credit Card
+                                  </option>
                                   <option value="Debit Card">Debit Card</option>
                                   <option value="NEFT/RTGS">NEFT/RTGS</option>
-                                  <option value="Foreign Receipt">Foreign Receipt</option>
+                                  <option value="Foreign Receipt">
+                                    Foreign Receipt
+                                  </option>
                                   <option value="Paytm">Paytm</option>
-                                  <option value="On Line Payment">On Line Payment</option>
+                                  <option value="On Line Payment">
+                                    On Line Payment
+                                  </option>
                                 </select>
                               </td>
                               <td className="px-2 py-1.5 text-right">
@@ -3655,9 +5186,13 @@ export default function BillingPage() {
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     const val = Number(e.target.value);
-                                    const cleanVal = isNaN(val) || val < 0 ? 0 : val;
+                                    const cleanVal =
+                                      isNaN(val) || val < 0 ? 0 : val;
                                     u[idx].amount = cleanVal;
-                                    if (u[idx].mode === "Credit Card" || u[idx].mode === "Debit Card") {
+                                    if (
+                                      u[idx].mode === "Credit Card" ||
+                                      u[idx].mode === "Debit Card"
+                                    ) {
                                       u[idx].cardSwipingValue = cleanVal;
                                     }
                                     setOpBillingPaymentRows(u);
@@ -3677,7 +5212,12 @@ export default function BillingPage() {
                               <td className="px-2 py-1.5">
                                 <Input
                                   type="date"
-                                  value={r.date && r.date.includes('/') ? r.date.split('/').reverse().join('-') : r.date || new Date().toISOString().split('T')[0]}
+                                  value={
+                                    r.date && r.date.includes("/")
+                                      ? r.date.split("/").reverse().join("-")
+                                      : r.date ||
+                                        new Date().toISOString().split("T")[0]
+                                  }
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     u[idx].date = e.target.value;
@@ -3686,95 +5226,117 @@ export default function BillingPage() {
                                   className="h-6 w-28 text-[10px] font-mono cursor-pointer bg-white"
                                 />
                               </td>
-                            <td className="px-2 py-1.5">
-                              <select
-                                value={r.bankName}
-                                onChange={(e) => {
-                                  const u = [...opBillingPaymentRows];
-                                  u[idx].bankName = e.target.value;
-                                  setOpBillingPaymentRows(u);
-                                }}
-                                className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
-                              >
-                                <option value="">-Select-</option>
-                                <option>SBI</option>
-                                <option>HDFC</option>
-                                <option>ICICI</option>
-                                <option>Axis</option>
-                              </select>
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <select
-                                value={r.beneficiaryName}
-                                onChange={(e) => {
-                                  const u = [...opBillingPaymentRows];
-                                  u[idx].beneficiaryName = e.target.value;
-                                  setOpBillingPaymentRows(u);
-                                }}
-                                className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
-                              >
-                                <option value="">-Select-</option>
-                                <option>Self</option>
-                                <option>Relative</option>
-                                <option>Corporate</option>
-                              </select>
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <Input
-                                value={r.refNo}
-                                onChange={(e) => {
-                                  const u = [...opBillingPaymentRows];
-                                  u[idx].refNo = e.target.value;
-                                  setOpBillingPaymentRows(u);
-                                }}
-                                placeholder="Ref#"
-                                className="h-6 w-24 text-[11px] font-mono"
-                              />
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <Input
-                                value={r.description}
-                                onChange={(e) => {
-                                  const u = [...opBillingPaymentRows];
-                                  u[idx].description = e.target.value;
-                                  setOpBillingPaymentRows(u);
-                                }}
-                                placeholder="Description..."
-                                className="h-6 w-32 text-[11px]"
-                              />
-                            </td>
-                            <td className="px-2 py-1.5 text-right">
-                              <Input
-                                type="number"
-                                min="0"
-                                value={r.cardSwipingValue}
-                                onChange={(e) => {
-                                  const u = [...opBillingPaymentRows];
-                                  const val = Number(e.target.value);
-                                  u[idx].cardSwipingValue = isNaN(val) || val < 0 ? 0 : val;
-                                  setOpBillingPaymentRows(u);
-                                }}
-                                className="h-6 w-16 text-[11px] text-right font-mono"
-                              />
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <button
-                                onClick={() => setOpBillingPaymentRows(opBillingPaymentRows.filter((_, i) => i !== idx))}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
+                              <td className="px-2 py-1.5">
+                                <select
+                                  value={r.bankName}
+                                  onChange={(e) => {
+                                    const u = [...opBillingPaymentRows];
+                                    u[idx].bankName = e.target.value;
+                                    setOpBillingPaymentRows(u);
+                                  }}
+                                  className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
+                                >
+                                  <option value="">-Select-</option>
+                                  <option>SBI</option>
+                                  <option>HDFC</option>
+                                  <option>ICICI</option>
+                                  <option>Axis</option>
+                                </select>
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <select
+                                  value={r.beneficiaryName}
+                                  onChange={(e) => {
+                                    const u = [...opBillingPaymentRows];
+                                    u[idx].beneficiaryName = e.target.value;
+                                    setOpBillingPaymentRows(u);
+                                  }}
+                                  className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
+                                >
+                                  <option value="">-Select-</option>
+                                  <option>Self</option>
+                                  <option>Relative</option>
+                                  <option>Corporate</option>
+                                </select>
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <Input
+                                  value={r.refNo}
+                                  onChange={(e) => {
+                                    const u = [...opBillingPaymentRows];
+                                    u[idx].refNo = e.target.value;
+                                    setOpBillingPaymentRows(u);
+                                  }}
+                                  placeholder="Ref#"
+                                  className="h-6 w-24 text-[11px] font-mono"
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <Input
+                                  value={r.description}
+                                  onChange={(e) => {
+                                    const u = [...opBillingPaymentRows];
+                                    u[idx].description = e.target.value;
+                                    setOpBillingPaymentRows(u);
+                                  }}
+                                  placeholder="Description..."
+                                  className="h-6 w-32 text-[11px]"
+                                />
+                              </td>
+                              <td className="px-2 py-1.5 text-right">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={r.cardSwipingValue}
+                                  onChange={(e) => {
+                                    const u = [...opBillingPaymentRows];
+                                    const val = Number(e.target.value);
+                                    u[idx].cardSwipingValue =
+                                      isNaN(val) || val < 0 ? 0 : val;
+                                    setOpBillingPaymentRows(u);
+                                  }}
+                                  className="h-6 w-16 text-[11px] text-right font-mono"
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <button
+                                  onClick={() =>
+                                    setOpBillingPaymentRows(
+                                      opBillingPaymentRows.filter(
+                                        (_, i) => i !== idx,
+                                      ),
+                                    )
+                                  }
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
 
                   {/* Add Row */}
                   <button
-                    onClick={() => setOpBillingPaymentRows([...opBillingPaymentRows, { mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }])}
+                    onClick={() =>
+                      setOpBillingPaymentRows([
+                        ...opBillingPaymentRows,
+                        {
+                          mode: "Cash",
+                          amount: 0,
+                          balance: 0,
+                          date: new Date().toLocaleDateString("en-GB"),
+                          bankName: "",
+                          beneficiaryName: "",
+                          refNo: "",
+                          description: "",
+                          cardSwipingValue: 0,
+                        },
+                      ])
+                    }
                     className="text-[11px] text-blue-600 font-bold hover:underline flex items-center gap-1"
                   >
                     <Plus className="w-3 h-3" /> Add Row
@@ -3782,9 +5344,14 @@ export default function BillingPage() {
 
                   {/* Co-Payment Paid By */}
                   <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-600 pt-1">
-                    <span className="whitespace-nowrap">Co-Payment Paid by</span>
+                    <span className="whitespace-nowrap">
+                      Co-Payment Paid by
+                    </span>
                     {["Patient", "Company"].map((opt) => (
-                      <label key={opt} className="flex items-center gap-1 cursor-pointer">
+                      <label
+                        key={opt}
+                        className="flex items-center gap-1 cursor-pointer"
+                      >
                         <input
                           type="radio"
                           name="opCoPay"
@@ -3805,31 +5372,55 @@ export default function BillingPage() {
 
                   {/* Consultant Change Remarks */}
                   <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
-                    <span className="whitespace-nowrap">Consultant Change Remarks</span>
-                    <Input placeholder="Enter remarks..." className="flex-1 h-6 text-[11px]" />
+                    <span className="whitespace-nowrap">
+                      Consultant Change Remarks
+                    </span>
+                    <Input
+                      placeholder="Enter remarks..."
+                      className="flex-1 h-6 text-[11px]"
+                    />
                   </div>
                 </div>
               )}
 
               {opBillingSubTab === "Checklist" && (
-                <div className="p-4 text-xs text-slate-500 italic">Checklist items will appear here once configured.</div>
+                <div className="p-4 text-xs text-slate-500 italic">
+                  Checklist items will appear here once configured.
+                </div>
               )}
 
               {opBillingSubTab === "Patient Diagnosis Entry" && (
                 <div className="p-4 space-y-3">
-                  <div className="text-xs font-bold text-slate-700">Patient Diagnosis Entry</div>
+                  <div className="text-xs font-bold text-slate-700">
+                    Patient Diagnosis Entry
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-600">Primary Diagnosis (ICD-10)</label>
-                      <Input placeholder="Enter diagnosis code or description..." className="text-xs h-8" />
+                      <label className="text-[11px] font-semibold text-slate-600">
+                        Primary Diagnosis (ICD-10)
+                      </label>
+                      <Input
+                        placeholder="Enter diagnosis code or description..."
+                        className="text-xs h-8"
+                      />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[11px] font-semibold text-slate-600">Secondary Diagnosis</label>
-                      <Input placeholder="Secondary diagnosis..." className="text-xs h-8" />
+                      <label className="text-[11px] font-semibold text-slate-600">
+                        Secondary Diagnosis
+                      </label>
+                      <Input
+                        placeholder="Secondary diagnosis..."
+                        className="text-xs h-8"
+                      />
                     </div>
                     <div className="space-y-1 col-span-2">
-                      <label className="text-[11px] font-semibold text-slate-600">Clinical Notes</label>
-                      <textarea placeholder="Clinical findings and notes..." className="w-full h-20 text-xs p-2 border border-slate-200 rounded-lg resize-none" />
+                      <label className="text-[11px] font-semibold text-slate-600">
+                        Clinical Notes
+                      </label>
+                      <textarea
+                        placeholder="Clinical findings and notes..."
+                        className="w-full h-20 text-xs p-2 border border-slate-200 rounded-lg resize-none"
+                      />
                     </div>
                   </div>
                 </div>
@@ -3837,11 +5428,17 @@ export default function BillingPage() {
 
               {opBillingSubTab === "Adjustment" && (
                 <div className="p-4 space-y-3">
-                  <div className="text-xs font-bold text-slate-700">Patient Deposit Adjustments</div>
+                  <div className="text-xs font-bold text-slate-700">
+                    Patient Deposit Adjustments
+                  </div>
                   <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-3">
                     <div className="flex items-center justify-between font-bold text-blue-900">
-                      <span>Available Deposit for UHID {opBillingUhid || "—"}:</span>
-                      <span className={`font-mono text-base ${opBillingAvailableDeposit === 0 ? 'text-slate-400 font-normal' : 'text-blue-900 font-bold'}`}>
+                      <span>
+                        Available Deposit for UHID {opBillingUhid || "—"}:
+                      </span>
+                      <span
+                        className={`font-mono text-base ${opBillingAvailableDeposit === 0 ? "text-slate-400 font-normal" : "text-blue-900 font-bold"}`}
+                      >
                         ₹{opBillingAvailableDeposit.toFixed(2)}
                       </span>
                     </div>
@@ -3849,23 +5446,36 @@ export default function BillingPage() {
                     {opBillingAppliedDeposit > 0 && (
                       <div className="flex items-center justify-between font-semibold text-emerald-800 text-[11px] bg-emerald-50 border border-emerald-200 rounded px-2.5 py-1.5">
                         <span>Applied Credit on Current Invoice:</span>
-                        <span className="font-mono font-bold">₹{opBillingAppliedDeposit.toFixed(2)}</span>
+                        <span className="font-mono font-bold">
+                          ₹{opBillingAppliedDeposit.toFixed(2)}
+                        </span>
                       </div>
                     )}
 
                     <div className="flex items-center gap-2 pt-1">
                       <Button
                         size="sm"
-                        disabled={opBillingAvailableDeposit <= 0 || opNetPayable <= 0}
+                        disabled={
+                          opBillingAvailableDeposit <= 0 || opNetPayable <= 0
+                        }
                         onClick={() => {
                           if (opBillingAvailableDeposit <= 0) {
-                            toast.error("No Available Deposit", "Patient has no available deposit balance.");
+                            toast.error(
+                              "No Available Deposit",
+                              "Patient has no available deposit balance.",
+                            );
                             return;
                           }
-                          const amountToApply = Math.min(opBillingAvailableDeposit, opNetPayable);
-                          const remaining = opBillingAvailableDeposit - amountToApply;
+                          const amountToApply = Math.min(
+                            opBillingAvailableDeposit,
+                            opNetPayable,
+                          );
+                          const remaining =
+                            opBillingAvailableDeposit - amountToApply;
                           setOpBillingAvailableDeposit(remaining);
-                          setOpBillingAppliedDeposit(prev => prev + amountToApply);
+                          setOpBillingAppliedDeposit(
+                            (prev) => prev + amountToApply,
+                          );
                           setOpBillingPaymentRows([
                             {
                               mode: "Advance Deposit",
@@ -3876,10 +5486,13 @@ export default function BillingPage() {
                               beneficiaryName: "",
                               refNo: "ADJUST-DEP",
                               description: `Adjusted from Advance Deposit (Remaining: ₹${remaining.toFixed(2)})`,
-                              cardSwipingValue: 0
-                            }
+                              cardSwipingValue: 0,
+                            },
                           ]);
-                          toast.success("Deposit Adjusted", `Applied ₹${amountToApply.toFixed(2)} credit to bill. Remaining Deposit: ₹${remaining.toFixed(2)}.`);
+                          toast.success(
+                            "Deposit Adjusted",
+                            `Applied ₹${amountToApply.toFixed(2)} credit to bill. Remaining Deposit: ₹${remaining.toFixed(2)}.`,
+                          );
                         }}
                         className="text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white disabled:bg-slate-300 disabled:text-slate-500"
                       >
@@ -3891,12 +5504,27 @@ export default function BillingPage() {
                           size="sm"
                           variant="outline"
                           onClick={() => {
-                            setOpBillingAvailableDeposit(prev => prev + opBillingAppliedDeposit);
+                            setOpBillingAvailableDeposit(
+                              (prev) => prev + opBillingAppliedDeposit,
+                            );
                             setOpBillingAppliedDeposit(0);
                             setOpBillingPaymentRows([
-                              { mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }
+                              {
+                                mode: "Cash",
+                                amount: 0,
+                                balance: 0,
+                                date: new Date().toLocaleDateString("en-GB"),
+                                bankName: "",
+                                beneficiaryName: "",
+                                refNo: "",
+                                description: "",
+                                cardSwipingValue: 0,
+                              },
                             ]);
-                            toast.info("Deposit Reverted", "Restored patient's advance deposit balance.");
+                            toast.info(
+                              "Deposit Reverted",
+                              "Restored patient's advance deposit balance.",
+                            );
                           }}
                           className="text-xs font-bold border-slate-300 text-slate-700 hover:bg-slate-100"
                         >
@@ -3905,22 +5533,26 @@ export default function BillingPage() {
                       )}
                     </div>
 
-                    {opBillingAvailableDeposit === 0 && opBillingAppliedDeposit === 0 && (
-                      <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2.5 flex items-center justify-between">
-                        <span>No active advance deposit collected for this patient.</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            if (opBillingUhid) setAdvUhid(opBillingUhid);
-                            setActiveTab("Advance Collection");
-                          }}
-                          className="h-5 text-[10px] font-bold border-amber-300 text-amber-800 hover:bg-amber-100"
-                        >
-                          + Collect Deposit
-                        </Button>
-                      </div>
-                    )}
+                    {opBillingAvailableDeposit === 0 &&
+                      opBillingAppliedDeposit === 0 && (
+                        <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2.5 flex items-center justify-between">
+                          <span>
+                            No active advance deposit collected for this
+                            patient.
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              if (opBillingUhid) setAdvUhid(opBillingUhid);
+                              setActiveTab("Advance Collection");
+                            }}
+                            className="h-5 text-[10px] font-bold border-amber-300 text-amber-800 hover:bg-amber-100"
+                          >
+                            + Collect Deposit
+                          </Button>
+                        </div>
+                      )}
                   </div>
                 </div>
               )}
@@ -3928,17 +5560,21 @@ export default function BillingPage() {
               {opBillingSubTab === "Outstanding" && (
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs font-bold text-slate-700">Previous Invoices & Balance History</div>
+                    <div className="text-xs font-bold text-slate-700">
+                      Previous Invoices & Balance History
+                    </div>
                     {opPatientOutstandingInvoices.length > 0 && (
                       <Badge className="bg-red-100 text-red-700 border-red-200">
-                        {opPatientOutstandingInvoices.length} Outstanding Bill(s) Found
+                        {opPatientOutstandingInvoices.length} Outstanding
+                        Bill(s) Found
                       </Badge>
                     )}
                   </div>
 
                   {opPatientOutstandingInvoices.length === 0 ? (
                     <div className="border rounded-lg p-4 bg-slate-50 text-xs text-slate-600">
-                      No overdue unpaid invoices for this patient. Account is clean.
+                      No overdue unpaid invoices for this patient. Account is
+                      clean.
                     </div>
                   ) : (
                     <div className="border rounded-lg overflow-hidden bg-white shadow-2xs">
@@ -3949,8 +5585,12 @@ export default function BillingPage() {
                             <th className="px-3 py-2">Date</th>
                             <th className="px-3 py-2">Company / Payer</th>
                             <th className="px-3 py-2 text-right">Net Amount</th>
-                            <th className="px-3 py-2 text-right">Paid Amount</th>
-                            <th className="px-3 py-2 text-right text-red-600">Outstanding Balance</th>
+                            <th className="px-3 py-2 text-right">
+                              Paid Amount
+                            </th>
+                            <th className="px-3 py-2 text-right text-red-600">
+                              Outstanding Balance
+                            </th>
                             <th className="px-3 py-2 text-center">Status</th>
                             <th className="px-3 py-2 text-center">Action</th>
                           </tr>
@@ -3958,12 +5598,22 @@ export default function BillingPage() {
                         <tbody className="divide-y divide-slate-100 font-medium">
                           {opPatientOutstandingInvoices.map((inv) => (
                             <tr key={inv.id} className="hover:bg-slate-50">
-                              <td className="px-3 py-2 font-mono font-bold text-blue-600">{inv.invoiceNo}</td>
-                              <td className="px-3 py-2 text-slate-500">{new Date(inv.date).toLocaleDateString("en-GB")}</td>
+                              <td className="px-3 py-2 font-mono font-bold text-blue-600">
+                                {inv.invoiceNo}
+                              </td>
+                              <td className="px-3 py-2 text-slate-500">
+                                {new Date(inv.date).toLocaleDateString("en-GB")}
+                              </td>
                               <td className="px-3 py-2">{inv.company}</td>
-                              <td className="px-3 py-2 text-right font-mono">₹{inv.netAmt.toFixed(2)}</td>
-                              <td className="px-3 py-2 text-right font-mono text-emerald-600">₹{(inv.netAmt - inv.balance).toFixed(2)}</td>
-                              <td className="px-3 py-2 text-right font-mono font-bold text-red-600">₹{inv.balance.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right font-mono">
+                                ₹{inv.netAmt.toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono text-emerald-600">
+                                ₹{(inv.netAmt - inv.balance).toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono font-bold text-red-600">
+                                ₹{inv.balance.toFixed(2)}
+                              </td>
                               <td className="px-3 py-2 text-center">
                                 <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">
                                   {inv.status}
@@ -3990,7 +5640,6 @@ export default function BillingPage() {
 
             {/* Bottom Summary Bar — matching reference layout exactly */}
             <div className="border-t border-slate-200 bg-[#cee6f8] flex-shrink-0 text-[11px]">
-              
               {/* Row 1: Treatment/Available Limit and Advance/Outstanding */}
               <div className="flex items-center gap-4 bg-[#cee6f8] px-3 py-1 text-slate-700 font-bold border-b border-slate-300 text-[11.5px]">
                 <div className="flex items-center justify-between w-[48%] border-r border-slate-300 pr-4">
@@ -4005,11 +5654,12 @@ export default function BillingPage() {
 
               {/* Row 2: Narration, Actions and Inputs aligned to match screenshot */}
               <div className="flex bg-[#cee6f8] border-b border-slate-200">
-                
                 {/* Left side: Narration + Buttons + Reporting + PAN */}
                 <div className="w-[65%] p-2.5 flex flex-col justify-between space-y-2 border-r border-slate-300">
                   <div className="space-y-1">
-                    <span className="text-slate-700 font-bold text-[10px]">Narration</span>
+                    <span className="text-slate-700 font-bold text-[10px]">
+                      Narration
+                    </span>
                     <textarea
                       value={opBillingNarration}
                       onChange={(e) => setOpBillingNarration(e.target.value)}
@@ -4017,33 +5667,47 @@ export default function BillingPage() {
                       className="w-full h-11 text-[11px] p-1.5 bg-white border border-slate-300 rounded resize-none focus:outline-none focus:border-blue-400 shadow-inner"
                     />
                   </div>
-                  
+
                   <div className="flex items-center justify-between gap-2 pt-0.5">
                     {/* Buttons styling matches screenshot */}
                     <div className="flex items-center gap-1.5">
                       <button
                         type="button"
-                        onClick={() => setOpBillingApprovalRequired(!opBillingApprovalRequired)}
+                        onClick={() =>
+                          setOpBillingApprovalRequired(
+                            !opBillingApprovalRequired,
+                          )
+                        }
                         className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${
-                          opBillingApprovalRequired ? "bg-red-500 text-white border-red-600" : "bg-red-100/80 border border-red-400 text-red-700 hover:bg-red-200"
+                          opBillingApprovalRequired
+                            ? "bg-red-500 text-white border-red-600"
+                            : "bg-red-100/80 border border-red-400 text-red-700 hover:bg-red-200"
                         }`}
                       >
                         Approval Required
                       </button>
                       <button
                         type="button"
-                        onClick={() => setOpBillingExcludedService(!opBillingExcludedService)}
+                        onClick={() =>
+                          setOpBillingExcludedService(!opBillingExcludedService)
+                        }
                         className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${
-                          opBillingExcludedService ? "bg-amber-500 text-white border-amber-600" : "bg-amber-50 border border-amber-400 text-blue-800 hover:bg-amber-100"
+                          opBillingExcludedService
+                            ? "bg-amber-500 text-white border-amber-600"
+                            : "bg-amber-50 border border-amber-400 text-blue-800 hover:bg-amber-100"
                         }`}
                       >
                         Excluded Service
                       </button>
                       <button
                         type="button"
-                        onClick={() => setOpBillingRefundedService(!opBillingRefundedService)}
+                        onClick={() =>
+                          setOpBillingRefundedService(!opBillingRefundedService)
+                        }
                         className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${
-                          opBillingRefundedService ? "bg-teal-500 text-white border-teal-600" : "bg-emerald-50 border border-emerald-400 text-blue-800 hover:bg-emerald-100"
+                          opBillingRefundedService
+                            ? "bg-teal-500 text-white border-teal-600"
+                            : "bg-emerald-50 border border-emerald-400 text-blue-800 hover:bg-emerald-100"
                         }`}
                       >
                         Refunded Service
@@ -4051,33 +5715,48 @@ export default function BillingPage() {
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <span className="text-slate-700 font-bold text-[10px]">Reporting DateTime</span>
+                      <span className="text-slate-700 font-bold text-[10px]">
+                        Reporting DateTime
+                      </span>
                       <div className="flex items-center bg-white border border-slate-300 rounded px-1.5 h-5 hover:border-blue-400">
-                        <input 
-                          type="text" 
-                          value={opBillingReportingDateTime || "22/08/2026 00:00"}
-                          onChange={(e) => setOpBillingReportingDateTime(e.target.value)}
+                        <input
+                          type="text"
+                          value={
+                            opBillingReportingDateTime || "22/08/2026 00:00"
+                          }
+                          onChange={(e) =>
+                            setOpBillingReportingDateTime(e.target.value)
+                          }
                           className="h-4 text-[10px] w-28 border-0 p-0 shadow-none focus:ring-0 font-mono"
                         />
-                        <span className="text-slate-400 text-[10px] cursor-pointer" title="Select date-time">🕒</span>
+                        <span
+                          className="text-slate-400 text-[10px] cursor-pointer"
+                          title="Select date-time"
+                        >
+                          🕒
+                        </span>
                       </div>
 
-                      <span className="text-slate-700 font-bold text-[10px]">PAN No.</span>
-                      <input 
-                        type="text" 
-                        value={opBillingPanNo} 
+                      <span className="text-slate-700 font-bold text-[10px]">
+                        PAN No.
+                      </span>
+                      <input
+                        type="text"
+                        value={opBillingPanNo}
                         onChange={(e) => setOpBillingPanNo(e.target.value)}
-                        className="w-16 h-5 text-[10px] px-1 border border-slate-300 rounded bg-white font-mono text-center" 
+                        className="w-16 h-5 text-[10px] px-1 border border-slate-300 rounded bg-white font-mono text-center"
                       />
                     </div>
                   </div>
 
                   <label className="flex items-center gap-1 text-[10px] font-bold text-slate-700 cursor-pointer w-fit">
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       checked={opBillingEmailResult}
-                      onChange={(e) => setOpBillingEmailResult(e.target.checked)}
-                      className="mr-1 accent-blue-600 w-3 h-3" 
+                      onChange={(e) =>
+                        setOpBillingEmailResult(e.target.checked)
+                      }
+                      className="mr-1 accent-blue-600 w-3 h-3"
                     />
                     E-mail Result
                   </label>
@@ -4088,59 +5767,130 @@ export default function BillingPage() {
                   {/* Left Column (Currency, Received, Rate, Conv.Amt, Charge, Discount) */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Currency</span>
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Currency
+                      </span>
                       <select className="h-5 w-20 text-[10px] border border-slate-300 rounded bg-white px-1 text-right">
                         <option>INR</option>
                         <option>USD</option>
                       </select>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Received</span>
-                      <input type="text" value={opTotalPaid.toFixed(2)} readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Received
+                      </span>
+                      <input
+                        type="text"
+                        value={opTotalPaid.toFixed(2)}
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Rate</span>
-                      <input type="text" value="1.00" readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Rate
+                      </span>
+                      <input
+                        type="text"
+                        value="1.00"
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Conv.Amt</span>
-                      <input type="text" value="0.00" readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Conv.Amt
+                      </span>
+                      <input
+                        type="text"
+                        value="0.00"
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Charge</span>
-                      <input type="text" value="0.00" readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Charge
+                      </span>
+                      <input
+                        type="text"
+                        value="0.00"
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Discount</span>
-                      <input type="text" value={opDiscountTotal.toFixed(2)} readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Discount
+                      </span>
+                      <input
+                        type="text"
+                        value={opDiscountTotal.toFixed(2)}
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono"
+                      />
                     </div>
                   </div>
-                  
+
                   {/* Right Column (Net Amt, Deductable Amt, Received, Advance, Balance) */}
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Net Amt</span>
-                      <input type="text" value={opNetPayable.toFixed(2)} readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono font-bold" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Net Amt
+                      </span>
+                      <input
+                        type="text"
+                        value={opNetPayable.toFixed(2)}
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono font-bold"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Deductable Amt</span>
-                      <input type="text" value="0.00" readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Deductable Amt
+                      </span>
+                      <input
+                        type="text"
+                        value="0.00"
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Received</span>
-                      <input type="text" value={opTotalPaid.toFixed(2)} readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Received
+                      </span>
+                      <input
+                        type="text"
+                        value={opTotalPaid.toFixed(2)}
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Advance</span>
-                      <input type="text" value="0.00" readOnly className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono" />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Advance
+                      </span>
+                      <input
+                        type="text"
+                        value="0.00"
+                        readOnly
+                        className="h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono"
+                      />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-700 text-[10px] font-bold">Balance</span>
-                      <input type="text" value={opBalance.toFixed(2)} readOnly className={`h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono font-bold ${opBalance > 0 ? 'text-red-600' : 'text-emerald-600'}`} />
+                      <span className="text-slate-700 text-[10px] font-bold">
+                        Balance
+                      </span>
+                      <input
+                        type="text"
+                        value={opBalance.toFixed(2)}
+                        readOnly
+                        className={`h-5 w-20 text-[10px] text-right border border-slate-300 bg-white px-1 rounded font-mono font-bold ${opBalance > 0 ? "text-red-600" : "text-emerald-600"}`}
+                      />
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           </Card>
@@ -4152,35 +5902,44 @@ export default function BillingPage() {
             {/* Header bar */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-slate-800">IP Invoice</span>
+                <span className="text-sm font-bold text-slate-800">
+                  IP Invoice
+                </span>
                 {/* Search Bar matching screenshot */}
                 <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-5 w-5 text-blue-600 hover:text-blue-800"
                     onClick={() => setIsPatientSearchModalOpen(true)}
                   >
                     <Search className="h-3.5 w-3.5" />
                   </Button>
                   <Select value="IP No">
-                    <SelectTrigger className="h-5 w-16 text-[10px] bg-slate-50 border-0 p-0 shadow-none focus:ring-0"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="IP No">IP No</SelectItem></SelectContent>
+                    <SelectTrigger className="h-5 w-16 text-[10px] bg-slate-50 border-0 p-0 shadow-none focus:ring-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IP No">IP No</SelectItem>
+                    </SelectContent>
                   </Select>
-                  <Input 
-                    type="text" 
-                    value={ipBillingUhid} 
-                    onChange={(e) => setIpBillingUhid(e.target.value)} 
-                    className="h-5 text-xs w-32 border-0 p-0 shadow-none font-mono font-bold focus-visible:ring-0" 
+                  <Input
+                    type="text"
+                    value={ipBillingUhid}
+                    onChange={(e) => setIpBillingUhid(e.target.value)}
+                    className="h-5 text-xs w-32 border-0 p-0 shadow-none font-mono font-bold focus-visible:ring-0"
                     placeholder="Enter IP No / UHID..."
                   />
                 </div>
                 {/* Notes Button */}
-                <Button 
+                <Button
                   type="button"
                   onClick={() => {
                     if (!ipBillingUhid.trim()) {
-                      toast.error("No IP Patient Selected", "Please select an IP patient (UHID/IP No) first to view or add notes.");
+                      toast.error(
+                        "No IP Patient Selected",
+                        "Please select an IP patient (UHID/IP No) first to view or add notes.",
+                      );
                       setIsPatientSearchModalOpen(true);
                       return;
                     }
@@ -4194,33 +5953,50 @@ export default function BillingPage() {
 
               {/* Header Right Action Buttons */}
               <div className="flex items-center gap-1.5">
-                <Button 
+                <Button
                   onClick={() => {
                     if (!ipBillingUhid.trim()) {
-                      toast.error("No IP Patient Selected", "Please select an IP patient (IP No / UHID) before processing discharge.");
+                      toast.error(
+                        "No IP Patient Selected",
+                        "Please select an IP patient (IP No / UHID) before processing discharge.",
+                      );
                       setIsPatientSearchModalOpen(true);
                       return;
                     }
                     const balance = ipNetPayable;
                     if (balance < 0) {
                       setIpDischargeMode("refund");
-                      setIpDischargeSplitRows([{ mode: "Cash", amount: Math.abs(balance), refNo: "" }]);
-                    } else if (ipBillingPayer && !ipBillingPayer.includes("CASH") && !ipBillingPayer.includes("Direct")) {
+                      setIpDischargeSplitRows([
+                        { mode: "Cash", amount: Math.abs(balance), refNo: "" },
+                      ]);
+                    } else if (
+                      ipBillingPayer &&
+                      !ipBillingPayer.includes("CASH") &&
+                      !ipBillingPayer.includes("Direct")
+                    ) {
                       setIpDischargeMode("tpa_credit");
-                      setIpDischargeSplitRows([{ mode: "TPA Claim", amount: balance, refNo: "" }]);
+                      setIpDischargeSplitRows([
+                        { mode: "TPA Claim", amount: balance, refNo: "" },
+                      ]);
                     } else {
                       setIpDischargeMode("pay_now");
-                      setIpDischargeSplitRows([{ mode: "Cash", amount: Math.max(0, balance), refNo: "" }]);
+                      setIpDischargeSplitRows([
+                        {
+                          mode: "Cash",
+                          amount: Math.max(0, balance),
+                          refNo: "",
+                        },
+                      ]);
                     }
                     setIsIpDischargeModalOpen(true);
                   }}
-                  variant="outline" 
-                  size="sm" 
+                  variant="outline"
+                  size="sm"
                   className="h-6 text-[10px] bg-white border-blue-200 text-blue-800 font-bold px-3 hover:bg-blue-50 cursor-pointer"
                 >
                   Discharge
                 </Button>
-                <Button 
+                <Button
                   onClick={() => {
                     setIpBillingUhid("");
                     setIpBillingPan("");
@@ -4242,22 +6018,22 @@ export default function BillingPage() {
                     setIpDiscountOnVal(0);
                     setIpStatus("Audit Bill");
                   }}
-                  variant="outline" 
-                  size="sm" 
+                  variant="outline"
+                  size="sm"
                   className="h-6 text-[10px] bg-white border-blue-200 text-blue-800 font-bold px-3 hover:bg-blue-50"
                 >
                   New
                 </Button>
-                <Button 
+                <Button
                   onClick={() => handleSaveIpBilling(false)}
-                  size="sm" 
+                  size="sm"
                   className="h-6 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 shadow-sm"
                 >
                   Save
                 </Button>
-                <Button 
+                <Button
                   onClick={() => handleSaveIpBilling(true)}
-                  size="sm" 
+                  size="sm"
                   className="h-6 text-[10px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 shadow-sm"
                 >
                   Print
@@ -4267,43 +6043,68 @@ export default function BillingPage() {
 
             {/* Dense 4-column summary grid container */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-0 divide-x divide-slate-200 bg-[#f8fbfd] border-b border-slate-200 text-[10px] flex-shrink-0">
-              
               {/* Box 1: Patient Details */}
               <div className="p-3.5 flex gap-4">
-                <div className={`w-16 h-20 border rounded flex items-center justify-center overflow-hidden flex-shrink-0 self-center ${ipBillingPatientInfo ? 'border-blue-400 bg-blue-50' : 'border-slate-300 bg-slate-100'}`}>
+                <div
+                  className={`w-16 h-20 border rounded flex items-center justify-center overflow-hidden flex-shrink-0 self-center ${ipBillingPatientInfo ? "border-blue-400 bg-blue-50" : "border-slate-300 bg-slate-100"}`}
+                >
                   {ipBillingPatientInfo?.image ? (
-                    <img 
+                    <img
                       src={ipBillingPatientInfo.image}
                       alt={ipBillingPatientInfo.name}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                        (e.target as HTMLImageElement).parentElement!.innerHTML = `<svg class="w-12 h-12 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>`;
+                        (e.target as HTMLImageElement).style.display = "none";
+                        (
+                          e.target as HTMLImageElement
+                        ).parentElement!.innerHTML =
+                          `<svg class="w-12 h-12 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>`;
                       }}
                     />
                   ) : (
-                    <svg className={`w-12 h-12 ${ipBillingPatientInfo ? 'text-blue-400' : 'text-slate-400'}`} fill="currentColor" viewBox="0 0 24 24">
+                    <svg
+                      className={`w-12 h-12 ${ipBillingPatientInfo ? "text-blue-400" : "text-slate-400"}`}
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
                       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                     </svg>
                   )}
                 </div>
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <h4 className="font-bold text-slate-800 text-xs mb-1">Patient Details</h4>
-                    <div className="font-bold text-slate-900">{ipBillingPatientInfo?.name || (ipBillingUhid ? <span className="text-slate-400 italic">Loading...</span> : <span className="text-slate-400 italic">No patient selected</span>)}</div>
-                    <div className="text-slate-500 font-semibold mt-0.5">{ipBillingPatientInfo?.genderAge || ""}</div>
+                    <h4 className="font-bold text-slate-800 text-xs mb-1">
+                      Patient Details
+                    </h4>
+                    <div className="font-bold text-slate-900">
+                      {ipBillingPatientInfo?.name ||
+                        (ipBillingUhid ? (
+                          <span className="text-slate-400 italic">
+                            Loading...
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic">
+                            No patient selected
+                          </span>
+                        ))}
+                    </div>
+                    <div className="text-slate-500 font-semibold mt-0.5">
+                      {ipBillingPatientInfo?.genderAge || ""}
+                    </div>
                   </div>
                   <div className="mt-2 flex items-center gap-1.5">
-                    <span className="font-semibold text-slate-500 mr-1">IP Status:</span>
-                    <button 
+                    <span className="font-semibold text-slate-500 mr-1">
+                      IP Status:
+                    </span>
+                    <button
                       onClick={() => setIpStatus("Audit Bill")}
-                      className={`h-5 px-2 text-[9px] font-bold rounded-sm border transition-colors ${ipStatus === "Audit Bill" ? 'bg-red-500 text-white border-red-600' : 'bg-white text-red-600 border-red-300 hover:bg-red-50'}`}
+                      className={`h-5 px-2 text-[9px] font-bold rounded-sm border transition-colors ${ipStatus === "Audit Bill" ? "bg-red-500 text-white border-red-600" : "bg-white text-red-600 border-red-300 hover:bg-red-50"}`}
                     >
                       Audit Bill
                     </button>
-                    <button 
+                    <button
                       onClick={() => setIpStatus("Bill Prepared")}
-                      className={`h-5 px-2 text-[9px] font-bold rounded-sm border transition-colors ${ipStatus === "Bill Prepared" ? 'bg-blue-600 text-white border-blue-700' : 'bg-white text-blue-600 border-blue-300 hover:bg-blue-50'}`}
+                      className={`h-5 px-2 text-[9px] font-bold rounded-sm border transition-colors ${ipStatus === "Bill Prepared" ? "bg-blue-600 text-white border-blue-700" : "bg-white text-blue-600 border-blue-300 hover:bg-blue-50"}`}
                     >
                       Bill Prepared
                     </button>
@@ -4313,15 +6114,26 @@ export default function BillingPage() {
 
               {/* Box 2: Invoice Details */}
               <div className="p-3.5 space-y-1.5">
-                <h4 className="font-bold text-slate-800 text-xs mb-1">Invoice Details</h4>
+                <h4 className="font-bold text-slate-800 text-xs mb-1">
+                  Invoice Details
+                </h4>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-semibold">IP No.</span>
-                  <span className="font-mono font-bold text-slate-800">{ipBillingUhid || <span className="text-slate-400 italic">—</span>}</span>
+                  <span className="font-mono font-bold text-slate-800">
+                    {ipBillingUhid || (
+                      <span className="text-slate-400 italic">—</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-semibold">Type</span>
-                  <Select value={ipBillingType} onValueChange={setIpBillingType}>
-                    <SelectTrigger className="h-5 w-24 text-[10px] bg-white border-slate-300 px-1 py-0 shadow-none"><SelectValue /></SelectTrigger>
+                  <Select
+                    value={ipBillingType}
+                    onValueChange={setIpBillingType}
+                  >
+                    <SelectTrigger className="h-5 w-24 text-[10px] bg-white border-slate-300 px-1 py-0 shadow-none">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Cash">Cash</SelectItem>
                       <SelectItem value="Credit">Credit</SelectItem>
@@ -4330,53 +6142,110 @@ export default function BillingPage() {
                   </Select>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-blue-600 font-bold hover:underline cursor-pointer">Invoice No</span>
-                  <span className="font-mono font-bold text-slate-800">{ipBillingUhid ? `IPCA26/${ipBillingUhid}` : <span className="text-slate-400 italic">—</span>}</span>
+                  <span className="text-blue-600 font-bold hover:underline cursor-pointer">
+                    Invoice No
+                  </span>
+                  <span className="font-mono font-bold text-slate-800">
+                    {ipBillingUhid ? (
+                      `IPCA26/${ipBillingUhid}`
+                    ) : (
+                      <span className="text-slate-400 italic">—</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-semibold">Inv. Date</span>
-                  <span className="font-mono font-bold text-red-700">{ipBillingUhid ? new Date().toLocaleString('en-GB').replace(',','') : "—"}</span>
+                  <span className="text-slate-500 font-semibold">
+                    Inv. Date
+                  </span>
+                  <span className="font-mono font-bold text-red-700">
+                    {ipBillingUhid
+                      ? new Date().toLocaleString("en-GB").replace(",", "")
+                      : "—"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-semibold">Admission</span>
-                  <span className="font-mono text-slate-700">{ipBillingPatientInfo?.admissionDate ? new Date(ipBillingPatientInfo.admissionDate).toLocaleString('en-GB').replace(',','') : "—"}</span>
+                  <span className="text-slate-500 font-semibold">
+                    Admission
+                  </span>
+                  <span className="font-mono text-slate-700">
+                    {ipBillingPatientInfo?.admissionDate
+                      ? new Date(ipBillingPatientInfo.admissionDate)
+                          .toLocaleString("en-GB")
+                          .replace(",", "")
+                      : "—"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-semibold">Discharge Date</span>
-                  <span className="font-mono text-slate-700">{ipBillingPatientInfo && (ipBillingPatientInfo as any).dischargeDate ? new Date((ipBillingPatientInfo as any).dischargeDate).toLocaleString('en-GB').replace(',','') : "—"}</span>
+                  <span className="text-slate-500 font-semibold">
+                    Discharge Date
+                  </span>
+                  <span className="font-mono text-slate-700">
+                    {ipBillingPatientInfo &&
+                    (ipBillingPatientInfo as any).dischargeDate
+                      ? new Date((ipBillingPatientInfo as any).dischargeDate)
+                          .toLocaleString("en-GB")
+                          .replace(",", "")
+                      : "—"}
+                  </span>
                 </div>
               </div>
 
               {/* Box 3: Payor Details */}
               <div className="p-3.5 space-y-1.5">
-                <h4 className="font-bold text-slate-800 text-xs mb-1">Payor Details</h4>
+                <h4 className="font-bold text-slate-800 text-xs mb-1">
+                  Payor Details
+                </h4>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-semibold">Payer</span>
-                  <span className="font-bold text-slate-800">{ipBillingPayer || <span className="text-slate-400 italic">—</span>}</span>
+                  <span className="font-bold text-slate-800">
+                    {ipBillingPayer || (
+                      <span className="text-slate-400 italic">—</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-semibold">Sponsor</span>
-                  <span className="font-bold text-slate-800">{ipBillingSponsor || <span className="text-slate-400 italic">—</span>}</span>
+                  <span className="font-bold text-slate-800">
+                    {ipBillingSponsor || (
+                      <span className="text-slate-400 italic">—</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-semibold">Network</span>
-                  <span className="text-slate-700">{ipBillingNetwork || <span className="text-slate-400 italic">—</span>}</span>
+                  <span className="text-slate-700">
+                    {ipBillingNetwork || (
+                      <span className="text-slate-400 italic">—</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-semibold">Consultant</span>
-                  <span className="text-blue-600 font-bold">{ipBillingConsultant || <span className="text-slate-400 italic">—</span>}</span>
+                  <span className="text-slate-500 font-semibold">
+                    Consultant
+                  </span>
+                  <span className="text-blue-600 font-bold">
+                    {ipBillingConsultant || (
+                      <span className="text-slate-400 italic">—</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-semibold">BillCategory /Bed No.</span>
-                  <span className="font-semibold text-slate-800">{ipBillingCategory || <span className="text-slate-400 italic">—</span>}</span>
+                  <span className="text-slate-500 font-semibold">
+                    BillCategory /Bed No.
+                  </span>
+                  <span className="font-semibold text-slate-800">
+                    {ipBillingCategory || (
+                      <span className="text-slate-400 italic">—</span>
+                    )}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500 font-semibold">PAN No.</span>
-                  <Input 
-                    type="text" 
-                    value={ipBillingPan} 
-                    onChange={e => setIpBillingPan(e.target.value)} 
-                    className="h-5 text-[10px] w-36 px-1.5 py-0 bg-white border-slate-300 focus-visible:ring-1" 
+                  <Input
+                    type="text"
+                    value={ipBillingPan}
+                    onChange={(e) => setIpBillingPan(e.target.value)}
+                    className="h-5 text-[10px] w-36 px-1.5 py-0 bg-white border-slate-300 focus-visible:ring-1"
                     placeholder="Enter PAN No..."
                   />
                 </div>
@@ -4385,48 +6254,71 @@ export default function BillingPage() {
               {/* Box 4: Other Detail */}
               <div className="p-3.5 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-bold text-slate-800 text-xs">Other Detail</h4>
+                  <h4 className="font-bold text-slate-800 text-xs">
+                    Other Detail
+                  </h4>
                   {/* Colored status icon indicators */}
                   <div className="flex items-center gap-1">
-                    <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-xs"><ShieldCheck className="w-2.5 h-2.5" /></span>
-                    <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-xs"><User className="w-2.5 h-2.5" /></span>
-                    <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs"><CheckCircle2 className="w-2.5 h-2.5" /></span>
-                    <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs"><ClipboardList className="w-2.5 h-2.5" /></span>
+                    <span className="w-4 h-4 rounded-full bg-red-100 text-red-600 flex items-center justify-center shadow-xs">
+                      <ShieldCheck className="w-2.5 h-2.5" />
+                    </span>
+                    <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shadow-xs">
+                      <User className="w-2.5 h-2.5" />
+                    </span>
+                    <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-xs">
+                      <CheckCircle2 className="w-2.5 h-2.5" />
+                    </span>
+                    <span className="w-4 h-4 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shadow-xs">
+                      <ClipboardList className="w-2.5 h-2.5" />
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-semibold">Treatment/Available Limit</span>
-                  <span className="font-mono font-bold text-red-600">{ipBillingUhid ? "0.00 / 0.00" : "—"}</span>
-                </div>
-                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-semibold">Advance</span>
-                  <span className="font-mono font-bold text-slate-800">{ipBillingUhid ? `₹${ipActiveAdvanceBalance.toFixed(2)}` : "—"}</span>
+                  <span className="text-slate-500 font-semibold">
+                    Treatment/Available Limit
+                  </span>
+                  <span className="font-mono font-bold text-red-600">
+                    {ipBillingUhid ? "0.00 / 0.00" : "—"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-semibold">Receivable/Refundable</span>
+                  <span className="text-slate-500 font-semibold">Advance</span>
+                  <span className="font-mono font-bold text-slate-800">
+                    {ipBillingUhid
+                      ? `₹${ipActiveAdvanceBalance.toFixed(2)}`
+                      : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500 font-semibold">
+                    Receivable/Refundable
+                  </span>
                   <span className="font-mono font-bold text-red-600">
-                    {ipBillingUhid ? `${ipGrossTotal - Number(ipAdvanceAdjusted || 0) - ipDiscountAmt >= 0 ? "Receivable" : "Refundable"}: ₹${Math.abs(ipGrossTotal - Number(ipAdvanceAdjusted || 0) - ipDiscountAmt).toFixed(2)}` : "—"}
+                    {ipBillingUhid
+                      ? `${ipGrossTotal - Number(ipAdvanceAdjusted || 0) - ipDiscountAmt >= 0 ? "Receivable" : "Refundable"}: ₹${Math.abs(ipGrossTotal - Number(ipAdvanceAdjusted || 0) - ipDiscountAmt).toFixed(2)}`
+                      : "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200">
                   <span className="text-slate-700 font-bold">Net Bill Amt</span>
-                  <span className="font-mono font-extrabold text-blue-600 text-xs">{ipBillingUhid ? `₹${ipNetPayable.toFixed(2)}` : "—"}</span>
+                  <span className="font-mono font-extrabold text-blue-600 text-xs">
+                    {ipBillingUhid ? `₹${ipNetPayable.toFixed(2)}` : "—"}
+                  </span>
                 </div>
               </div>
-
             </div>
 
             {/* Department Wise and Checklist toggle bar */}
             <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-100 px-4 py-1.5 flex-shrink-0">
-              <button 
+              <button
                 onClick={() => setIpBillingSubTab("Department Wise")}
-                className={`h-6 px-4 text-xs font-bold rounded-sm shadow-xs transition-colors ${ipBillingSubTab === "Department Wise" ? 'bg-white text-blue-600 border border-blue-200' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`h-6 px-4 text-xs font-bold rounded-sm shadow-xs transition-colors ${ipBillingSubTab === "Department Wise" ? "bg-white text-blue-600 border border-blue-200" : "text-slate-600 hover:text-slate-900"}`}
               >
                 Department Wise
               </button>
-              <button 
+              <button
                 onClick={() => setIpBillingSubTab("Checklist")}
-                className={`h-6 px-4 text-xs font-bold rounded-sm shadow-xs transition-colors ${ipBillingSubTab === "Checklist" ? 'bg-white text-blue-600 border border-blue-200' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`h-6 px-4 text-xs font-bold rounded-sm shadow-xs transition-colors ${ipBillingSubTab === "Checklist" ? "bg-white text-blue-600 border border-blue-200" : "text-slate-600 hover:text-slate-900"}`}
               >
                 Checklist
               </button>
@@ -4436,100 +6328,133 @@ export default function BillingPage() {
             <div className="flex-1 overflow-auto bg-white p-4">
               {ipBillingSubTab === "Department Wise" ? (
                 <div className="space-y-4">
-                  <div className="text-xs font-bold text-slate-700">Inpatient Department-Wise Itemized Charges</div>
+                  <div className="text-xs font-bold text-slate-700">
+                    Inpatient Department-Wise Itemized Charges
+                  </div>
                   <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
                     <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
                       <tr>
                         <th className="px-3 py-2">Department / Head</th>
                         <th className="px-3 py-2 text-right">Daily Rate (₹)</th>
                         <th className="px-3 py-2 text-center">Days / Units</th>
-                        <th className="px-3 py-2 text-right">Total Amount (₹)</th>
+                        <th className="px-3 py-2 text-right">
+                          Total Amount (₹)
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                       <tr>
-                        <td className="px-3 py-2.5 font-bold text-slate-800">Room & Bed Charges (Deluxe Ward)</td>
+                        <td className="px-3 py-2.5 font-bold text-slate-800">
+                          Room & Bed Charges (Deluxe Ward)
+                        </td>
                         <td className="px-3 py-2.5 text-right font-mono">
-                          <Input 
-                            type="number" 
-                            value={ipRoomRate} 
+                          <Input
+                            type="number"
+                            value={ipRoomRate}
                             onChange={(e) => {
                               const val = e.target.value;
                               setIpRoomRate(val === "" ? "" : Number(val));
-                            }} 
-                            className="h-6 w-24 text-right bg-white inline-block font-mono text-xs focus-visible:ring-1" 
+                            }}
+                            className="h-6 w-24 text-right bg-white inline-block font-mono text-xs focus-visible:ring-1"
                           />
                         </td>
                         <td className="px-3 py-2.5 text-center font-mono">
-                          <Input 
-                            type="number" 
-                            value={ipDays} 
+                          <Input
+                            type="number"
+                            value={ipDays}
                             onChange={(e) => {
                               const val = e.target.value;
                               setIpDays(val === "" ? "" : Number(val));
-                            }} 
-                            className="h-6 w-16 text-center bg-white inline-block font-mono text-xs focus-visible:ring-1" 
+                            }}
+                            className="h-6 w-16 text-center bg-white inline-block font-mono text-xs focus-visible:ring-1"
                           />
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold">₹{(Number(ipDays || 0) * Number(ipRoomRate || 0)).toFixed(2)}</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-bold">
+                          ₹
+                          {(
+                            Number(ipDays || 0) * Number(ipRoomRate || 0)
+                          ).toFixed(2)}
+                        </td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-2.5 font-bold text-slate-800">Nursing & Patient Care Charges</td>
+                        <td className="px-3 py-2.5 font-bold text-slate-800">
+                          Nursing & Patient Care Charges
+                        </td>
                         <td className="px-3 py-2.5 text-right font-mono">
-                          <Input 
-                            type="number" 
-                            value={ipNursingRate} 
+                          <Input
+                            type="number"
+                            value={ipNursingRate}
                             onChange={(e) => {
                               const val = e.target.value;
                               setIpNursingRate(val === "" ? "" : Number(val));
-                            }} 
-                            className="h-6 w-24 text-right bg-white inline-block font-mono text-xs focus-visible:ring-1" 
+                            }}
+                            className="h-6 w-24 text-right bg-white inline-block font-mono text-xs focus-visible:ring-1"
                           />
                         </td>
                         <td className="px-3 py-2.5 text-center font-mono">
-                          <Input 
-                            type="number" 
-                            value={ipDays} 
+                          <Input
+                            type="number"
+                            value={ipDays}
                             onChange={(e) => {
                               const val = e.target.value;
                               setIpDays(val === "" ? "" : Number(val));
-                            }} 
-                            className="h-6 w-16 text-center bg-white inline-block font-mono text-xs focus-visible:ring-1" 
+                            }}
+                            className="h-6 w-16 text-center bg-white inline-block font-mono text-xs focus-visible:ring-1"
                           />
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold">₹{(Number(ipDays || 0) * Number(ipNursingRate || 0)).toFixed(2)}</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-bold">
+                          ₹
+                          {(
+                            Number(ipDays || 0) * Number(ipNursingRate || 0)
+                          ).toFixed(2)}
+                        </td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-2.5 font-bold text-slate-800">Consultant Daily Rounds & Physician Visits</td>
+                        <td className="px-3 py-2.5 font-bold text-slate-800">
+                          Consultant Daily Rounds & Physician Visits
+                        </td>
                         <td className="px-3 py-2.5 text-right font-mono">
-                          <Input 
-                            type="number" 
-                            value={ipDoctorRoundRate} 
+                          <Input
+                            type="number"
+                            value={ipDoctorRoundRate}
                             onChange={(e) => {
                               const val = e.target.value;
-                              setIpDoctorRoundRate(val === "" ? "" : Number(val));
-                            }} 
-                            className="h-6 w-24 text-right bg-white inline-block font-mono text-xs focus-visible:ring-1" 
+                              setIpDoctorRoundRate(
+                                val === "" ? "" : Number(val),
+                              );
+                            }}
+                            className="h-6 w-24 text-right bg-white inline-block font-mono text-xs focus-visible:ring-1"
                           />
                         </td>
                         <td className="px-3 py-2.5 text-center font-mono">
-                          <Input 
-                            type="number" 
-                            value={ipDays} 
+                          <Input
+                            type="number"
+                            value={ipDays}
                             onChange={(e) => {
                               const val = e.target.value;
                               setIpDays(val === "" ? "" : Number(val));
-                            }} 
-                            className="h-6 w-16 text-center bg-white inline-block font-mono text-xs focus-visible:ring-1" 
+                            }}
+                            className="h-6 w-16 text-center bg-white inline-block font-mono text-xs focus-visible:ring-1"
                           />
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold">₹{(Number(ipDays || 0) * Number(ipDoctorRoundRate || 0)).toFixed(2)}</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-bold">
+                          ₹
+                          {(
+                            Number(ipDays || 0) * Number(ipDoctorRoundRate || 0)
+                          ).toFixed(2)}
+                        </td>
                       </tr>
                       <tr>
-                        <td className="px-3 py-2.5 font-bold text-slate-800">Inpatient Pharmacy, Infusions & Consumables</td>
-                        <td className="px-3 py-2.5 text-right font-mono">₹4,500.00</td>
+                        <td className="px-3 py-2.5 font-bold text-slate-800">
+                          Inpatient Pharmacy, Infusions & Consumables
+                        </td>
+                        <td className="px-3 py-2.5 text-right font-mono">
+                          ₹4,500.00
+                        </td>
                         <td className="px-3 py-2.5 text-center font-mono">1</td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold">₹4,500.00</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-bold">
+                          ₹4,500.00
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -4537,12 +6462,20 @@ export default function BillingPage() {
                   {/* Calculations Summary Card */}
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border">
                     <div>
-                      <span className="text-[10px] text-slate-500 uppercase font-bold">Gross Inpatient Bill</span>
-                      <div className="text-base font-black text-slate-900 font-mono mt-0.5">₹{ipGrossTotal.toFixed(2)}</div>
+                      <span className="text-[10px] text-slate-500 uppercase font-bold">
+                        Gross Inpatient Bill
+                      </span>
+                      <div className="text-base font-black text-slate-900 font-mono mt-0.5">
+                        ₹{ipGrossTotal.toFixed(2)}
+                      </div>
                     </div>
                     <div>
-                      <span className="text-[10px] text-amber-600 uppercase font-bold">Less: Discount Adjusted</span>
-                      <div className="text-base font-black text-amber-600 font-mono mt-0.5">₹{ipDiscountAmt.toFixed(2)}</div>
+                      <span className="text-[10px] text-amber-600 uppercase font-bold">
+                        Less: Discount Adjusted
+                      </span>
+                      <div className="text-base font-black text-amber-600 font-mono mt-0.5">
+                        ₹{ipDiscountAmt.toFixed(2)}
+                      </div>
                     </div>
                     <div>
                       <span className="text-[10px] text-emerald-600 uppercase font-bold flex items-center justify-between">
@@ -4554,94 +6487,139 @@ export default function BillingPage() {
                         )}
                       </span>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <Input 
-                          type="number" 
-                          value={ipAdvanceAdjusted} 
+                        <Input
+                          type="number"
+                          value={ipAdvanceAdjusted}
                           onChange={(e) => {
                             const val = e.target.value;
                             const num = val === "" ? "" : Number(val);
                             if (num !== "" && num > ipActiveAdvanceBalance) {
-                              toast.warning("Limit Exceeded", `Adjusted advance cannot exceed available balance of ₹${ipActiveAdvanceBalance.toFixed(2)}.`);
+                              toast.warning(
+                                "Limit Exceeded",
+                                `Adjusted advance cannot exceed available balance of ₹${ipActiveAdvanceBalance.toFixed(2)}.`,
+                              );
                               setIpAdvanceAdjusted(ipActiveAdvanceBalance);
                             } else {
                               setIpAdvanceAdjusted(num);
                             }
-                          }} 
-                          className="h-6 w-28 font-mono font-bold text-emerald-600 bg-white focus-visible:ring-1 text-xs" 
+                          }}
+                          className="h-6 w-28 font-mono font-bold text-emerald-600 bg-white focus-visible:ring-1 text-xs"
                         />
                       </div>
                     </div>
                     <div>
-                      <span className="text-[10px] text-blue-600 uppercase font-bold">Net Final Settlement Payable</span>
-                      <div className="text-lg font-black text-blue-700 font-mono mt-0.5">₹{ipNetPayable.toFixed(2)}</div>
+                      <span className="text-[10px] text-blue-600 uppercase font-bold">
+                        Net Final Settlement Payable
+                      </span>
+                      <div className="text-lg font-black text-blue-700 font-mono mt-0.5">
+                        ₹{ipNetPayable.toFixed(2)}
+                      </div>
                     </div>
                   </div>
                 </div>
               ) : (
                 // Checklist Content View
                 <div className="space-y-4">
-                  <div className="text-xs font-bold text-slate-700">Patient Hospitalization Discharge Checklist</div>
+                  <div className="text-xs font-bold text-slate-700">
+                    Patient Hospitalization Discharge Checklist
+                  </div>
                   <div className="max-w-xl border rounded-lg overflow-hidden divide-y divide-slate-100">
                     <div className="p-3 flex items-center justify-between bg-white hover:bg-slate-50">
                       <div className="flex items-center gap-2.5">
-                        <input 
-                          type="checkbox" 
-                          id="chk_doc" 
-                          checked={ipChecklistDoctor} 
-                          onChange={e => setIpChecklistDoctor(e.target.checked)}
+                        <input
+                          type="checkbox"
+                          id="chk_doc"
+                          checked={ipChecklistDoctor}
+                          onChange={(e) =>
+                            setIpChecklistDoctor(e.target.checked)
+                          }
                           className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="chk_doc" className="font-bold text-slate-800 cursor-pointer">Doctor Discharge Clearance</label>
+                        <label
+                          htmlFor="chk_doc"
+                          className="font-bold text-slate-800 cursor-pointer"
+                        >
+                          Doctor Discharge Clearance
+                        </label>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm ${ipChecklistDoctor ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-sm ${ipChecklistDoctor ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}
+                      >
                         {ipChecklistDoctor ? "CLEARED" : "PENDING"}
                       </span>
                     </div>
 
                     <div className="p-3 flex items-center justify-between bg-white hover:bg-slate-50">
                       <div className="flex items-center gap-2.5">
-                        <input 
-                          type="checkbox" 
-                          id="chk_pharma" 
-                          checked={ipChecklistPharmacy} 
-                          onChange={e => setIpChecklistPharmacy(e.target.checked)}
+                        <input
+                          type="checkbox"
+                          id="chk_pharma"
+                          checked={ipChecklistPharmacy}
+                          onChange={(e) =>
+                            setIpChecklistPharmacy(e.target.checked)
+                          }
                           className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="chk_pharma" className="font-bold text-slate-800 cursor-pointer">Inpatient Pharmacy Returns Processed</label>
+                        <label
+                          htmlFor="chk_pharma"
+                          className="font-bold text-slate-800 cursor-pointer"
+                        >
+                          Inpatient Pharmacy Returns Processed
+                        </label>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm ${ipChecklistPharmacy ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-sm ${ipChecklistPharmacy ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}
+                      >
                         {ipChecklistPharmacy ? "CLEARED" : "PENDING"}
                       </span>
                     </div>
 
                     <div className="p-3 flex items-center justify-between bg-white hover:bg-slate-50">
                       <div className="flex items-center gap-2.5">
-                        <input 
-                          type="checkbox" 
-                          id="chk_nursing" 
-                          checked={ipChecklistNursing} 
-                          onChange={e => setIpChecklistNursing(e.target.checked)}
+                        <input
+                          type="checkbox"
+                          id="chk_nursing"
+                          checked={ipChecklistNursing}
+                          onChange={(e) =>
+                            setIpChecklistNursing(e.target.checked)
+                          }
                           className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="chk_nursing" className="font-bold text-slate-800 cursor-pointer">Nursing Handover & Vitals Verified</label>
+                        <label
+                          htmlFor="chk_nursing"
+                          className="font-bold text-slate-800 cursor-pointer"
+                        >
+                          Nursing Handover & Vitals Verified
+                        </label>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm ${ipChecklistNursing ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-sm ${ipChecklistNursing ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}
+                      >
                         {ipChecklistNursing ? "CLEARED" : "PENDING"}
                       </span>
                     </div>
 
                     <div className="p-3 flex items-center justify-between bg-white hover:bg-slate-50">
                       <div className="flex items-center gap-2.5">
-                        <input 
-                          type="checkbox" 
-                          id="chk_auditor" 
-                          checked={ipChecklistAuditor} 
-                          onChange={e => setIpChecklistAuditor(e.target.checked)}
+                        <input
+                          type="checkbox"
+                          id="chk_auditor"
+                          checked={ipChecklistAuditor}
+                          onChange={(e) =>
+                            setIpChecklistAuditor(e.target.checked)
+                          }
                           className="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="chk_auditor" className="font-bold text-slate-800 cursor-pointer">Billing Audit & Insurance Authorization</label>
+                        <label
+                          htmlFor="chk_auditor"
+                          className="font-bold text-slate-800 cursor-pointer"
+                        >
+                          Billing Audit & Insurance Authorization
+                        </label>
                       </div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-sm ${ipChecklistAuditor ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-sm ${ipChecklistAuditor ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}
+                      >
                         {ipChecklistAuditor ? "CLEARED" : "PENDING"}
                       </span>
                     </div>
@@ -4655,14 +6633,27 @@ export default function BillingPage() {
               {/* Column 1 */}
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-36 flex-shrink-0">Discount Authorized By:</span>
-                  <Select value={ipDiscountAuthBy} onValueChange={setIpDiscountAuthBy}>
-                    <SelectTrigger className="h-6 w-36 text-xs bg-white border-slate-300 px-1 py-0 shadow-none"><SelectValue /></SelectTrigger>
+                  <span className="w-36 flex-shrink-0">
+                    Discount Authorized By:
+                  </span>
+                  <Select
+                    value={ipDiscountAuthBy}
+                    onValueChange={setIpDiscountAuthBy}
+                  >
+                    <SelectTrigger className="h-6 w-36 text-xs bg-white border-slate-300 px-1 py-0 shadow-none">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Select">[ Select ]</SelectItem>
-                      <SelectItem value="Dr. Abhishek Bansal">Dr. Abhishek Bansal</SelectItem>
-                      <SelectItem value="Medical Superintendent">Medical Superintendent</SelectItem>
-                      <SelectItem value="Finance Director">Finance Director</SelectItem>
+                      <SelectItem value="Dr. Abhishek Bansal">
+                        Dr. Abhishek Bansal
+                      </SelectItem>
+                      <SelectItem value="Medical Superintendent">
+                        Medical Superintendent
+                      </SelectItem>
+                      <SelectItem value="Finance Director">
+                        Finance Director
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <span className="text-slate-600 font-normal ml-0.5">(%)</span>
@@ -4677,11 +6668,11 @@ export default function BillingPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
                   <span className="w-16 flex-shrink-0">Remarks:</span>
-                  <input 
+                  <input
                     type="text"
                     list="ip-remarks-suggestions"
                     value={ipRemarks}
-                    onChange={e => setIpRemarks(e.target.value)}
+                    onChange={(e) => setIpRemarks(e.target.value)}
                     className="h-6 w-56 text-xs bg-white border border-slate-300 rounded px-1.5 focus-visible:ring-1 focus-visible:outline-none font-sans font-medium"
                     placeholder="Select or type remarks..."
                   />
@@ -4695,21 +6686,23 @@ export default function BillingPage() {
                 <div className="flex items-center gap-1.5">
                   <div className="w-16 flex-shrink-0"></div>
                   <Select value={ipDiscountOn} onValueChange={setIpDiscountOn}>
-                    <SelectTrigger className="h-6 w-24 text-xs bg-white border-slate-300 px-1 py-0 shadow-none"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-6 w-24 text-xs bg-white border-slate-300 px-1 py-0 shadow-none">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Discount On">Discount On</SelectItem>
                       <SelectItem value="Percent">Percent</SelectItem>
                       <SelectItem value="Amount">Amount</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Input 
-                    type="number" 
-                    value={ipDiscountOnVal} 
-                    onChange={e => {
+                  <Input
+                    type="number"
+                    value={ipDiscountOnVal}
+                    onChange={(e) => {
                       const val = e.target.value;
                       setIpDiscountOnVal(val === "" ? "" : Number(val));
-                    }} 
-                    className="h-6 w-16 text-center bg-white border-slate-300 px-1 font-mono text-xs focus-visible:ring-1" 
+                    }}
+                    className="h-6 w-16 text-center bg-white border-slate-300 px-1 font-mono text-xs focus-visible:ring-1"
                   />
                 </div>
               </div>
@@ -4718,17 +6711,19 @@ export default function BillingPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
                   <span className="w-24 flex-shrink-0">Facilitator Name</span>
-                  <Input 
-                    type="text" 
-                    value={ipFacilitator} 
-                    onChange={e => setIpFacilitator(e.target.value)} 
-                    className="h-6 w-44 bg-white border-slate-300 px-2 text-xs focus-visible:ring-1" 
+                  <Input
+                    type="text"
+                    value={ipFacilitator}
+                    onChange={(e) => setIpFacilitator(e.target.value)}
+                    className="h-6 w-44 bg-white border-slate-300 px-2 text-xs focus-visible:ring-1"
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-24 flex-shrink-0">Billing Currency</span>
                   <Select value={ipCurrency} onValueChange={setIpCurrency}>
-                    <SelectTrigger className="h-6 w-16 text-xs bg-white border-slate-300 px-1 py-0 shadow-none"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-6 w-16 text-xs bg-white border-slate-300 px-1 py-0 shadow-none">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="INR">INR</SelectItem>
                       <SelectItem value="USD">USD</SelectItem>
@@ -4746,37 +6741,192 @@ export default function BillingPage() {
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-slate-800">Patient Refund Management</h3>
-                <p className="text-xs text-slate-500">Process overpayment returns, cancelled order refunds, and deposit payouts</p>
+                <h3 className="text-sm font-black text-slate-800">
+                  Patient Refund Management
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Process overpayment returns, cancelled order refunds, and
+                  deposit payouts
+                </p>
               </div>
             </div>
 
-            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3">
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Patient UHID*</Label>
-                <Input value={refUhid} onChange={(e) => setRefUhid(e.target.value)} placeholder="UHID..." className="h-7 text-xs bg-white" />
+            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3 items-start">
+              {/* Patient UHID Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">
+                    Patient UHID*
+                  </Label>
+                  {refPatientMatch.status === "found" && (
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                      <CheckCircle2 className="w-3 h-3" /> Available
+                    </span>
+                  )}
+                  {refPatientMatch.status === "not_found" && (
+                    <span className="text-[10px] font-bold text-rose-600 flex items-center gap-0.5">
+                      <AlertCircle className="w-3 h-3" /> Not Available
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <Input
+                    type="text"
+                    value={refUhid}
+                    onChange={(e) => setRefUhid(e.target.value)}
+                    placeholder="UHID..."
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
+                      refPatientMatch.status === "found"
+                        ? "text-emerald-700"
+                        : refPatientMatch.status === "not_found"
+                          ? "text-rose-700"
+                          : "text-slate-800"
+                    }`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer flex-shrink-0"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    title="Open Patient Search Directory"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {refPatientMatch.status === "found" &&
+                  refPatientMatch.patient && (
+                    <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 font-medium truncate">
+                      👤{" "}
+                      <span className="font-bold">
+                        {refPatientMatch.patient.patientName}
+                      </span>{" "}
+                      ({refPatientMatch.patient.genderAge || "Patient"})
+                    </div>
+                  )}
+                {refPatientMatch.status === "not_found" && (
+                  <div className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 font-medium">
+                    ⚠️ UHID not found in database
+                  </div>
+                )}
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Invoice No</Label>
-                <Input value={refInvoiceNo} onChange={(e) => setRefInvoiceNo(e.target.value)} placeholder="e.g. OPCA26/104" className="h-7 text-xs bg-white" />
+
+              {/* Invoice No Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">
+                    Invoice No
+                  </Label>
+                  {refInvoiceMatch.status === "found" &&
+                    refInvoiceMatch.uhidMatch && (
+                      <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                        <CheckCircle2 className="w-3 h-3" /> Available
+                      </span>
+                    )}
+                  {refInvoiceMatch.status === "found" &&
+                    !refInvoiceMatch.uhidMatch && (
+                      <span className="text-[10px] font-bold text-amber-600 flex items-center gap-0.5">
+                        <AlertCircle className="w-3 h-3" /> UHID Mismatch
+                      </span>
+                    )}
+                  {refInvoiceMatch.status === "not_found" && (
+                    <span className="text-[10px] font-bold text-rose-600 flex items-center gap-0.5">
+                      <AlertCircle className="w-3 h-3" /> Not Available
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <Input
+                    type="text"
+                    value={refInvoiceNo}
+                    onChange={(e) => handleSelectRefundInvoice(e.target.value)}
+                    placeholder="e.g. OPCA26/104"
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
+                      refInvoiceMatch.status === "found" &&
+                      refInvoiceMatch.uhidMatch
+                        ? "text-emerald-700"
+                        : refInvoiceMatch.status === "found" &&
+                            !refInvoiceMatch.uhidMatch
+                          ? "text-amber-700"
+                          : refInvoiceMatch.status === "not_found"
+                            ? "text-rose-700"
+                            : "text-slate-800"
+                    }`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer flex-shrink-0"
+                    onClick={() => setIsInvoiceSearchModalOpen(true)}
+                    title="Open Invoice Search Directory"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {refInvoiceMatch.status === "found" &&
+                  refInvoiceMatch.invoice && (
+                    <div
+                      className={`text-[10px] rounded px-1.5 py-0.5 font-medium border truncate ${
+                        refInvoiceMatch.uhidMatch
+                          ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                          : "text-amber-700 bg-amber-50 border-amber-200"
+                      }`}
+                    >
+                      📄{" "}
+                      <span className="font-bold">
+                        ₹{refInvoiceMatch.invoice.netAmt}
+                      </span>{" "}
+                      ({refInvoiceMatch.invoice.status})
+                      {!refInvoiceMatch.uhidMatch &&
+                        ` • Belongs to ${refInvoiceMatch.invoice.uhid}`}
+                    </div>
+                  )}
+                {refInvoiceMatch.status === "not_found" && (
+                  <div className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 font-medium">
+                    ⚠️ Invoice No not found
+                  </div>
+                )}
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Refund Amount (₹)*</Label>
-                <Input type="number" value={refAmount} onChange={(e) => setRefAmount(Number(e.target.value))} className="h-7 text-xs bg-white font-mono font-bold" />
+
+              {/* Refund Amount */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Refund Amount (₹)*
+                </Label>
+                <Input
+                  type="number"
+                  value={refAmount}
+                  onChange={(e) => setRefAmount(Number(e.target.value))}
+                  className="h-7 text-xs bg-white font-mono font-bold"
+                />
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Refund Mode</Label>
+
+              {/* Refund Mode */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Refund Mode
+                </Label>
                 <Select value={refMode} onValueChange={setRefMode}>
-                  <SelectTrigger className="h-7 text-xs bg-white"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-7 text-xs bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="Bank Transfer">Bank Transfer / UPI</SelectItem>
+                    <SelectItem value="Bank Transfer">
+                      Bank Transfer / UPI
+                    </SelectItem>
                     <SelectItem value="Cheque">Cheque</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end">
-                <Button onClick={handleSaveRefund} className="h-7 text-xs w-full font-bold bg-amber-600 hover:bg-amber-700 text-white">
+
+              {/* Action Button */}
+              <div className="flex flex-col justify-end pt-5">
+                <Button
+                  onClick={handleSaveRefund}
+                  className="h-7 text-xs w-full font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-xs"
+                >
                   Process Refund
                 </Button>
               </div>
@@ -4800,16 +6950,29 @@ export default function BillingPage() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {refunds.map((r) => (
                     <tr key={r.id}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-amber-700">{r.refundNo}</td>
-                      <td className="px-3 py-2.5 font-mono text-slate-600">{r.uhid}</td>
-                      <td className="px-3 py-2.5 font-bold text-slate-800">{r.patientName}</td>
-                      <td className="px-3 py-2.5 font-mono">{r.invoiceNo || "-"}</td>
-                      <td className="px-3 py-2.5 text-right font-mono font-bold text-amber-600">₹{r.amount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-amber-700">
+                        {r.refundNo}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">
+                        {r.uhid}
+                      </td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">
+                        {r.patientName}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono">
+                        {r.invoiceNo || "-"}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-amber-600">
+                        ₹{r.amount.toFixed(2)}
+                      </td>
                       <td className="px-3 py-2.5">{r.mode}</td>
                       <td className="px-3 py-2.5 text-slate-600">{r.reason}</td>
                       <td className="px-3 py-2.5">{r.authorizedBy}</td>
                       <td className="px-3 py-2.5 text-center">
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                        <Badge
+                          variant="outline"
+                          className="bg-emerald-50 text-emerald-700 border-emerald-200"
+                        >
                           {r.status}
                         </Badge>
                       </td>
@@ -4817,7 +6980,12 @@ export default function BillingPage() {
                   ))}
                   {refunds.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-3 py-8 text-center text-slate-400 font-bold">No refund records yet.</td>
+                      <td
+                        colSpan={9}
+                        className="px-3 py-8 text-center text-slate-400 font-bold"
+                      >
+                        No refund records yet.
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -4831,38 +6999,128 @@ export default function BillingPage() {
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-slate-800">Advance & Patient Deposit Collection</h3>
-                <p className="text-xs text-slate-500">Collect pre-admission deposits and surgery advances with official receipt vouchers</p>
+                <h3 className="text-sm font-black text-slate-800">
+                  Advance & Patient Deposit Collection
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Collect pre-admission deposits and surgery advances with
+                  official receipt vouchers
+                </p>
               </div>
             </div>
 
-            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3">
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Patient UHID*</Label>
-                <Input value={advUhid} onChange={(e) => setAdvUhid(e.target.value)} placeholder="UHID..." className="h-7 text-xs bg-white" />
+            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3 items-start">
+              {/* Patient UHID Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">
+                    Patient UHID*
+                  </Label>
+                  {advPatientMatch.status === "found" && (
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                      <CheckCircle2 className="w-3 h-3" /> Available
+                    </span>
+                  )}
+                  {advPatientMatch.status === "not_found" && (
+                    <span className="text-[10px] font-bold text-rose-600 flex items-center gap-0.5">
+                      <AlertCircle className="w-3 h-3" /> Not Available
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <Input
+                    type="text"
+                    value={advUhid}
+                    onChange={(e) => setAdvUhid(e.target.value)}
+                    placeholder="UHID..."
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
+                      advPatientMatch.status === "found"
+                        ? "text-emerald-700"
+                        : advPatientMatch.status === "not_found"
+                          ? "text-rose-700"
+                          : "text-slate-800"
+                    }`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer flex-shrink-0"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    title="Open Patient Search Directory"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {advPatientMatch.status === "found" &&
+                  advPatientMatch.patient && (
+                    <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 font-medium truncate">
+                      👤{" "}
+                      <span className="font-bold">
+                        {advPatientMatch.patient.patientName}
+                      </span>{" "}
+                      ({advPatientMatch.patient.genderAge || "Patient"})
+                    </div>
+                  )}
+                {advPatientMatch.status === "not_found" && (
+                  <div className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 font-medium">
+                    ⚠️ UHID not found in database
+                  </div>
+                )}
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Deposit Amount (₹)*</Label>
-                <Input type="number" value={advAmount} onChange={(e) => setAdvAmount(Number(e.target.value))} className="h-7 text-xs bg-white font-mono font-bold" />
+
+              {/* Deposit Amount */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Deposit Amount (₹)*
+                </Label>
+                <Input
+                  type="number"
+                  value={advAmount}
+                  onChange={(e) => setAdvAmount(Number(e.target.value))}
+                  className="h-7 text-xs bg-white font-mono font-bold"
+                />
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Payment Mode</Label>
+
+              {/* Payment Mode */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Payment Mode
+                </Label>
                 <Select value={advMode} onValueChange={setAdvMode}>
-                  <SelectTrigger className="h-7 text-xs bg-white"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-7 text-xs bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Cash">Cash</SelectItem>
                     <SelectItem value="UPI">UPI / QR Code</SelectItem>
                     <SelectItem value="Card">Card</SelectItem>
-                    <SelectItem value="Bank Transfer">Bank Transfer (NEFT)</SelectItem>
+                    <SelectItem value="Bank Transfer">
+                      Bank Transfer (NEFT)
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Purpose</Label>
-                <Input value={advPurpose} onChange={(e) => setAdvPurpose(e.target.value)} placeholder="e.g. Admission Deposit" className="h-7 text-xs bg-white" />
+
+              {/* Purpose */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Purpose
+                </Label>
+                <Input
+                  value={advPurpose}
+                  onChange={(e) => setAdvPurpose(e.target.value)}
+                  placeholder="e.g. Admission Deposit"
+                  className="h-7 text-xs bg-white"
+                />
               </div>
-              <div className="flex items-end">
-                <Button onClick={handleSaveAdvance} className="h-7 text-xs w-full font-bold bg-teal-600 hover:bg-teal-700 text-white">
+
+              {/* Action Button */}
+              <div className="flex flex-col justify-end pt-5">
+                <Button
+                  onClick={handleSaveAdvance}
+                  className="h-7 text-xs w-full font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-xs"
+                >
                   + Collect Deposit
                 </Button>
               </div>
@@ -4877,7 +7135,9 @@ export default function BillingPage() {
                     <th className="px-3 py-2">Patient Name</th>
                     <th className="px-3 py-2 text-right">Deposited (₹)</th>
                     <th className="px-3 py-2 text-right">Adjusted (₹)</th>
-                    <th className="px-3 py-2 text-right">Balance Available (₹)</th>
+                    <th className="px-3 py-2 text-right">
+                      Balance Available (₹)
+                    </th>
                     <th className="px-3 py-2">Mode</th>
                     <th className="px-3 py-2">Purpose</th>
                     <th className="px-3 py-2 text-center">Status</th>
@@ -4886,16 +7146,37 @@ export default function BillingPage() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {filteredAdvances.map((a) => (
                     <tr key={a.id}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-teal-700">{a.advanceNo}</td>
-                      <td className="px-3 py-2.5 font-mono text-slate-600">{a.uhid}</td>
-                      <td className="px-3 py-2.5 font-bold text-slate-800">{a.patientName}</td>
-                      <td className="px-3 py-2.5 text-right font-mono font-bold">₹{a.amount.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono text-emerald-600">₹{a.adjustedAmount.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono font-black text-teal-700">₹{a.balanceAmount.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-teal-700">
+                        {a.advanceNo}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">
+                        {a.uhid}
+                      </td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">
+                        {a.patientName}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold">
+                        ₹{a.amount.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono text-emerald-600">
+                        ₹{a.adjustedAmount.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono font-black text-teal-700">
+                        ₹{a.balanceAmount.toFixed(2)}
+                      </td>
                       <td className="px-3 py-2.5">{a.mode}</td>
-                      <td className="px-3 py-2.5 text-slate-600">{a.purpose}</td>
+                      <td className="px-3 py-2.5 text-slate-600">
+                        {a.purpose}
+                      </td>
                       <td className="px-3 py-2.5 text-center">
-                        <Badge variant="outline" className={a.status === "Active" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-50 text-slate-600"}>
+                        <Badge
+                          variant="outline"
+                          className={
+                            a.status === "Active"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-slate-50 text-slate-600"
+                          }
+                        >
                           {a.status}
                         </Badge>
                       </td>
@@ -4912,30 +7193,179 @@ export default function BillingPage() {
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-slate-800">Credit Note & Bill Concessions</h3>
-                <p className="text-xs text-slate-500">Issue authorized bill waivers, discount adjustments, and post-billing credits</p>
+                <h3 className="text-sm font-black text-slate-800">
+                  Credit Note & Bill Concessions
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Issue authorized bill waivers, discount adjustments, and
+                  post-billing credits
+                </p>
               </div>
             </div>
 
-            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3">
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Invoice No*</Label>
-                <Input value={cnInvoiceNo} onChange={(e) => setCnInvoiceNo(e.target.value)} placeholder="e.g. IPCA26/102" className="h-7 text-xs bg-white font-mono" />
+            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3 items-start">
+              {/* Invoice No Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">
+                    Invoice No*
+                  </Label>
+                  {cnInvoiceMatch.status === "found" &&
+                    cnInvoiceMatch.uhidMatch && (
+                      <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                        <CheckCircle2 className="w-3 h-3" /> Available
+                      </span>
+                    )}
+                  {cnInvoiceMatch.status === "found" &&
+                    !cnInvoiceMatch.uhidMatch && (
+                      <span className="text-[10px] font-bold text-amber-600 flex items-center gap-0.5">
+                        <AlertCircle className="w-3 h-3" /> Mismatch
+                      </span>
+                    )}
+                  {cnInvoiceMatch.status === "not_found" && (
+                    <span className="text-[10px] font-bold text-rose-600 flex items-center gap-0.5">
+                      <AlertCircle className="w-3 h-3" /> Not Available
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <Input
+                    type="text"
+                    value={cnInvoiceNo}
+                    onChange={(e) =>
+                      handleSelectCreditNoteInvoice(e.target.value)
+                    }
+                    placeholder="e.g. IPCA26/102"
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
+                      cnInvoiceMatch.status === "found" &&
+                      cnInvoiceMatch.uhidMatch
+                        ? "text-emerald-700"
+                        : cnInvoiceMatch.status === "found" &&
+                            !cnInvoiceMatch.uhidMatch
+                          ? "text-amber-700"
+                          : cnInvoiceMatch.status === "not_found"
+                            ? "text-rose-700"
+                            : "text-slate-800"
+                    }`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer flex-shrink-0"
+                    onClick={() => setIsInvoiceSearchModalOpen(true)}
+                    title="Open Invoice Search Directory"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {cnInvoiceMatch.status === "found" &&
+                  cnInvoiceMatch.invoice && (
+                    <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 font-medium truncate">
+                      📄{" "}
+                      <span className="font-bold">
+                        ₹{cnInvoiceMatch.invoice.netAmt}
+                      </span>{" "}
+                      ({cnInvoiceMatch.invoice.patientName})
+                    </div>
+                  )}
+                {cnInvoiceMatch.status === "not_found" && (
+                  <div className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 font-medium">
+                    ⚠️ Invoice No not found
+                  </div>
+                )}
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Patient UHID</Label>
-                <Input value={cnUhid} onChange={(e) => setCnUhid(e.target.value)} placeholder="UHID..." className="h-7 text-xs bg-white" />
+
+              {/* Patient UHID Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">
+                    Patient UHID
+                  </Label>
+                  {cnPatientMatch.status === "found" && (
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                      <CheckCircle2 className="w-3 h-3" /> Available
+                    </span>
+                  )}
+                  {cnPatientMatch.status === "not_found" && (
+                    <span className="text-[10px] font-bold text-rose-600 flex items-center gap-0.5">
+                      <AlertCircle className="w-3 h-3" /> Not Available
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <Input
+                    type="text"
+                    value={cnUhid}
+                    onChange={(e) => setCnUhid(e.target.value)}
+                    placeholder="UHID..."
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
+                      cnPatientMatch.status === "found"
+                        ? "text-emerald-700"
+                        : cnPatientMatch.status === "not_found"
+                          ? "text-rose-700"
+                          : "text-slate-800"
+                    }`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer flex-shrink-0"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    title="Open Patient Search Directory"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {cnPatientMatch.status === "found" &&
+                  cnPatientMatch.patient && (
+                    <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 font-medium truncate">
+                      👤{" "}
+                      <span className="font-bold">
+                        {cnPatientMatch.patient.patientName}
+                      </span>
+                    </div>
+                  )}
+                {cnPatientMatch.status === "not_found" && (
+                  <div className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 font-medium">
+                    ⚠️ UHID not found
+                  </div>
+                )}
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Waiver Amount (₹)*</Label>
-                <Input type="number" value={cnAmount} onChange={(e) => setCnAmount(Number(e.target.value))} className="h-7 text-xs bg-white font-mono font-bold" />
+
+              {/* Waiver Amount */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Waiver Amount (₹)*
+                </Label>
+                <Input
+                  type="number"
+                  value={cnAmount}
+                  onChange={(e) => setCnAmount(Number(e.target.value))}
+                  className="h-7 text-xs bg-white font-mono font-bold"
+                />
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Reason*</Label>
-                <Input value={cnReason} onChange={(e) => setCnReason(e.target.value)} placeholder="e.g. Courtesy Waiver" className="h-7 text-xs bg-white" />
+
+              {/* Reason */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Reason*
+                </Label>
+                <Input
+                  value={cnReason}
+                  onChange={(e) => setCnReason(e.target.value)}
+                  placeholder="e.g. Courtesy Waiver"
+                  className="h-7 text-xs bg-white"
+                />
               </div>
-              <div className="flex items-end">
-                <Button onClick={handleSaveCreditNote} className="h-7 text-xs w-full font-bold bg-purple-600 hover:bg-purple-700 text-white">
+
+              {/* Action Button */}
+              <div className="flex flex-col justify-end pt-5">
+                <Button
+                  onClick={handleSaveCreditNote}
+                  className="h-7 text-xs w-full font-bold bg-purple-600 hover:bg-purple-700 text-white shadow-xs"
+                >
                   Issue Credit Note
                 </Button>
               </div>
@@ -4958,14 +7388,28 @@ export default function BillingPage() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {creditNotes.map((cn) => (
                     <tr key={cn.id}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-purple-700">{cn.creditNoteNo}</td>
-                      <td className="px-3 py-2.5 font-mono font-bold text-slate-800">{cn.invoiceNo}</td>
-                      <td className="px-3 py-2.5 font-mono text-slate-600">{cn.uhid}</td>
-                      <td className="px-3 py-2.5 font-bold text-slate-800">{cn.patientName}</td>
-                      <td className="px-3 py-2.5 text-right font-mono font-black text-purple-600">₹{cn.amount.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-slate-600">{cn.reason}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-purple-700">
+                        {cn.creditNoteNo}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-slate-800">
+                        {cn.invoiceNo}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">
+                        {cn.uhid}
+                      </td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">
+                        {cn.patientName}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono font-black text-purple-600">
+                        ₹{cn.amount.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-600">
+                        {cn.reason}
+                      </td>
                       <td className="px-3 py-2.5">{cn.authorizedBy}</td>
-                      <td className="px-3 py-2.5 text-slate-500">{new Date(cn.createdAt).toLocaleDateString("en-GB")}</td>
+                      <td className="px-3 py-2.5 text-slate-500">
+                        {new Date(cn.createdAt).toLocaleDateString("en-GB")}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -4979,34 +7423,133 @@ export default function BillingPage() {
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-slate-800">TPA & Insurance Claims Intimation</h3>
-                <p className="text-xs text-slate-500">Track cashless pre-authorization, TPA query resolution, and insurance settlements</p>
+                <h3 className="text-sm font-black text-slate-800">
+                  TPA & Insurance Claims Intimation
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Track cashless pre-authorization, TPA query resolution, and
+                  insurance settlements
+                </p>
               </div>
             </div>
 
-            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-6 gap-3">
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Patient UHID*</Label>
-                <Input value={intUhid} onChange={(e) => setIntUhid(e.target.value)} placeholder="UHID..." className="h-7 text-xs bg-white" />
+            <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
+              {/* Patient UHID Field */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[10px] font-bold uppercase text-slate-500">
+                    Patient UHID*
+                  </Label>
+                  {intPatientMatch.status === "found" && (
+                    <span className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
+                      <CheckCircle2 className="w-3 h-3" /> Available
+                    </span>
+                  )}
+                  {intPatientMatch.status === "not_found" && (
+                    <span className="text-[10px] font-bold text-rose-600 flex items-center gap-0.5">
+                      <AlertCircle className="w-3 h-3" /> Not Available
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 bg-white rounded-md border border-slate-300 px-2 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <Input
+                    type="text"
+                    value={intUhid}
+                    onChange={(e) => setIntUhid(e.target.value)}
+                    placeholder="UHID..."
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
+                      intPatientMatch.status === "found"
+                        ? "text-emerald-700"
+                        : intPatientMatch.status === "not_found"
+                          ? "text-rose-700"
+                          : "text-slate-800"
+                    }`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 cursor-pointer flex-shrink-0"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    title="Open Patient Search Directory"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                {intPatientMatch.status === "found" &&
+                  intPatientMatch.patient && (
+                    <div className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 font-medium truncate">
+                      👤{" "}
+                      <span className="font-bold">
+                        {intPatientMatch.patient.patientName}
+                      </span>
+                    </div>
+                  )}
+                {intPatientMatch.status === "not_found" && (
+                  <div className="text-[10px] text-rose-700 bg-rose-50 border border-rose-200 rounded px-1.5 py-0.5 font-medium">
+                    ⚠️ UHID not found
+                  </div>
+                )}
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">TPA Name*</Label>
-                <Input value={intTpa} onChange={(e) => setIntTpa(e.target.value)} placeholder="e.g. Star Health" className="h-7 text-xs bg-white" />
+
+              {/* TPA Name */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  TPA Name*
+                </Label>
+                <Input
+                  value={intTpa}
+                  onChange={(e) => setIntTpa(e.target.value)}
+                  placeholder="e.g. Star Health"
+                  className="h-7 text-xs bg-white"
+                />
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Claim Ref#*</Label>
-                <Input value={intClaimNo} onChange={(e) => setIntClaimNo(e.target.value)} placeholder="Claim Number..." className="h-7 text-xs bg-white font-mono" />
+
+              {/* Claim Ref */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Claim Ref#*
+                </Label>
+                <Input
+                  value={intClaimNo}
+                  onChange={(e) => setIntClaimNo(e.target.value)}
+                  placeholder="Claim Number..."
+                  className="h-7 text-xs bg-white font-mono"
+                />
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Requested (₹)</Label>
-                <Input type="number" value={intReqAmt} onChange={(e) => setIntReqAmt(Number(e.target.value))} className="h-7 text-xs bg-white font-mono" />
+
+              {/* Requested Amount */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Requested (₹)
+                </Label>
+                <Input
+                  type="number"
+                  value={intReqAmt}
+                  onChange={(e) => setIntReqAmt(Number(e.target.value))}
+                  className="h-7 text-xs bg-white font-mono"
+                />
               </div>
-              <div>
-                <Label className="text-[10px] font-bold uppercase text-slate-500">Approved Limit (₹)</Label>
-                <Input type="number" value={intApprAmt} onChange={(e) => setIntApprAmt(Number(e.target.value))} className="h-7 text-xs bg-white font-mono font-bold" />
+
+              {/* Approved Limit */}
+              <div className="space-y-1">
+                <Label className="text-[10px] font-bold uppercase text-slate-500">
+                  Approved Limit (₹)
+                </Label>
+                <Input
+                  type="number"
+                  value={intApprAmt}
+                  onChange={(e) => setIntApprAmt(Number(e.target.value))}
+                  className="h-7 text-xs bg-white font-mono font-bold"
+                />
               </div>
-              <div className="flex items-end">
-                <Button onClick={handleSaveIntimation} className="h-7 text-xs w-full font-bold bg-blue-600 hover:bg-blue-700 text-white">
+
+              {/* Action Button */}
+              <div className="flex flex-col justify-end pt-5">
+                <Button
+                  onClick={handleSaveIntimation}
+                  className="h-7 text-xs w-full font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs"
+                >
                   + Add Intimation
                 </Button>
               </div>
@@ -5030,19 +7573,42 @@ export default function BillingPage() {
                 <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                   {intimations.map((it) => (
                     <tr key={it.id}>
-                      <td className="px-3 py-2.5 font-mono font-bold text-blue-700">{it.claimNo}</td>
-                      <td className="px-3 py-2.5 font-mono text-slate-600">{it.uhid}</td>
-                      <td className="px-3 py-2.5 font-bold text-slate-800">{it.patientName}</td>
-                      <td className="px-3 py-2.5 text-slate-700 font-semibold">{it.tpaName}</td>
-                      <td className="px-3 py-2.5 text-right font-mono">₹{it.requestedAmt.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono font-bold text-emerald-600">₹{it.approvedAmt.toFixed(2)}</td>
-                      <td className="px-3 py-2.5 text-right font-mono text-amber-600">₹{it.coPayAmt.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 font-mono font-bold text-blue-700">
+                        {it.claimNo}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-slate-600">
+                        {it.uhid}
+                      </td>
+                      <td className="px-3 py-2.5 font-bold text-slate-800">
+                        {it.patientName}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-700 font-semibold">
+                        {it.tpaName}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono">
+                        ₹{it.requestedAmt.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono font-bold text-emerald-600">
+                        ₹{it.approvedAmt.toFixed(2)}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-mono text-amber-600">
+                        ₹{it.coPayAmt.toFixed(2)}
+                      </td>
                       <td className="px-3 py-2.5 text-center">
-                        <Badge variant="outline" className={it.status === "Approved" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-blue-50 text-blue-700 border-blue-200"}>
+                        <Badge
+                          variant="outline"
+                          className={
+                            it.status === "Approved"
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              : "bg-blue-50 text-blue-700 border-blue-200"
+                          }
+                        >
                           {it.status}
                         </Badge>
                       </td>
-                      <td className="px-3 py-2.5 text-slate-500">{it.remarks}</td>
+                      <td className="px-3 py-2.5 text-slate-500">
+                        {it.remarks}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -5056,12 +7622,17 @@ export default function BillingPage() {
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-black text-slate-800">Unbilled Doctor & Service Orders Queue</h3>
-                <p className="text-xs text-slate-500">Pending investigations and procedures waiting for invoicing & settlement</p>
+                <h3 className="text-sm font-black text-slate-800">
+                  Unbilled Doctor & Service Orders Queue
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Pending investigations and procedures waiting for invoicing &
+                  settlement
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
-                <Button 
+                <Button
                   onClick={handleBillSelectedOrders}
                   disabled={selectedUnbilledOrders.length === 0}
                   className="h-7 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
@@ -5097,32 +7668,57 @@ export default function BillingPage() {
                             checked={isChecked}
                             onChange={() => {
                               if (isChecked) {
-                                setSelectedUnbilledOrders(selectedUnbilledOrders.filter(id => id !== ord.id));
+                                setSelectedUnbilledOrders(
+                                  selectedUnbilledOrders.filter(
+                                    (id) => id !== ord.id,
+                                  ),
+                                );
                               } else {
-                                setSelectedUnbilledOrders([...selectedUnbilledOrders, ord.id]);
+                                setSelectedUnbilledOrders([
+                                  ...selectedUnbilledOrders,
+                                  ord.id,
+                                ]);
                               }
                             }}
                             className="h-3.5 w-3.5 rounded text-blue-600"
                           />
                         </td>
-                        <td className="px-3 py-2.5 font-mono font-bold text-blue-700">{ord.orderNo}</td>
-                        <td className="px-3 py-2.5 font-mono text-slate-600">{ord.uhid}</td>
-                        <td className="px-3 py-2.5 font-bold text-slate-800">{ord.patientName}</td>
-                        <td className="px-3 py-2.5 text-slate-700 font-semibold">{ord.doctorName}</td>
+                        <td className="px-3 py-2.5 font-mono font-bold text-blue-700">
+                          {ord.orderNo}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-slate-600">
+                          {ord.uhid}
+                        </td>
+                        <td className="px-3 py-2.5 font-bold text-slate-800">
+                          {ord.patientName}
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-700 font-semibold">
+                          {ord.doctorName}
+                        </td>
                         <td className="px-3 py-2.5">
-                          <Badge variant="outline" className="bg-slate-50 text-slate-700">
+                          <Badge
+                            variant="outline"
+                            className="bg-slate-50 text-slate-700"
+                          >
                             {ord.orderType}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900">₹{ord.netAmount.toFixed(2)}</td>
-                        <td className="px-3 py-2.5 text-slate-500">{new Date(ord.createdAt).toLocaleDateString("en-GB")}</td>
+                        <td className="px-3 py-2.5 text-right font-mono font-bold text-slate-900">
+                          ₹{ord.netAmount.toFixed(2)}
+                        </td>
+                        <td className="px-3 py-2.5 text-slate-500">
+                          {new Date(ord.createdAt).toLocaleDateString("en-GB")}
+                        </td>
                         <td className="px-3 py-2.5 text-center">
                           <Button
                             size="xs"
                             onClick={async () => {
                               try {
                                 const inv = await billOrder(ord.id);
-                                toast.success("Order Billed", `Invoice ${inv.invoiceNo} generated!`);
+                                toast.success(
+                                  "Order Billed",
+                                  `Invoice ${inv.invoiceNo} generated!`,
+                                );
                                 loadAllBillingData();
                                 setActiveTab("Master Activity List");
                               } catch (err: any) {
@@ -5139,8 +7735,12 @@ export default function BillingPage() {
                   })}
                   {unbilledOrders.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="px-3 py-12 text-center text-slate-400 font-bold">
-                        All doctor orders have been billed. No pending items in queue.
+                      <td
+                        colSpan={9}
+                        className="px-3 py-12 text-center text-slate-400 font-bold"
+                      >
+                        All doctor orders have been billed. No pending items in
+                        queue.
                       </td>
                     </tr>
                   )}
@@ -5152,314 +7752,438 @@ export default function BillingPage() {
       </div>
 
       {/* ─── MODAL 0: PATIENT NOTES & BILLING FLAGS ────────────────────────── */}
-      {isNotesModalOpen && activePatientNotesUhid && (() => {
-        const currentPatientName = (activeTab === "IP Billing" ? findPatientByUhid(activePatientNotesUhid)?.fullName : opBillingPatientInfo?.name) || "";
-        const notesList = patientNotesMap[activePatientNotesUhid] || [];
+      {isNotesModalOpen &&
+        activePatientNotesUhid &&
+        (() => {
+          const currentPatientName =
+            (activeTab === "IP Billing"
+              ? findPatientByUhid(activePatientNotesUhid)?.fullName
+              : opBillingPatientInfo?.name) || "";
+          const notesList = patientNotesMap[activePatientNotesUhid] || [];
 
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[85vh]">
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-[#cee6f8]">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-1.5 rounded-md bg-white text-blue-700 shadow-2xs">
-                    <FileText className="h-4 w-4" />
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+              <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[85vh]">
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-[#cee6f8]">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-1.5 rounded-md bg-white text-blue-700 shadow-2xs">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">
+                        Patient Notes & Billing Flags
+                      </h3>
+                      <p className="text-[11px] text-slate-600 font-medium">
+                        UHID:{" "}
+                        <span className="font-mono font-bold text-blue-700">
+                          {activePatientNotesUhid}
+                        </span>{" "}
+                        {currentPatientName ? `(${currentPatientName})` : ""}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-sm">Patient Notes & Billing Flags</h3>
-                    <p className="text-[11px] text-slate-600 font-medium">
-                      UHID: <span className="font-mono font-bold text-blue-700">{activePatientNotesUhid}</span> {currentPatientName ? `(${currentPatientName})` : ""}
-                    </p>
-                  </div>
+                  <button
+                    onClick={() => setIsNotesModalOpen(false)}
+                    className="p-1 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 cursor-pointer"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setIsNotesModalOpen(false)}
-                  className="p-1 rounded-md text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 cursor-pointer"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
 
-              {/* Form to Add Note */}
-              <div className="p-4 bg-slate-50 border-b border-slate-200 space-y-3">
-                <div className="text-xs font-bold text-slate-700 uppercase tracking-wide">Add New Patient Note / Flag</div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="col-span-1">
-                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Category</Label>
-                    <Select value={newNoteCategory} onValueChange={(val: any) => setNewNoteCategory(val)}>
-                      <SelectTrigger className="h-7 text-xs bg-white border-slate-300">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Billing Flag">Billing Flag</SelectItem>
-                        <SelectItem value="Clinical Alert">Clinical Alert</SelectItem>
-                        <SelectItem value="General Note">General Note</SelectItem>
-                        <SelectItem value="Special Instruction">Special Instruction</SelectItem>
-                      </SelectContent>
-                    </Select>
+                {/* Form to Add Note */}
+                <div className="p-4 bg-slate-50 border-b border-slate-200 space-y-3">
+                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                    Add New Patient Note / Flag
                   </div>
-                  <div className="col-span-2">
-                    <Label className="text-[10px] font-bold text-slate-500 uppercase">Note Description</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        value={newNoteText}
-                        onChange={(e) => setNewNoteText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && newNoteText.trim()) {
-                            handleAddNote();
-                          }
-                        }}
-                        placeholder="Enter billing flag or clinical note..."
-                        className="h-7 text-xs bg-white border-slate-300 flex-1"
-                      />
-                      <Button
-                        size="sm"
-                        onClick={handleAddNote}
-                        className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 shrink-0"
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-1">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                        Category
+                      </Label>
+                      <Select
+                        value={newNoteCategory}
+                        onValueChange={(val: any) => setNewNoteCategory(val)}
                       >
-                        + Add
-                      </Button>
+                        <SelectTrigger className="h-7 text-xs bg-white border-slate-300">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Billing Flag">
+                            Billing Flag
+                          </SelectItem>
+                          <SelectItem value="Clinical Alert">
+                            Clinical Alert
+                          </SelectItem>
+                          <SelectItem value="General Note">
+                            General Note
+                          </SelectItem>
+                          <SelectItem value="Special Instruction">
+                            Special Instruction
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                        Note Description
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="text"
+                          value={newNoteText}
+                          onChange={(e) => setNewNoteText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && newNoteText.trim()) {
+                              handleAddNote();
+                            }
+                          }}
+                          placeholder="Enter billing flag or clinical note..."
+                          className="h-7 text-xs bg-white border-slate-300 flex-1"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={handleAddNote}
+                          className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 shrink-0"
+                        >
+                          + Add
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Notes List */}
-              <div className="p-4 overflow-y-auto flex-1 space-y-2 max-h-[350px]">
-                {notesList.length === 0 ? (
-                  <div className="p-8 text-center text-xs text-slate-500 font-medium">
-                    No notes created for this patient yet. Use the input box above to add a new note.
-                  </div>
-                ) : (
-                  notesList.map((note) => (
-                    <div key={note.id} className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs space-y-1.5 hover:border-blue-300 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <Badge className={`text-[10px] px-2 py-0.5 font-bold ${
-                          note.category === "Billing Flag" ? "bg-amber-100 text-amber-800 border-amber-300" :
-                          note.category === "Clinical Alert" ? "bg-red-100 text-red-800 border-red-300" :
-                          note.category === "Special Instruction" ? "bg-purple-100 text-purple-800 border-purple-300" :
-                          "bg-blue-100 text-blue-800 border-blue-300"
-                        }`}>
-                          {note.category}
-                        </Badge>
-                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
-                          <span>By {note.author}</span>
-                          <span>•</span>
-                          <span>{note.createdAt}</span>
-                          <button
-                            onClick={() => handleRemoveNote(activePatientNotesUhid, note.id)}
-                            className="text-slate-400 hover:text-red-600 p-0.5 rounded cursor-pointer transition-colors"
-                            title="Delete note"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-xs text-slate-700 font-medium leading-relaxed">{note.text}</p>
+                {/* Notes List */}
+                <div className="p-4 overflow-y-auto flex-1 space-y-2 max-h-[350px]">
+                  {notesList.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-500 font-medium">
+                      No notes created for this patient yet. Use the input box
+                      above to add a new note.
                     </div>
-                  ))
-                )}
-              </div>
+                  ) : (
+                    notesList.map((note) => (
+                      <div
+                        key={note.id}
+                        className="p-3 bg-white rounded-lg border border-slate-200 shadow-2xs space-y-1.5 hover:border-blue-300 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <Badge
+                            className={`text-[10px] px-2 py-0.5 font-bold ${
+                              note.category === "Billing Flag"
+                                ? "bg-amber-100 text-amber-800 border-amber-300"
+                                : note.category === "Clinical Alert"
+                                  ? "bg-red-100 text-red-800 border-red-300"
+                                  : note.category === "Special Instruction"
+                                    ? "bg-purple-100 text-purple-800 border-purple-300"
+                                    : "bg-blue-100 text-blue-800 border-blue-300"
+                            }`}
+                          >
+                            {note.category}
+                          </Badge>
+                          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                            <span>By {note.author}</span>
+                            <span>•</span>
+                            <span>{note.createdAt}</span>
+                            <button
+                              onClick={() =>
+                                handleRemoveNote(
+                                  activePatientNotesUhid,
+                                  note.id,
+                                )
+                              }
+                              className="text-slate-400 hover:text-red-600 p-0.5 rounded cursor-pointer transition-colors"
+                              title="Delete note"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                          {note.text}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
 
-              {/* Footer */}
-              <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsNotesModalOpen(false)}
-                  className="h-7 text-xs font-bold px-4"
-                >
-                  Close
-                </Button>
+                {/* Footer */}
+                <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsNotesModalOpen(false)}
+                    className="h-7 text-xs font-bold px-4"
+                  >
+                    Close
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       {/* ─── MODAL 1: SETTLEMENT / SPLIT RECEIPT DIALOG ────────────────────── */}
-      {isSettleModalOpen && selectedInvoice && (() => {
-        const isRefund = selectedInvoice.status === "Refundable" || selectedInvoice.balance < 0;
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-            <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-100 bg-[#cee6f8] flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-white text-blue-600 shadow-2xs">
-                    <ReceiptText className="h-5 w-5" />
+      {isSettleModalOpen &&
+        selectedInvoice &&
+        (() => {
+          const isRefund =
+            selectedInvoice.status === "Refundable" ||
+            selectedInvoice.balance < 0;
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+              <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-3.5 border-b border-slate-100 bg-[#cee6f8] flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-white text-blue-600 shadow-2xs">
+                      <ReceiptText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-800 text-sm">
+                        {isRefund
+                          ? "Refund Settlement"
+                          : "Invoice Payment Settlement"}
+                      </h3>
+                      <p className="text-xs text-slate-600 font-mono">
+                        Invoice No: {selectedInvoice.invoiceNo}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 text-sm">{isRefund ? "Refund Settlement" : "Invoice Payment Settlement"}</h3>
-                    <p className="text-xs text-slate-600 font-mono">Invoice No: {selectedInvoice.invoiceNo}</p>
-                  </div>
-                </div>
-                <button onClick={() => setIsSettleModalOpen(false)} className="p-1 rounded-md text-slate-500 hover:text-slate-700">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
-                <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 border rounded-xl">
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Patient</span>
-                    <div className="font-bold text-slate-800">{selectedInvoice.patientName} (UHID: {selectedInvoice.uhid})</div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Invoice Total</span>
-                    <div className="font-bold text-slate-800 font-mono">₹{selectedInvoice.netAmt.toFixed(2)}</div>
-                  </div>
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Pending Balance</span>
-                    <div className="font-black text-red-600 font-mono text-sm">₹{Math.abs(selectedInvoice.balance).toFixed(2)}</div>
-                  </div>
+                  <button
+                    onClick={() => setIsSettleModalOpen(false)}
+                    className="p-1 rounded-md text-slate-500 hover:text-slate-700"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Payment Split Modes</span>
-                    <Button 
-                      size="xs" 
-                      variant="outline" 
-                      onClick={() => setPaymentRows([...paymentRows, { mode: "Cash", amount: 0, balance: 0, date: new Date().toLocaleDateString("en-GB"), bankName: "", beneficiaryName: "", refNo: "", description: "", cardSwipingValue: 0 }])}
-                      className="h-6 text-[10px] font-bold text-blue-600"
+                {/* Body */}
+                <div className="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+                  <div className="grid grid-cols-3 gap-3 p-3 bg-slate-50 border rounded-xl">
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">
+                        Patient
+                      </span>
+                      <div className="font-bold text-slate-800">
+                        {selectedInvoice.patientName} (UHID:{" "}
+                        {selectedInvoice.uhid})
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">
+                        Invoice Total
+                      </span>
+                      <div className="font-bold text-slate-800 font-mono">
+                        ₹{selectedInvoice.netAmt.toFixed(2)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">
+                        Pending Balance
+                      </span>
+                      <div className="font-black text-red-600 font-mono text-sm">
+                        ₹{Math.abs(selectedInvoice.balance).toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                        Payment Split Modes
+                      </span>
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        onClick={() =>
+                          setPaymentRows([
+                            ...paymentRows,
+                            {
+                              mode: "Cash",
+                              amount: 0,
+                              balance: 0,
+                              date: new Date().toLocaleDateString("en-GB"),
+                              bankName: "",
+                              beneficiaryName: "",
+                              refNo: "",
+                              description: "",
+                              cardSwipingValue: 0,
+                            },
+                          ])
+                        }
+                        className="h-6 text-[10px] font-bold text-blue-600"
+                      >
+                        + Add Payment Mode
+                      </Button>
+                    </div>
+
+                    <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                      <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
+                        <tr>
+                          <th className="px-2 py-2">Mode</th>
+                          <th className="px-2 py-2 text-right">Amount (₹)</th>
+                          <th className="px-2 py-2">Bank</th>
+                          <th className="px-2 py-2">Reference No</th>
+                          <th className="px-2 py-2">Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {paymentRows.map((row, idx) => (
+                          <tr key={idx}>
+                            <td className="p-2">
+                              <Select
+                                value={row.mode}
+                                onValueChange={(val) => {
+                                  const updated = [...paymentRows];
+                                  updated[idx].mode = val;
+                                  setPaymentRows(updated);
+                                }}
+                              >
+                                <SelectTrigger className="h-7 text-xs bg-white">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Cash">Cash</SelectItem>
+                                  <SelectItem value="Cheque/DD">
+                                    Cheque/DD
+                                  </SelectItem>
+                                  <SelectItem value="Credit Card">
+                                    Credit Card
+                                  </SelectItem>
+                                  <SelectItem value="Debit Card">
+                                    Debit Card
+                                  </SelectItem>
+                                  <SelectItem value="NEFT/RTGS">
+                                    NEFT/RTGS
+                                  </SelectItem>
+                                  <SelectItem value="Foreign Receipt">
+                                    Foreign Receipt
+                                  </SelectItem>
+                                  <SelectItem value="Paytm">Paytm</SelectItem>
+                                  <SelectItem value="On Line Payment">
+                                    On Line Payment
+                                  </SelectItem>
+                                  <SelectItem value="CreditNote">
+                                    Credit Note
+                                  </SelectItem>
+                                  <SelectItem value="TDS">TDS</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </td>
+                            <td className="p-2 text-right">
+                              <Input
+                                type="number"
+                                value={row.amount}
+                                onChange={(e) => {
+                                  const updated = [...paymentRows];
+                                  updated[idx].amount = Number(e.target.value);
+                                  setPaymentRows(updated);
+                                }}
+                                className="h-7 text-xs text-right bg-white font-mono font-bold"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input
+                                placeholder="Bank name"
+                                value={row.bankName}
+                                onChange={(e) => {
+                                  const updated = [...paymentRows];
+                                  updated[idx].bankName = e.target.value;
+                                  setPaymentRows(updated);
+                                }}
+                                className="h-7 text-xs bg-white"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input
+                                placeholder="Transaction / Ref#"
+                                value={row.refNo}
+                                onChange={(e) => {
+                                  const updated = [...paymentRows];
+                                  updated[idx].refNo = e.target.value;
+                                  setPaymentRows(updated);
+                                }}
+                                className="h-7 text-xs bg-white font-mono"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input
+                                placeholder="Remarks"
+                                value={row.description}
+                                onChange={(e) => {
+                                  const updated = [...paymentRows];
+                                  updated[idx].description = e.target.value;
+                                  setPaymentRows(updated);
+                                }}
+                                className="h-7 text-xs bg-white"
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {isRefund && (
+                    <div className="space-y-1">
+                      <Label className="text-[10px] font-bold uppercase text-slate-500">
+                        Refund Reason / Remarks*
+                      </Label>
+                      <textarea
+                        value={settlementNotes}
+                        onChange={(e) => setSettlementNotes(e.target.value)}
+                        className="w-full h-16 text-xs p-2 border rounded-lg"
+                        placeholder="Reason for processing refund..."
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between px-6 py-3 border-t bg-slate-50 flex-shrink-0">
+                  <div className="font-bold text-slate-700">
+                    Total Settlement Amount:{" "}
+                    <span className="font-mono text-sm text-emerald-600">
+                      ₹
+                      {paymentRows
+                        .reduce((sum, r) => sum + Number(r.amount || 0), 0)
+                        .toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsSettleModalOpen(false)}
                     >
-                      + Add Payment Mode
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSaveSettlement}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1"
+                    >
+                      <ShieldCheck className="w-4 h-4" /> Save Receipt
                     </Button>
                   </div>
-
-                  <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
-                    <thead className="bg-slate-50 border-b text-slate-500 uppercase text-[9px] font-bold">
-                      <tr>
-                        <th className="px-2 py-2">Mode</th>
-                        <th className="px-2 py-2 text-right">Amount (₹)</th>
-                        <th className="px-2 py-2">Bank</th>
-                        <th className="px-2 py-2">Reference No</th>
-                        <th className="px-2 py-2">Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {paymentRows.map((row, idx) => (
-                        <tr key={idx}>
-                          <td className="p-2">
-                            <Select 
-                              value={row.mode} 
-                              onValueChange={(val) => {
-                                const updated = [...paymentRows];
-                                updated[idx].mode = val;
-                                setPaymentRows(updated);
-                              }}
-                            >
-                              <SelectTrigger className="h-7 text-xs bg-white"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Cash">Cash</SelectItem>
-                                <SelectItem value="Cheque/DD">Cheque/DD</SelectItem>
-                                <SelectItem value="Credit Card">Credit Card</SelectItem>
-                                <SelectItem value="Debit Card">Debit Card</SelectItem>
-                                <SelectItem value="NEFT/RTGS">NEFT/RTGS</SelectItem>
-                                <SelectItem value="Foreign Receipt">Foreign Receipt</SelectItem>
-                                <SelectItem value="Paytm">Paytm</SelectItem>
-                                <SelectItem value="On Line Payment">On Line Payment</SelectItem>
-                                <SelectItem value="CreditNote">Credit Note</SelectItem>
-                                <SelectItem value="TDS">TDS</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                          <td className="p-2 text-right">
-                            <Input
-                              type="number"
-                              value={row.amount}
-                              onChange={(e) => {
-                                const updated = [...paymentRows];
-                                updated[idx].amount = Number(e.target.value);
-                                setPaymentRows(updated);
-                              }}
-                              className="h-7 text-xs text-right bg-white font-mono font-bold"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              placeholder="Bank name"
-                              value={row.bankName}
-                              onChange={(e) => {
-                                const updated = [...paymentRows];
-                                updated[idx].bankName = e.target.value;
-                                setPaymentRows(updated);
-                              }}
-                              className="h-7 text-xs bg-white"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              placeholder="Transaction / Ref#"
-                              value={row.refNo}
-                              onChange={(e) => {
-                                const updated = [...paymentRows];
-                                updated[idx].refNo = e.target.value;
-                                setPaymentRows(updated);
-                              }}
-                              className="h-7 text-xs bg-white font-mono"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <Input
-                              placeholder="Remarks"
-                              value={row.description}
-                              onChange={(e) => {
-                                const updated = [...paymentRows];
-                                updated[idx].description = e.target.value;
-                                setPaymentRows(updated);
-                              }}
-                              className="h-7 text-xs bg-white"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {isRefund && (
-                  <div className="space-y-1">
-                    <Label className="text-[10px] font-bold uppercase text-slate-500">Refund Reason / Remarks*</Label>
-                    <textarea
-                      value={settlementNotes}
-                      onChange={(e) => setSettlementNotes(e.target.value)}
-                      className="w-full h-16 text-xs p-2 border rounded-lg"
-                      placeholder="Reason for processing refund..."
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-between px-6 py-3 border-t bg-slate-50 flex-shrink-0">
-                <div className="font-bold text-slate-700">
-                  Total Settlement Amount: <span className="font-mono text-sm text-emerald-600">₹{paymentRows.reduce((sum, r) => sum + Number(r.amount || 0), 0).toFixed(2)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setIsSettleModalOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button size="sm" onClick={handleSaveSettlement} className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1">
-                    <ShieldCheck className="w-4 h-4" /> Save Receipt
-                  </Button>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       {/* ─── MODAL 2: PRINTABLE HOSPITAL INVOICE / RECEIPT ─────────────────── */}
       {printInvoiceData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-5 py-2.5 border-b bg-slate-50 flex-shrink-0">
-              <span className="font-bold text-slate-800 text-sm">Official Invoice & Settlement Receipt</span>
-              <button onClick={() => setPrintInvoiceData(null)} className="p-1 rounded-md text-slate-400 hover:text-slate-600">
+              <span className="font-bold text-slate-800 text-sm">
+                Official Invoice & Settlement Receipt
+              </span>
+              <button
+                onClick={() => setPrintInvoiceData(null)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -5469,38 +8193,72 @@ export default function BillingPage() {
               <div className="flex justify-between items-start border-b border-slate-300 pb-4 mb-2">
                 {/* Logo on the left */}
                 <div className="h-16 flex items-center justify-center">
-                  <img 
-                    src={`${window.location.origin}/cmk-logo.png`} 
-                    alt="CMK Healthcare" 
-                    className="h-full object-contain" 
+                  <img
+                    src={`${window.location.origin}/cmk-logo.png`}
+                    alt="CMK Healthcare"
+                    className="h-full object-contain"
                   />
                 </div>
                 {/* Clinic Details on the right side corner */}
                 <div className="leading-tight text-right text-slate-800">
-                  <h1 className="font-extrabold text-[13px] uppercase text-slate-900 tracking-wide">CMK HEALTHCARE PVT. LTD.</h1>
-                  <p className="text-[10px] text-slate-600 font-medium">M 158/5, Chittaranjan Park, New Delhi</p>
-                  <p className="text-[10px] text-slate-600 font-medium">Phone: 011-41552233, 88000200 | Fax:</p>
-                  <p className="text-[10px] text-slate-600 font-medium">Email: info@curemyknee.com | WebSite: www.curemyknee.com</p>
+                  <h1 className="font-extrabold text-[13px] uppercase text-slate-900 tracking-wide">
+                    CMK HEALTHCARE PVT. LTD.
+                  </h1>
+                  <p className="text-[10px] text-slate-600 font-medium">
+                    M 158/5, Chittaranjan Park, New Delhi
+                  </p>
+                  <p className="text-[10px] text-slate-600 font-medium">
+                    Phone: 011-41552233, 88000200 | Fax:
+                  </p>
+                  <p className="text-[10px] text-slate-600 font-medium">
+                    Email: info@curemyknee.com | WebSite: www.curemyknee.com
+                  </p>
                 </div>
               </div>
 
               {/* Bill & Patient Details */}
               <div className="grid grid-cols-2 gap-4 border-b pb-4">
                 <div className="space-y-1">
-                  <p><strong className="text-slate-600">Patient:</strong> <span className="font-bold text-slate-900">{printInvoiceData.patientName}</span></p>
-                  <p><strong className="text-slate-600">UHID:</strong> <span className="font-mono">{printInvoiceData.uhid}</span></p>
-                  <p><strong className="text-slate-600">Consultant:</strong> {printInvoiceData.doctorName || "Dr. Abhishek Bansal"}</p>
+                  <p>
+                    <strong className="text-slate-600">Patient:</strong>{" "}
+                    <span className="font-bold text-slate-900">
+                      {printInvoiceData.patientName}
+                    </span>
+                  </p>
+                  <p>
+                    <strong className="text-slate-600">UHID:</strong>{" "}
+                    <span className="font-mono">{printInvoiceData.uhid}</span>
+                  </p>
+                  <p>
+                    <strong className="text-slate-600">Consultant:</strong>{" "}
+                    {printInvoiceData.doctorName || "Dr. Abhishek Bansal"}
+                  </p>
                 </div>
                 <div className="text-right space-y-1">
-                  <p><strong className="text-slate-600">Invoice No:</strong> <span className="font-mono font-bold text-blue-700">{printInvoiceData.invoiceNo}</span></p>
-                  <p><strong className="text-slate-600">Date:</strong> {new Date(printInvoiceData.date).toLocaleDateString("en-GB")}</p>
-                  <p><strong className="text-slate-600">Payer Category:</strong> {printInvoiceData.company}</p>
+                  <p>
+                    <strong className="text-slate-600">Invoice No:</strong>{" "}
+                    <span className="font-mono font-bold text-blue-700">
+                      {printInvoiceData.invoiceNo}
+                    </span>
+                  </p>
+                  <p>
+                    <strong className="text-slate-600">Date:</strong>{" "}
+                    {new Date(printInvoiceData.date).toLocaleDateString(
+                      "en-GB",
+                    )}
+                  </p>
+                  <p>
+                    <strong className="text-slate-600">Payer Category:</strong>{" "}
+                    {printInvoiceData.company}
+                  </p>
                 </div>
               </div>
 
               {/* Service Line Items */}
               <div className="space-y-2">
-                <h4 className="font-bold uppercase text-[10px] text-slate-500">Service Charges Breakdown</h4>
+                <h4 className="font-bold uppercase text-[10px] text-slate-500">
+                  Service Charges Breakdown
+                </h4>
                 <table className="w-full text-left border-t border-b py-2">
                   <thead>
                     <tr className="border-b text-[10px] uppercase text-slate-500">
@@ -5512,22 +8270,35 @@ export default function BillingPage() {
                     {(() => {
                       let items = [];
                       try {
-                        if (printInvoiceData.itemsJson) items = JSON.parse(printInvoiceData.itemsJson);
+                        if (printInvoiceData.itemsJson)
+                          items = JSON.parse(printInvoiceData.itemsJson);
                       } catch {
                         items = [];
                       }
                       if (items.length > 0) {
                         return items.map((it: any, idx: number) => (
                           <tr key={idx}>
-                            <td className="py-2">{it.name} (Qty: {it.qty || 1})</td>
-                            <td className="py-2 text-right font-mono">₹{((it.netAmt || it.rate || 0) * (it.qty || 1)).toFixed(2)}</td>
+                            <td className="py-2">
+                              {it.name} (Qty: {it.qty || 1})
+                            </td>
+                            <td className="py-2 text-right font-mono">
+                              ₹
+                              {(
+                                (it.netAmt || it.rate || 0) * (it.qty || 1)
+                              ).toFixed(2)}
+                            </td>
                           </tr>
                         ));
                       }
                       return (
                         <tr>
-                          <td className="py-2">Hospital Healthcare & Consultation Charges ({printInvoiceData.type})</td>
-                          <td className="py-2 text-right font-mono">₹{printInvoiceData.netAmt.toFixed(2)}</td>
+                          <td className="py-2">
+                            Hospital Healthcare & Consultation Charges (
+                            {printInvoiceData.type})
+                          </td>
+                          <td className="py-2 text-right font-mono">
+                            ₹{printInvoiceData.netAmt.toFixed(2)}
+                          </td>
                         </tr>
                       );
                     })()}
@@ -5538,24 +8309,34 @@ export default function BillingPage() {
               {/* Totals Summary */}
               <div className="space-y-1.5 pt-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-slate-600 font-medium">Gross Total:</span>
-                  <span className="font-mono font-bold">₹{printInvoiceData.netAmt.toFixed(2)}</span>
+                  <span className="text-slate-600 font-medium">
+                    Gross Total:
+                  </span>
+                  <span className="font-mono font-bold">
+                    ₹{printInvoiceData.netAmt.toFixed(2)}
+                  </span>
                 </div>
                 {printInvoiceData.adjusted > 0 && (
                   <div className="flex justify-between text-emerald-600">
                     <span>Total Amount Paid / Settled:</span>
-                    <span className="font-mono font-bold">-₹{printInvoiceData.adjusted.toFixed(2)}</span>
+                    <span className="font-mono font-bold">
+                      -₹{printInvoiceData.adjusted.toFixed(2)}
+                    </span>
                   </div>
                 )}
                 {printInvoiceData.creditNote > 0 && (
                   <div className="flex justify-between text-purple-600">
                     <span>Credit Note Waiver:</span>
-                    <span className="font-mono font-bold">-₹{printInvoiceData.creditNote.toFixed(2)}</span>
+                    <span className="font-mono font-bold">
+                      -₹{printInvoiceData.creditNote.toFixed(2)}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center text-sm font-black pt-2 border-t text-slate-900">
                   <span>Balance Outstanding:</span>
-                  <span className={`font-mono ${printInvoiceData.balance <= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                  <span
+                    className={`font-mono ${printInvoiceData.balance <= 0 ? "text-emerald-600" : "text-red-600"}`}
+                  >
                     ₹{Math.abs(printInvoiceData.balance).toFixed(2)}
                   </span>
                 </div>
@@ -5564,16 +8345,26 @@ export default function BillingPage() {
               {/* Signature Lines */}
               <div className="flex justify-end items-end pt-12 text-[11px] text-slate-500">
                 <div>
-                  <div className="border-t border-slate-300 w-44 pt-1 text-center font-bold">Authorized Cashier</div>
+                  <div className="border-t border-slate-300 w-44 pt-1 text-center font-bold">
+                    Authorized Cashier
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="flex justify-end gap-2 p-4 border-t bg-slate-50">
-              <Button variant="outline" size="sm" onClick={() => setPrintInvoiceData(null)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPrintInvoiceData(null)}
+              >
                 Close
               </Button>
-              <Button size="sm" className="gap-1 font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer" onClick={() => handlePrintInvoice?.()}>
+              <Button
+                size="sm"
+                className="gap-1 font-bold bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                onClick={() => handlePrintInvoice?.()}
+              >
                 <Printer className="h-4 w-4" /> Print Document
               </Button>
             </div>
@@ -5581,322 +8372,486 @@ export default function BillingPage() {
 
           {/* Hidden Printable Invoice Element for Clean Printing */}
           <div className="hidden">
-            <BillingInvoicePrint ref={printInvoiceRef} invoice={printInvoiceData} />
+            <BillingInvoicePrint
+              ref={printInvoiceRef}
+              invoice={printInvoiceData}
+            />
           </div>
         </div>
       )}
 
       {/* ─── MODAL 2.5: IP DISCHARGE & FINANCIAL CLEARANCE MODAL ───────────── */}
-      {isIpDischargeModalOpen && ipBillingUhid.trim() && (() => {
-        const patientName = ipBillingPatientInfo?.name || `IP Patient ${ipBillingUhid}`;
-        const netPayable = ipNetPayable;
+      {isIpDischargeModalOpen &&
+        ipBillingUhid.trim() &&
+        (() => {
+          const patientName =
+            ipBillingPatientInfo?.name || `IP Patient ${ipBillingUhid}`;
+          const netPayable = ipNetPayable;
 
-        // Calculate sum of split payments entered
-        const totalSplitAmount = ipDischargeSplitRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-        const remainingDue = Math.max(0, netPayable - totalSplitAmount);
+          // Calculate sum of split payments entered
+          const totalSplitAmount = ipDischargeSplitRows.reduce(
+            (sum, r) => sum + (Number(r.amount) || 0),
+            0,
+          );
+          const remainingDue = Math.max(0, netPayable - totalSplitAmount);
 
-        const handleAddSplitRow = () => {
-          setIpDischargeSplitRows([
-            ...ipDischargeSplitRows,
-            { mode: "UPI / QR", amount: remainingDue > 0 ? remainingDue : 0, refNo: "" }
-          ]);
-        };
+          const handleAddSplitRow = () => {
+            setIpDischargeSplitRows([
+              ...ipDischargeSplitRows,
+              {
+                mode: "UPI / QR",
+                amount: remainingDue > 0 ? remainingDue : 0,
+                refNo: "",
+              },
+            ]);
+          };
 
-        const handleRemoveSplitRow = (index: number) => {
-          if (ipDischargeSplitRows.length <= 1) return;
-          setIpDischargeSplitRows(ipDischargeSplitRows.filter((_, i) => i !== index));
-        };
+          const handleRemoveSplitRow = (index: number) => {
+            if (ipDischargeSplitRows.length <= 1) return;
+            setIpDischargeSplitRows(
+              ipDischargeSplitRows.filter((_, i) => i !== index),
+            );
+          };
 
-        const handleSplitRowChange = (index: number, field: "mode" | "amount" | "refNo", val: any) => {
-          const updated = [...ipDischargeSplitRows];
-          updated[index] = { ...updated[index], [field]: val };
-          setIpDischargeSplitRows(updated);
-        };
+          const handleSplitRowChange = (
+            index: number,
+            field: "mode" | "amount" | "refNo",
+            val: any,
+          ) => {
+            const updated = [...ipDischargeSplitRows];
+            updated[index] = { ...updated[index], [field]: val };
+            setIpDischargeSplitRows(updated);
+          };
 
-        const handleConfirmDischarge = async () => {
-          try {
-            if (ipDischargeMode === "pay_now" && netPayable > 0) {
-              if (totalSplitAmount < netPayable) {
-                toast.error("Incomplete Settlement", `Total collected payments (₹${totalSplitAmount}) is less than net bill payable (₹${netPayable}). Please add remaining ₹${remainingDue.toFixed(2)}.`);
+          const handleConfirmDischarge = async () => {
+            try {
+              if (ipDischargeMode === "pay_now" && netPayable > 0) {
+                if (totalSplitAmount < netPayable) {
+                  toast.error(
+                    "Incomplete Settlement",
+                    `Total collected payments (₹${totalSplitAmount}) is less than net bill payable (₹${netPayable}). Please add remaining ₹${remainingDue.toFixed(2)}.`,
+                  );
+                  return;
+                }
+                // Save all split payment rows
+                const formattedRows = ipDischargeSplitRows.map((r) => ({
+                  mode: r.mode,
+                  amount: Number(r.amount) || 0,
+                  balance: 0,
+                  date: new Date().toLocaleDateString("en-GB"),
+                  bankName: "",
+                  beneficiaryName: "",
+                  refNo: r.refNo,
+                  description: `Discharge Settlement (${r.mode})`,
+                  cardSwipingValue: 0,
+                }));
+                await handleSaveIpBilling(false);
+              } else if (
+                ipDischargeMode === "tpa_credit" &&
+                !ipDischargeRefNo.trim()
+              ) {
+                toast.error(
+                  "TPA Claim Ref Required",
+                  "Please enter TPA Pre-authorization / Claim Clearance Ref No.",
+                );
+                return;
+              } else if (
+                ipDischargeMode === "credit_approval" &&
+                !ipDischargeNotes.trim()
+              ) {
+                toast.error(
+                  "Override Notes Required",
+                  "Please enter Admin / Medical Director authorization notes.",
+                );
                 return;
               }
-              // Save all split payment rows
-              const formattedRows = ipDischargeSplitRows.map(r => ({
-                mode: r.mode,
-                amount: Number(r.amount) || 0,
-                balance: 0,
-                date: new Date().toLocaleDateString("en-GB"),
-                bankName: "",
-                beneficiaryName: "",
-                refNo: r.refNo,
-                description: `Discharge Settlement (${r.mode})`,
-                cardSwipingValue: 0
-              }));
-              await handleSaveIpBilling(false);
-            } else if (ipDischargeMode === "tpa_credit" && !ipDischargeRefNo.trim()) {
-              toast.error("TPA Claim Ref Required", "Please enter TPA Pre-authorization / Claim Clearance Ref No.");
-              return;
-            } else if (ipDischargeMode === "credit_approval" && !ipDischargeNotes.trim()) {
-              toast.error("Override Notes Required", "Please enter Admin / Medical Director authorization notes.");
-              return;
+
+              setIpStatus("Discharged");
+              setIsIpDischargeModalOpen(false);
+              toast.success(
+                "Discharge Cleared Successfully",
+                `${patientName} (IP: ${ipBillingUhid}) has been marked as Discharged.`,
+              );
+            } catch (err: any) {
+              toast.error(
+                "Discharge Failed",
+                err.message || "Something went wrong.",
+              );
             }
+          };
 
-            setIpStatus("Discharged");
-            setIsIpDischargeModalOpen(false);
-            toast.success("Discharge Cleared Successfully", `${patientName} (IP: ${ipBillingUhid}) has been marked as Discharged.`);
-          } catch (err: any) {
-            toast.error("Discharge Failed", err.message || "Something went wrong.");
-          }
-        };
-
-        return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-            <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[92vh]">
-              {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-900 text-white flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30">
-                    <ShieldCheck className="h-5 w-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-sm text-white tracking-wide uppercase">IP Patient Discharge & Financial Clearance</h3>
-                    <p className="text-xs text-slate-300 font-mono">
-                      Patient: <span className="font-bold text-white">{patientName}</span> | UHID: <span className="font-bold text-blue-300">{ipBillingUhid}</span>
-                    </p>
-                  </div>
-                </div>
-                <button onClick={() => setIsIpDischargeModalOpen(false)} className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              {/* Body */}
-              <div className="p-6 space-y-5 overflow-y-auto bg-slate-50 flex-1 text-xs">
-                
-                {/* Financial Summary Card */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wide flex justify-between items-center">
-                    <span className="flex items-center gap-1.5"><ReceiptText className="w-4 h-4 text-blue-600" /> Financial Settlement Breakdown</span>
-                    <Badge className={netPayable <= 0 ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-mono" : "bg-red-100 text-red-800 border-red-300 font-mono text-xs px-2.5 py-0.5"}>
-                      {netPayable <= 0 ? "Balance Settled (₹0.00)" : `Net Payable: ₹${netPayable.toFixed(2)}`}
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2 text-center font-mono">
-                    <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
-                      <span className="block text-[10px] text-slate-500 font-sans uppercase font-bold">Gross Inpatient Bill</span>
-                      <span className="font-bold text-sm text-slate-900">₹{ipGrossTotal.toFixed(2)}</span>
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+              <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[92vh]">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-900 text-white flex-shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30">
+                      <ShieldCheck className="h-5 w-5 text-emerald-400" />
                     </div>
-                    <div className="p-2.5 bg-amber-50/50 rounded-lg border border-amber-200">
-                      <span className="block text-[10px] text-amber-700 font-sans uppercase font-bold">Less Discount</span>
-                      <span className="font-bold text-sm text-amber-800">₹{(Number(ipDiscountAmt) || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="p-2.5 bg-emerald-50/50 rounded-lg border border-emerald-200">
-                      <span className="block text-[10px] text-emerald-700 font-sans uppercase font-bold">Advance Deposit</span>
-                      <span className="font-bold text-sm text-emerald-800">₹{(Number(ipAdvanceAdjusted) || 0).toFixed(2)}</span>
-                    </div>
-                    <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-300">
-                      <span className="block text-[10px] text-blue-700 font-sans uppercase font-extrabold">Net Payable Balance</span>
-                      <span className="font-extrabold text-sm text-blue-900">₹{netPayable.toFixed(2)}</span>
+                    <div>
+                      <h3 className="font-bold text-sm text-white tracking-wide uppercase">
+                        IP Patient Discharge & Financial Clearance
+                      </h3>
+                      <p className="text-xs text-slate-300 font-mono">
+                        Patient:{" "}
+                        <span className="font-bold text-white">
+                          {patientName}
+                        </span>{" "}
+                        | UHID:{" "}
+                        <span className="font-bold text-blue-300">
+                          {ipBillingUhid}
+                        </span>
+                      </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setIsIpDischargeModalOpen(false)}
+                    className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
 
-                {/* Clearance Mode Selection */}
-                <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
-                  <div className="text-xs font-bold text-slate-700 uppercase tracking-wide">Select Discharge Clearance Method</div>
-                  
-                  <div className="grid grid-cols-3 gap-3">
-                    <div 
-                      onClick={() => setIpDischargeMode("pay_now")}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "pay_now" ? "bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
-                    >
-                      <div className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
-                        <DollarSign className="w-4 h-4 text-emerald-600" /> Full Settlement
-                      </div>
-                      <p className="text-[10px] text-slate-500 leading-tight">Collect cash/card/UPI payments & settle bill</p>
+                {/* Body */}
+                <div className="p-6 space-y-5 overflow-y-auto bg-slate-50 flex-1 text-xs">
+                  {/* Financial Summary Card */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                    <div className="text-xs font-bold text-slate-700 uppercase tracking-wide flex justify-between items-center">
+                      <span className="flex items-center gap-1.5">
+                        <ReceiptText className="w-4 h-4 text-blue-600" />{" "}
+                        Financial Settlement Breakdown
+                      </span>
+                      <Badge
+                        className={
+                          netPayable <= 0
+                            ? "bg-emerald-100 text-emerald-800 border-emerald-300 font-mono"
+                            : "bg-red-100 text-red-800 border-red-300 font-mono text-xs px-2.5 py-0.5"
+                        }
+                      >
+                        {netPayable <= 0
+                          ? "Balance Settled (₹0.00)"
+                          : `Net Payable: ₹${netPayable.toFixed(2)}`}
+                      </Badge>
                     </div>
 
-                    <div 
-                      onClick={() => setIpDischargeMode("tpa_credit")}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "tpa_credit" ? "bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
-                    >
-                      <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
-                        <ShieldCheck className="w-4 h-4 text-blue-600" /> TPA / Insurance Claim
+                    <div className="grid grid-cols-4 gap-2 text-center font-mono">
+                      <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                        <span className="block text-[10px] text-slate-500 font-sans uppercase font-bold">
+                          Gross Inpatient Bill
+                        </span>
+                        <span className="font-bold text-sm text-slate-900">
+                          ₹{ipGrossTotal.toFixed(2)}
+                        </span>
                       </div>
-                      <p className="text-[10px] text-slate-500 leading-tight">Mark balance as TPA corporate receivable</p>
-                    </div>
-
-                    <div 
-                      onClick={() => setIpDischargeMode("credit_approval")}
-                      className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "credit_approval" ? "bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
-                    >
-                      <div className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4 text-amber-600" /> Credit Approval
+                      <div className="p-2.5 bg-amber-50/50 rounded-lg border border-amber-200">
+                        <span className="block text-[10px] text-amber-700 font-sans uppercase font-bold">
+                          Less Discount
+                        </span>
+                        <span className="font-bold text-sm text-amber-800">
+                          ₹{(Number(ipDiscountAmt) || 0).toFixed(2)}
+                        </span>
                       </div>
-                      <p className="text-[10px] text-slate-500 leading-tight">Promissory note / Admin override</p>
+                      <div className="p-2.5 bg-emerald-50/50 rounded-lg border border-emerald-200">
+                        <span className="block text-[10px] text-emerald-700 font-sans uppercase font-bold">
+                          Advance Deposit
+                        </span>
+                        <span className="font-bold text-sm text-emerald-800">
+                          ₹{(Number(ipAdvanceAdjusted) || 0).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-300">
+                        <span className="block text-[10px] text-blue-700 font-sans uppercase font-extrabold">
+                          Net Payable Balance
+                        </span>
+                        <span className="font-extrabold text-sm text-blue-900">
+                          ₹{netPayable.toFixed(2)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Mode Form Fields: Split Payments */}
-                  {ipDischargeMode === "pay_now" && (
-                    <div className="pt-2 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-800 text-xs uppercase tracking-wide">Multi-Mode Payment Collection</span>
-                        <Button 
-                          type="button"
-                          onClick={handleAddSplitRow}
-                          size="xs"
-                          className="h-6 text-[11px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 gap-1 cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3" /> Add Payment Mode
-                        </Button>
+                  {/* Clearance Mode Selection */}
+                  <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-3">
+                    <div className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                      Select Discharge Clearance Method
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div
+                        onClick={() => setIpDischargeMode("pay_now")}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "pay_now" ? "bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
+                      >
+                        <div className="font-bold text-emerald-900 text-xs flex items-center gap-1.5">
+                          <DollarSign className="w-4 h-4 text-emerald-600" />{" "}
+                          Full Settlement
+                        </div>
+                        <p className="text-[10px] text-slate-500 leading-tight">
+                          Collect cash/card/UPI payments & settle bill
+                        </p>
                       </div>
 
-                      {/* Payment Rows Table */}
-                      <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
-                        <table className="w-full text-left text-xs">
-                          <thead className="bg-slate-100 border-b border-slate-200 font-bold text-[10px] uppercase text-slate-600">
-                            <tr>
-                              <th className="px-3 py-2">Payment Mode</th>
-                              <th className="px-3 py-2 w-44">Collection Amount (₹)</th>
-                              <th className="px-3 py-2">Ref / Transaction No.</th>
-                              <th className="px-3 py-2 w-10 text-center">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100">
-                            {ipDischargeSplitRows.map((row, idx) => (
-                              <tr key={idx} className="bg-white">
-                                <td className="p-2">
-                                  <Select value={row.mode} onValueChange={(val) => handleSplitRowChange(idx, "mode", val)}>
-                                    <SelectTrigger className="h-8 text-xs bg-white border-slate-300"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="Cash">Cash</SelectItem>
-                                      <SelectItem value="UPI / QR">UPI / QR Code</SelectItem>
-                                      <SelectItem value="Credit Card">Credit Card</SelectItem>
-                                      <SelectItem value="Debit Card">Debit Card</SelectItem>
-                                      <SelectItem value="Net Banking">Net Banking</SelectItem>
-                                      <SelectItem value="Cheque">Cheque</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </td>
-                                <td className="p-2">
-                                  <Input 
-                                    type="number"
-                                    value={row.amount}
-                                    onChange={(e) => handleSplitRowChange(idx, "amount", Number(e.target.value))}
-                                    className="h-8 text-xs font-mono font-bold bg-white border-slate-300 text-right"
-                                  />
-                                </td>
-                                <td className="p-2">
-                                  <Input 
-                                    type="text"
-                                    value={row.refNo}
-                                    onChange={(e) => handleSplitRowChange(idx, "refNo", e.target.value)}
-                                    placeholder="Optional Ref / Txn No..."
-                                    className="h-8 text-xs bg-white border-slate-300"
-                                  />
-                                </td>
-                                <td className="p-2 text-center">
-                                  <button 
-                                    type="button"
-                                    disabled={ipDischargeSplitRows.length <= 1}
-                                    onClick={() => handleRemoveSplitRow(idx)}
-                                    className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50 disabled:opacity-30 cursor-pointer"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </td>
+                      <div
+                        onClick={() => setIpDischargeMode("tpa_credit")}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "tpa_credit" ? "bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
+                      >
+                        <div className="font-bold text-blue-900 text-xs flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4 text-blue-600" /> TPA
+                          / Insurance Claim
+                        </div>
+                        <p className="text-[10px] text-slate-500 leading-tight">
+                          Mark balance as TPA corporate receivable
+                        </p>
+                      </div>
+
+                      <div
+                        onClick={() => setIpDischargeMode("credit_approval")}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all space-y-1 ${ipDischargeMode === "credit_approval" ? "bg-amber-50/80 border-amber-500 ring-2 ring-amber-500/20 shadow-2xs" : "bg-slate-50 border-slate-200 hover:bg-slate-100"}`}
+                      >
+                        <div className="font-bold text-amber-900 text-xs flex items-center gap-1.5">
+                          <AlertCircle className="w-4 h-4 text-amber-600" />{" "}
+                          Credit Approval
+                        </div>
+                        <p className="text-[10px] text-slate-500 leading-tight">
+                          Promissory note / Admin override
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Mode Form Fields: Split Payments */}
+                    {ipDischargeMode === "pay_now" && (
+                      <div className="pt-2 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-slate-800 text-xs uppercase tracking-wide">
+                            Multi-Mode Payment Collection
+                          </span>
+                          <Button
+                            type="button"
+                            onClick={handleAddSplitRow}
+                            size="xs"
+                            className="h-6 text-[11px] bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" /> Add Payment Mode
+                          </Button>
+                        </div>
+
+                        {/* Payment Rows Table */}
+                        <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                          <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-100 border-b border-slate-200 font-bold text-[10px] uppercase text-slate-600">
+                              <tr>
+                                <th className="px-3 py-2">Payment Mode</th>
+                                <th className="px-3 py-2 w-44">
+                                  Collection Amount (₹)
+                                </th>
+                                <th className="px-3 py-2">
+                                  Ref / Transaction No.
+                                </th>
+                                <th className="px-3 py-2 w-10 text-center">
+                                  Action
+                                </th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {ipDischargeSplitRows.map((row, idx) => (
+                                <tr key={idx} className="bg-white">
+                                  <td className="p-2">
+                                    <Select
+                                      value={row.mode}
+                                      onValueChange={(val) =>
+                                        handleSplitRowChange(idx, "mode", val)
+                                      }
+                                    >
+                                      <SelectTrigger className="h-8 text-xs bg-white border-slate-300">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="Cash">
+                                          Cash
+                                        </SelectItem>
+                                        <SelectItem value="UPI / QR">
+                                          UPI / QR Code
+                                        </SelectItem>
+                                        <SelectItem value="Credit Card">
+                                          Credit Card
+                                        </SelectItem>
+                                        <SelectItem value="Debit Card">
+                                          Debit Card
+                                        </SelectItem>
+                                        <SelectItem value="Net Banking">
+                                          Net Banking
+                                        </SelectItem>
+                                        <SelectItem value="Cheque">
+                                          Cheque
+                                        </SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </td>
+                                  <td className="p-2">
+                                    <Input
+                                      type="number"
+                                      value={row.amount}
+                                      onChange={(e) =>
+                                        handleSplitRowChange(
+                                          idx,
+                                          "amount",
+                                          Number(e.target.value),
+                                        )
+                                      }
+                                      className="h-8 text-xs font-mono font-bold bg-white border-slate-300 text-right"
+                                    />
+                                  </td>
+                                  <td className="p-2">
+                                    <Input
+                                      type="text"
+                                      value={row.refNo}
+                                      onChange={(e) =>
+                                        handleSplitRowChange(
+                                          idx,
+                                          "refNo",
+                                          e.target.value,
+                                        )
+                                      }
+                                      placeholder="Optional Ref / Txn No..."
+                                      className="h-8 text-xs bg-white border-slate-300"
+                                    />
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        ipDischargeSplitRows.length <= 1
+                                      }
+                                      onClick={() => handleRemoveSplitRow(idx)}
+                                      className="p-1 rounded text-red-500 hover:text-red-700 hover:bg-red-50 disabled:opacity-30 cursor-pointer"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
 
-                      {/* Payment Total Status Bar */}
-                      <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg border border-slate-200 font-mono text-xs">
-                        <div className="flex items-center gap-4">
-                          <span>Total Collected: <strong className="text-emerald-700 font-bold">₹{totalSplitAmount.toFixed(2)}</strong></span>
-                          <span>Net Bill Payable: <strong>₹{netPayable.toFixed(2)}</strong></span>
+                        {/* Payment Total Status Bar */}
+                        <div className="flex items-center justify-between p-3 bg-slate-100 rounded-lg border border-slate-200 font-mono text-xs">
+                          <div className="flex items-center gap-4">
+                            <span>
+                              Total Collected:{" "}
+                              <strong className="text-emerald-700 font-bold">
+                                ₹{totalSplitAmount.toFixed(2)}
+                              </strong>
+                            </span>
+                            <span>
+                              Net Bill Payable:{" "}
+                              <strong>₹{netPayable.toFixed(2)}</strong>
+                            </span>
+                          </div>
+                          <div>
+                            {remainingDue <= 0 ? (
+                              <Badge className="bg-emerald-600 text-white font-bold">
+                                Fully Settled (100%)
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-red-600 text-white font-bold">
+                                Remaining Due: ₹{remainingDue.toFixed(2)}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {ipDischargeMode === "tpa_credit" && (
+                      <div className="p-3 bg-blue-50/60 rounded-lg border border-blue-200 grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-[10px] font-bold text-blue-900 uppercase">
+                            TPA Pre-authorization Claim Ref No. *
+                          </Label>
+                          <Input
+                            type="text"
+                            value={ipDischargeRefNo}
+                            onChange={(e) =>
+                              setIpDischargeRefNo(e.target.value)
+                            }
+                            placeholder="Enter TPA approval letter ref no..."
+                            className="h-8 text-xs bg-white border-blue-300 font-mono"
+                          />
                         </div>
                         <div>
-                          {remainingDue <= 0 ? (
-                            <Badge className="bg-emerald-600 text-white font-bold">Fully Settled (100%)</Badge>
-                          ) : (
-                            <Badge className="bg-red-600 text-white font-bold">Remaining Due: ₹{remainingDue.toFixed(2)}</Badge>
-                          )}
+                          <Label className="text-[10px] font-bold text-blue-900 uppercase">
+                            Insurance Provider / TPA Name
+                          </Label>
+                          <Input
+                            type="text"
+                            value={ipBillingPayer || "Star Health Insurance"}
+                            readOnly
+                            className="h-8 text-xs bg-slate-100 border-blue-200 font-semibold"
+                          />
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {ipDischargeMode === "tpa_credit" && (
-                    <div className="p-3 bg-blue-50/60 rounded-lg border border-blue-200 grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-[10px] font-bold text-blue-900 uppercase">TPA Pre-authorization Claim Ref No. *</Label>
-                        <Input 
-                          type="text"
-                          value={ipDischargeRefNo}
-                          onChange={(e) => setIpDischargeRefNo(e.target.value)}
-                          placeholder="Enter TPA approval letter ref no..."
-                          className="h-8 text-xs bg-white border-blue-300 font-mono"
-                        />
+                    {ipDischargeMode === "credit_approval" && (
+                      <div className="p-3 bg-amber-50/60 rounded-lg border border-amber-200 space-y-2">
+                        <div>
+                          <Label className="text-[10px] font-bold text-amber-900 uppercase">
+                            Admin / Manager Authorization Notes *
+                          </Label>
+                          <Input
+                            type="text"
+                            value={ipDischargeNotes}
+                            onChange={(e) =>
+                              setIpDischargeNotes(e.target.value)
+                            }
+                            placeholder="Enter credit waiver reason or promissory note ref..."
+                            className="h-8 text-xs bg-white border-amber-300"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-[10px] font-bold text-blue-900 uppercase">Insurance Provider / TPA Name</Label>
-                        <Input 
-                          type="text"
-                          value={ipBillingPayer || "Star Health Insurance"}
-                          readOnly
-                          className="h-8 text-xs bg-slate-100 border-blue-200 font-semibold"
-                        />
-                      </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
 
-                  {ipDischargeMode === "credit_approval" && (
-                    <div className="p-3 bg-amber-50/60 rounded-lg border border-amber-200 space-y-2">
-                      <div>
-                        <Label className="text-[10px] font-bold text-amber-900 uppercase">Admin / Manager Authorization Notes *</Label>
-                        <Input 
-                          type="text"
-                          value={ipDischargeNotes}
-                          onChange={(e) => setIpDischargeNotes(e.target.value)}
-                          placeholder="Enter credit waiver reason or promissory note ref..."
-                          className="h-8 text-xs bg-white border-amber-300"
-                        />
-                      </div>
+                  {/* Department Clearance Badges */}
+                  <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 text-[11px] font-bold text-slate-700">
+                    <span>Department Clearance Status:</span>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">
+                        Doctor Summary: Cleared
+                      </Badge>
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">
+                        Nursing Bed: Cleared
+                      </Badge>
+                      <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">
+                        Pharmacy: Cleared
+                      </Badge>
                     </div>
-                  )}
-                </div>
-
-                {/* Department Clearance Badges */}
-                <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-200 text-[11px] font-bold text-slate-700">
-                  <span>Department Clearance Status:</span>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">Doctor Summary: Cleared</Badge>
-                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">Nursing Bed: Cleared</Badge>
-                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 text-[10px]">Pharmacy: Cleared</Badge>
                   </div>
                 </div>
-              </div>
 
-              {/* Footer */}
-              <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-between items-center">
-                <Button variant="outline" size="sm" onClick={() => setIsIpDischargeModalOpen(false)} className="h-8 text-xs font-bold px-4">
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleConfirmDischarge}
-                  className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-5 shadow-sm gap-1 cursor-pointer"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" /> Confirm & Complete Discharge Clearance
-                </Button>
+                {/* Footer */}
+                <div className="p-4 bg-slate-100 border-t border-slate-200 flex justify-between items-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsIpDischargeModalOpen(false)}
+                    className="h-8 text-xs font-bold px-4"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleConfirmDischarge}
+                    className="h-8 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-5 shadow-sm gap-1 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Confirm & Complete
+                    Discharge Clearance
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
       {/* ─── MODAL 3: PATIENT SEARCH MODAL ─────────────────────────────────── */}
       {isPatientSearchModalOpen && (
@@ -5904,8 +8859,14 @@ export default function BillingPage() {
           <div className="w-full max-w-[1380px] bg-white shadow-2xl border border-slate-200 flex flex-col rounded-xl overflow-hidden h-[90vh] my-4">
             {/* Header */}
             <div className="flex items-center gap-1 bg-slate-900 text-white px-4 py-2.5 text-xs font-bold flex-shrink-0">
-              <span className="flex-1 font-bold text-sm tracking-wide">Patient Search Directory</span>
-              <Button size="sm" onClick={() => setIsPatientSearchModalOpen(false)} className="h-7 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold">
+              <span className="flex-1 font-bold text-sm tracking-wide">
+                Patient Search Directory
+              </span>
+              <Button
+                size="sm"
+                onClick={() => setIsPatientSearchModalOpen(false)}
+                className="h-7 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold"
+              >
                 Close
               </Button>
             </div>
@@ -5915,58 +8876,196 @@ export default function BillingPage() {
               {/* Top Filters & Actions */}
               <div className="flex items-center gap-3 bg-[#e2f0fd] p-3 border border-blue-100 text-blue-900 font-semibold rounded-lg mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-700">Facility</span>
-                  <Select value={advSearchFields.facility} onValueChange={v => setAdvSearchFields({...advSearchFields, facility: v})}>
-                    <SelectTrigger className="h-8 w-64 text-xs bg-white border-blue-300 shadow-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="CMK HEALTHCARE PVT. LTD.">CMK HEALTHCARE PVT. LTD.</SelectItem></SelectContent>
+                  <span className="text-xs font-bold text-slate-700">
+                    Facility
+                  </span>
+                  <Select
+                    value={advSearchFields.facility}
+                    onValueChange={(v) =>
+                      setAdvSearchFields({ ...advSearchFields, facility: v })
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-64 text-xs bg-white border-blue-300 shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CMK HEALTHCARE PVT. LTD.">
+                        CMK HEALTHCARE PVT. LTD.
+                      </SelectItem>
+                    </SelectContent>
                   </Select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-700">Entry Site</span>
-                  <Select value={advSearchFields.entrySite} onValueChange={v => setAdvSearchFields({...advSearchFields, entrySite: v})}>
-                    <SelectTrigger className="h-8 w-44 text-xs bg-white border-blue-300 shadow-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent><SelectItem value="-- ALL --">-- ALL --</SelectItem></SelectContent>
+                  <span className="text-xs font-bold text-slate-700">
+                    Entry Site
+                  </span>
+                  <Select
+                    value={advSearchFields.entrySite}
+                    onValueChange={(v) =>
+                      setAdvSearchFields({ ...advSearchFields, entrySite: v })
+                    }
+                  >
+                    <SelectTrigger className="h-8 w-44 text-xs bg-white border-blue-300 shadow-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="-- ALL --">-- ALL --</SelectItem>
+                    </SelectContent>
                   </Select>
                 </div>
                 <div className="flex-1"></div>
-                <Button onClick={() => fetchAdvancedPatients(1)} className="h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm">Filter</Button>
-                <Button onClick={() => setAdvSearchFields({
-                  uhid: "", bedNo: "", motherName: "", ipNo: "", email: "", fatherName: "",
-                  patientName: "", company: "", privilegeCard: "", dob: "", passportNo: "",
-                  address: "", phone: "", identityNo: "", mobileNo: "", oldRegNo: "",
-                  facility: "CMK HEALTHCARE PVT. LTD.", entrySite: "-- ALL --",
-                  searchType: "Search All (Date Range)", typeFilter: "all"
-                })} variant="outline" className="h-8 px-4 bg-white hover:bg-slate-100 text-slate-700 border-slate-300 font-bold text-xs">Clear Filter</Button>
+                <Button
+                  onClick={() => fetchAdvancedPatients(1)}
+                  className="h-8 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm"
+                >
+                  Filter
+                </Button>
+                <Button
+                  onClick={() =>
+                    setAdvSearchFields({
+                      uhid: "",
+                      bedNo: "",
+                      motherName: "",
+                      ipNo: "",
+                      email: "",
+                      fatherName: "",
+                      patientName: "",
+                      company: "",
+                      privilegeCard: "",
+                      dob: "",
+                      passportNo: "",
+                      address: "",
+                      phone: "",
+                      identityNo: "",
+                      mobileNo: "",
+                      oldRegNo: "",
+                      facility: "CMK HEALTHCARE PVT. LTD.",
+                      entrySite: "-- ALL --",
+                      searchType: "Search All (Date Range)",
+                      typeFilter: "all",
+                    })
+                  }
+                  variant="outline"
+                  className="h-8 px-4 bg-white hover:bg-slate-100 text-slate-700 border-slate-300 font-bold text-xs"
+                >
+                  Clear Filter
+                </Button>
               </div>
 
               {/* Radio options */}
               <div className="flex items-center justify-between px-2 mb-3 text-xs">
                 <div className="flex items-center gap-4 font-semibold text-slate-700">
                   <div className="flex items-center gap-1.5">
-                    <input type="radio" id="s_criteria" name="searchType" checked={advSearchFields.searchType === "Criteria"} onChange={() => setAdvSearchFields({...advSearchFields, searchType: "Criteria"})} className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500" />
-                    <label htmlFor="s_criteria" className="cursor-pointer">Search on Criteria</label>
+                    <input
+                      type="radio"
+                      id="s_criteria"
+                      name="searchType"
+                      checked={advSearchFields.searchType === "Criteria"}
+                      onChange={() =>
+                        setAdvSearchFields({
+                          ...advSearchFields,
+                          searchType: "Criteria",
+                        })
+                      }
+                      className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="s_criteria" className="cursor-pointer">
+                      Search on Criteria
+                    </label>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <input type="radio" id="s_all" name="searchType" checked={advSearchFields.searchType === "Search All (Date Range)"} onChange={() => setAdvSearchFields({...advSearchFields, searchType: "Search All (Date Range)"})} className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500" />
-                    <label htmlFor="s_all" className="cursor-pointer">Search All (Date Range)</label>
+                    <input
+                      type="radio"
+                      id="s_all"
+                      name="searchType"
+                      checked={
+                        advSearchFields.searchType === "Search All (Date Range)"
+                      }
+                      onChange={() =>
+                        setAdvSearchFields({
+                          ...advSearchFields,
+                          searchType: "Search All (Date Range)",
+                        })
+                      }
+                      className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="s_all" className="cursor-pointer">
+                      Search All (Date Range)
+                    </label>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 font-semibold text-slate-700">
                   <div className="flex items-center gap-1.5">
-                    <input type="radio" id="t_all" name="typeFilter" checked={advSearchFields.typeFilter === "all"} onChange={() => setAdvSearchFields({...advSearchFields, typeFilter: "all"})} className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500" />
-                    <label htmlFor="t_all" className="cursor-pointer">All</label>
+                    <input
+                      type="radio"
+                      id="t_all"
+                      name="typeFilter"
+                      checked={advSearchFields.typeFilter === "all"}
+                      onChange={() =>
+                        setAdvSearchFields({
+                          ...advSearchFields,
+                          typeFilter: "all",
+                        })
+                      }
+                      className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="t_all" className="cursor-pointer">
+                      All
+                    </label>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <input type="radio" id="t_reg" name="typeFilter" checked={advSearchFields.typeFilter === "Registration"} onChange={() => setAdvSearchFields({...advSearchFields, typeFilter: "Registration"})} className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500" />
-                    <label htmlFor="t_reg" className="cursor-pointer">Registration</label>
+                    <input
+                      type="radio"
+                      id="t_reg"
+                      name="typeFilter"
+                      checked={advSearchFields.typeFilter === "Registration"}
+                      onChange={() =>
+                        setAdvSearchFields({
+                          ...advSearchFields,
+                          typeFilter: "Registration",
+                        })
+                      }
+                      className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="t_reg" className="cursor-pointer">
+                      Registration
+                    </label>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <input type="radio" id="t_enc" name="typeFilter" checked={advSearchFields.typeFilter === "Admission"} onChange={() => setAdvSearchFields({...advSearchFields, typeFilter: "Admission"})} className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500" />
-                    <label htmlFor="t_enc" className="cursor-pointer">Encounter</label>
+                    <input
+                      type="radio"
+                      id="t_enc"
+                      name="typeFilter"
+                      checked={advSearchFields.typeFilter === "Admission"}
+                      onChange={() =>
+                        setAdvSearchFields({
+                          ...advSearchFields,
+                          typeFilter: "Admission",
+                        })
+                      }
+                      className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="t_enc" className="cursor-pointer">
+                      Encounter
+                    </label>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <input type="radio" id="t_dis" name="typeFilter" checked={advSearchFields.typeFilter === "Discharge"} onChange={() => setAdvSearchFields({...advSearchFields, typeFilter: "Discharge"})} className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500" />
-                    <label htmlFor="t_dis" className="cursor-pointer">Discharge</label>
+                    <input
+                      type="radio"
+                      id="t_dis"
+                      name="typeFilter"
+                      checked={advSearchFields.typeFilter === "Discharge"}
+                      onChange={() =>
+                        setAdvSearchFields({
+                          ...advSearchFields,
+                          typeFilter: "Discharge",
+                        })
+                      }
+                      className="h-3.5 w-3.5 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    />
+                    <label htmlFor="t_dis" className="cursor-pointer">
+                      Discharge
+                    </label>
                   </div>
                 </div>
               </div>
@@ -5974,69 +9073,246 @@ export default function BillingPage() {
               {/* Grid Form */}
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">UHID</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.uhid} onChange={e => setAdvSearchFields({...advSearchFields, uhid: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    UHID
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.uhid}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        uhid: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">IP No.</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.ipNo} onChange={e => setAdvSearchFields({...advSearchFields, ipNo: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    IP No.
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.ipNo}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        ipNo: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Patient Name</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200" value={advSearchFields.patientName} onChange={e => setAdvSearchFields({...advSearchFields, patientName: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Patient Name
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200"
+                    value={advSearchFields.patientName}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        patientName: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Date of Birth</Label>
-                  <Input type="date" className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.dob} onChange={e => setAdvSearchFields({...advSearchFields, dob: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Date of Birth
+                  </Label>
+                  <Input
+                    type="date"
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.dob}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        dob: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Phone</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.phone} onChange={e => setAdvSearchFields({...advSearchFields, phone: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Phone
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.phone}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        phone: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Mobile #</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.mobileNo} onChange={e => setAdvSearchFields({...advSearchFields, mobileNo: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Mobile #
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.mobileNo}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        mobileNo: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Bed No</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.bedNo} onChange={e => setAdvSearchFields({...advSearchFields, bedNo: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Bed No
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.bedNo}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        bedNo: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">E-Mail Id</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.email} onChange={e => setAdvSearchFields({...advSearchFields, email: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    E-Mail Id
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.email}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        email: e.target.value,
+                      })
+                    }
+                  />
                 </div>
 
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Company</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200" value={advSearchFields.company} onChange={e => setAdvSearchFields({...advSearchFields, company: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Company
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200"
+                    value={advSearchFields.company}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        company: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Passport No</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.passportNo} onChange={e => setAdvSearchFields({...advSearchFields, passportNo: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Passport No
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.passportNo}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        passportNo: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Identity No</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.identityNo} onChange={e => setAdvSearchFields({...advSearchFields, identityNo: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Identity No
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.identityNo}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        identityNo: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Old Reg No</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200 font-mono" value={advSearchFields.oldRegNo} onChange={e => setAdvSearchFields({...advSearchFields, oldRegNo: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Old Reg No
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200 font-mono"
+                    value={advSearchFields.oldRegNo}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        oldRegNo: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Mother Name</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200" value={advSearchFields.motherName} onChange={e => setAdvSearchFields({...advSearchFields, motherName: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Mother Name
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200"
+                    value={advSearchFields.motherName}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        motherName: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Father Name</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200" value={advSearchFields.fatherName} onChange={e => setAdvSearchFields({...advSearchFields, fatherName: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Father Name
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200"
+                    value={advSearchFields.fatherName}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        fatherName: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Privilege Card</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200" value={advSearchFields.privilegeCard} onChange={e => setAdvSearchFields({...advSearchFields, privilegeCard: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Privilege Card
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200"
+                    value={advSearchFields.privilegeCard}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        privilegeCard: e.target.value,
+                      })
+                    }
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5 col-span-2 lg:col-span-1">
-                  <Label className="text-[10px] font-bold text-slate-500 uppercase">Address</Label>
-                  <Input className="h-7 text-xs bg-white border-slate-200" value={advSearchFields.address} onChange={e => setAdvSearchFields({...advSearchFields, address: e.target.value})}/>
+                  <Label className="text-[10px] font-bold text-slate-500 uppercase">
+                    Address
+                  </Label>
+                  <Input
+                    className="h-7 text-xs bg-white border-slate-200"
+                    value={advSearchFields.address}
+                    onChange={(e) =>
+                      setAdvSearchFields({
+                        ...advSearchFields,
+                        address: e.target.value,
+                      })
+                    }
+                  />
                 </div>
               </div>
             </div>
@@ -6046,65 +9322,157 @@ export default function BillingPage() {
               <table className="w-full text-left text-xs whitespace-nowrap">
                 <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0 border-b border-slate-200 uppercase text-[10px]">
                   <tr>
-                    <th className="px-3 py-2 text-center w-14 border-r border-slate-200">Select</th>
-                    <th className="px-3 py-2 border-r border-slate-200">UHID</th>
-                    <th className="px-3 py-2 border-r border-slate-200">Patient Name</th>
-                    <th className="px-3 py-2 border-r border-slate-200">Gender/Age</th>
-                    <th className="px-3 py-2 border-r border-slate-200">Registration Date</th>
-                    <th className="px-3 py-2 border-r border-slate-200">Company</th>
-                    <th className="px-3 py-2 border-r border-slate-200">MobileNo</th>
+                    <th className="px-3 py-2 text-center w-14 border-r border-slate-200">
+                      Select
+                    </th>
+                    <th className="px-3 py-2 border-r border-slate-200">
+                      UHID
+                    </th>
+                    <th className="px-3 py-2 border-r border-slate-200">
+                      Patient Name
+                    </th>
+                    <th className="px-3 py-2 border-r border-slate-200">
+                      Gender/Age
+                    </th>
+                    <th className="px-3 py-2 border-r border-slate-200">
+                      Registration Date
+                    </th>
+                    <th className="px-3 py-2 border-r border-slate-200">
+                      Company
+                    </th>
+                    <th className="px-3 py-2 border-r border-slate-200">
+                      MobileNo
+                    </th>
                     <th className="px-3 py-2 border-r border-slate-200">DOB</th>
-                    <th className="px-3 py-2 border-r border-slate-200 w-72">Patient Address</th>
-                    <th className="px-3 py-2 border-r border-slate-200">Old Reg No</th>
+                    <th className="px-3 py-2 border-r border-slate-200 w-72">
+                      Patient Address
+                    </th>
+                    <th className="px-3 py-2 border-r border-slate-200">
+                      Old Reg No
+                    </th>
                     <th className="px-3 py-2">Father Name</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
                   {advIsLoading ? (
-                    <tr><td colSpan={11} className="p-8 text-center text-slate-500 font-bold">Loading patients...</td></tr>
+                    <tr>
+                      <td
+                        colSpan={11}
+                        className="p-8 text-center text-slate-500 font-bold"
+                      >
+                        Loading patients...
+                      </td>
+                    </tr>
                   ) : displayAdvPatients.length === 0 ? (
-                    <tr><td colSpan={11} className="p-8 text-center text-slate-500 font-bold">No matching patients found.</td></tr>
+                    <tr>
+                      <td
+                        colSpan={11}
+                        className="p-8 text-center text-slate-500 font-bold"
+                      >
+                        No matching patients found.
+                      </td>
+                    </tr>
                   ) : (
                     displayAdvPatients.map((p, idx) => {
                       const selectThisPatient = () => {
-                        if (activeTab === "OP Billing") setOpBillingUhid(p.uhid);
-                        else if (activeTab === "IP Billing") setIpBillingUhid(p.uhid);
-                        else if (activeTab === "Master Activity List") setMalUhid(p.uhid);
+                        if (activeTab === "OP Billing")
+                          setOpBillingUhid(p.uhid);
+                        else if (activeTab === "IP Billing")
+                          setIpBillingUhid(p.uhid);
+                        else if (activeTab === "Master Activity List")
+                          setMalUhid(p.uhid);
                         else if (activeTab === "Create OP Visit") {
-                          setOpUhid(p.uhid); setOpPatientName(p.patientName);
+                          setOpUhid(p.uhid);
+                          setOpPatientName(p.patientName);
                           setOpDoctor(p.doctor || "Dr. Abhishek Bansal 2273");
-                          setOpPayerType(p.company.includes("Insurance") || p.company.includes("Star") ? "Insurance" : "Direct Patient");
-                          setOpPayer(p.company || "CASH"); setOpSponsor(p.company || "CASH");
+                          setOpPayerType(
+                            p.company.includes("Insurance") ||
+                              p.company.includes("Star")
+                              ? "Insurance"
+                              : "Direct Patient",
+                          );
+                          setOpPayer(p.company || "CASH");
+                          setOpSponsor(p.company || "CASH");
                         } else if (activeTab === "OP Order") {
-                          setOrderUhid(p.uhid); setOrderDoctor(p.doctor || "Dr. Sameer Sen 3105");
-                        } else if (activeTab === "Advance Collection") setAdvUhid(p.uhid);
-                        else if (activeTab === "Credit Note") { setCnUhid(p.uhid); setCnInvoiceNo(`IPCA26/${p.uhid}`); }
-                        else if (activeTab === "Refund") { setRefUhid(p.uhid); setRefInvoiceNo(`OPCA26/${p.uhid}`); }
-                        else if (activeTab === "Intimation") {
-                          setIntUhid(p.uhid); if (p.company && !p.company.includes("CASH")) setIntTpa(p.company);
+                          setOrderUhid(p.uhid);
+                          setOrderDoctor(p.doctor || "Dr. Sameer Sen 3105");
+                        } else if (activeTab === "Advance Collection")
+                          setAdvUhid(p.uhid);
+                        else if (activeTab === "Credit Note") {
+                          setCnUhid(p.uhid);
+                          setCnInvoiceNo(`IPCA26/${p.uhid}`);
+                        } else if (activeTab === "Refund") {
+                          setRefUhid(p.uhid);
+                          setRefInvoiceNo(`OPCA26/${p.uhid}`);
+                        } else if (activeTab === "Intimation") {
+                          setIntUhid(p.uhid);
+                          if (p.company && !p.company.includes("CASH"))
+                            setIntTpa(p.company);
                         } else {
                           setMalUhid(p.uhid);
                           setInvoiceSearch(p.uhid);
                         }
 
                         setIsPatientSearchModalOpen(false);
-                        toast.success("Patient Selected", `${p.patientName} (UHID: ${p.uhid}) loaded.`);
+                        toast.success(
+                          "Patient Selected",
+                          `${p.patientName} (UHID: ${p.uhid}) loaded.`,
+                        );
                       };
 
                       return (
-                        <tr key={p.uhid} onClick={selectThisPatient} className={`hover:bg-blue-50/50 cursor-pointer ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/40'}`}>
-                          <td className="px-3 py-2 text-center border-r border-slate-100 text-blue-600 font-bold hover:underline" onClick={(e) => { e.stopPropagation(); selectThisPatient(); }}>
+                        <tr
+                          key={p.uhid}
+                          onClick={selectThisPatient}
+                          className={`hover:bg-blue-50/50 cursor-pointer ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"}`}
+                        >
+                          <td
+                            className="px-3 py-2 text-center border-r border-slate-100 text-blue-600 font-bold hover:underline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              selectThisPatient();
+                            }}
+                          >
                             Select
                           </td>
-                          <td className="px-3 py-2 border-r border-slate-100 font-mono text-blue-700 font-bold">{p.uhid}</td>
-                          <td className="px-3 py-2 border-r border-slate-100 font-bold text-slate-900">{p.patientName}</td>
-                          <td className="px-3 py-2 border-r border-slate-100">{p.genderAge}</td>
-                          <td className="px-3 py-2 border-r border-slate-100 font-mono">{p.admissionDate ? new Date(p.admissionDate).toLocaleString('en-GB') : ''}</td>
-                          <td className="px-3 py-2 border-r border-slate-100">{p.company}</td>
-                          <td className="px-3 py-2 border-r border-slate-100 font-mono">{p.mobileNo}</td>
-                          <td className="px-3 py-2 border-r border-slate-100 font-mono">{p.dateOfBirth ? new Date(p.dateOfBirth).toLocaleDateString('en-GB') : ''}</td>
-                          <td className="px-3 py-2 border-r border-slate-100 truncate max-w-[300px]" title={p.address}>{p.address}</td>
-                          <td className="px-3 py-2 border-r border-slate-100 font-mono">-</td>
+                          <td className="px-3 py-2 border-r border-slate-100 font-mono text-blue-700 font-bold">
+                            {p.uhid}
+                          </td>
+                          <td className="px-3 py-2 border-r border-slate-100 font-bold text-slate-900">
+                            {p.patientName}
+                          </td>
+                          <td className="px-3 py-2 border-r border-slate-100">
+                            {p.genderAge}
+                          </td>
+                          <td className="px-3 py-2 border-r border-slate-100 font-mono">
+                            {p.admissionDate
+                              ? new Date(p.admissionDate).toLocaleString(
+                                  "en-GB",
+                                )
+                              : ""}
+                          </td>
+                          <td className="px-3 py-2 border-r border-slate-100">
+                            {p.company}
+                          </td>
+                          <td className="px-3 py-2 border-r border-slate-100 font-mono">
+                            {p.mobileNo}
+                          </td>
+                          <td className="px-3 py-2 border-r border-slate-100 font-mono">
+                            {p.dateOfBirth
+                              ? new Date(p.dateOfBirth).toLocaleDateString(
+                                  "en-GB",
+                                )
+                              : ""}
+                          </td>
+                          <td
+                            className="px-3 py-2 border-r border-slate-100 truncate max-w-[300px]"
+                            title={p.address}
+                          >
+                            {p.address}
+                          </td>
+                          <td className="px-3 py-2 border-r border-slate-100 font-mono">
+                            -
+                          </td>
                           <td className="px-3 py-2">{p.fatherName}</td>
                         </tr>
                       );
@@ -6117,30 +9485,292 @@ export default function BillingPage() {
             {/* Pagination Controls */}
             <div className="flex items-center justify-between border-t border-slate-200 px-4 py-2 bg-slate-50 text-xs font-bold text-slate-700 flex-shrink-0">
               <div className="flex items-center gap-1">
-                <Button disabled={advPage === 1} onClick={() => fetchAdvancedPatients(1)} variant="outline" size="xs" className="h-6 w-8 font-extrabold">&lt;&lt;</Button>
-                <Button disabled={advPage === 1} onClick={() => fetchAdvancedPatients(advPage - 1)} variant="outline" size="xs" className="h-6 w-8 font-extrabold">&lt;</Button>
-                <span className="px-2 font-bold text-slate-600">Page {advPage} of {Math.max(1, Math.ceil(advTotalCount / 10))}</span>
-                <Button disabled={advPage >= Math.ceil(advTotalCount / 10)} onClick={() => fetchAdvancedPatients(advPage + 1)} variant="outline" size="xs" className="h-6 w-8 font-extrabold">&gt;</Button>
-                <Button disabled={advPage >= Math.ceil(advTotalCount / 10)} onClick={() => fetchAdvancedPatients(Math.ceil(advTotalCount / 10))} variant="outline" size="xs" className="h-6 w-8 font-extrabold">&gt;&gt;</Button>
+                <Button
+                  disabled={advPage === 1}
+                  onClick={() => fetchAdvancedPatients(1)}
+                  variant="outline"
+                  size="xs"
+                  className="h-6 w-8 font-extrabold"
+                >
+                  &lt;&lt;
+                </Button>
+                <Button
+                  disabled={advPage === 1}
+                  onClick={() => fetchAdvancedPatients(advPage - 1)}
+                  variant="outline"
+                  size="xs"
+                  className="h-6 w-8 font-extrabold"
+                >
+                  &lt;
+                </Button>
+                <span className="px-2 font-bold text-slate-600">
+                  Page {advPage} of {Math.max(1, Math.ceil(advTotalCount / 10))}
+                </span>
+                <Button
+                  disabled={advPage >= Math.ceil(advTotalCount / 10)}
+                  onClick={() => fetchAdvancedPatients(advPage + 1)}
+                  variant="outline"
+                  size="xs"
+                  className="h-6 w-8 font-extrabold"
+                >
+                  &gt;
+                </Button>
+                <Button
+                  disabled={advPage >= Math.ceil(advTotalCount / 10)}
+                  onClick={() =>
+                    fetchAdvancedPatients(Math.ceil(advTotalCount / 10))
+                  }
+                  variant="outline"
+                  size="xs"
+                  className="h-6 w-8 font-extrabold"
+                >
+                  &gt;&gt;
+                </Button>
               </div>
               <div className="text-slate-600 font-bold">
-                Total Patients: <span className="text-blue-600">{displayAdvPatients.length}</span>
+                Total Patients:{" "}
+                <span className="text-blue-600">
+                  {displayAdvPatients.length}
+                </span>
               </div>
             </div>
 
             {/* Patient Selection Details Banner */}
             <div className="bg-slate-900 text-white px-4 py-2.5 text-xs flex items-center justify-between flex-shrink-0">
-              <span className="font-extrabold uppercase tracking-wide text-slate-400">Patient Selection Details</span>
+              <span className="font-extrabold uppercase tracking-wide text-slate-400">
+                Patient Selection Details
+              </span>
               <div className="flex gap-8 font-semibold">
-                <span>Name: <span className="text-blue-400 font-bold">-</span></span>
-                <span>Address: <span className="text-slate-300">-</span></span>
-                <span>Kin Name: <span className="text-slate-300">-</span></span>
+                <span>
+                  Name: <span className="text-blue-400 font-bold">-</span>
+                </span>
+                <span>
+                  Address: <span className="text-slate-300">-</span>
+                </span>
+                <span>
+                  Kin Name: <span className="text-slate-300">-</span>
+                </span>
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* ─── MODAL 4: INVOICE SEARCH DIRECTORY MODAL ───────────────────────── */}
+      {isInvoiceSearchModalOpen &&
+        (() => {
+          const filteredInvoices = invoices.filter((inv) => {
+            if (!invoiceModalSearchTerm.trim()) return true;
+            const term = invoiceModalSearchTerm.trim().toLowerCase();
+            return (
+              inv.invoiceNo.toLowerCase().includes(term) ||
+              inv.uhid.toLowerCase().includes(term) ||
+              inv.patientName.toLowerCase().includes(term) ||
+              inv.company.toLowerCase().includes(term) ||
+              (inv.encNo && inv.encNo.toLowerCase().includes(term))
+            );
+          });
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-xs overflow-y-auto p-4">
+              <div className="w-full max-w-[1200px] bg-white shadow-2xl border border-slate-200 flex flex-col rounded-xl overflow-hidden h-[85vh] my-4">
+                {/* Header */}
+                <div className="flex items-center gap-1 bg-slate-900 text-white px-4 py-2.5 text-xs font-bold flex-shrink-0">
+                  <span className="flex-1 font-bold text-sm tracking-wide">
+                    Invoice Search Directory
+                  </span>
+                  <Button
+                    size="sm"
+                    onClick={() => setIsInvoiceSearchModalOpen(false)}
+                    className="h-7 px-3 bg-red-600 hover:bg-red-700 text-white text-xs font-bold"
+                  >
+                    Close
+                  </Button>
+                </div>
+
+                {/* Filter Bar */}
+                <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-3 flex-shrink-0">
+                  <div className="flex items-center gap-2 flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-slate-400" />
+                    <Input
+                      type="text"
+                      value={invoiceModalSearchTerm}
+                      onChange={(e) =>
+                        setInvoiceModalSearchTerm(e.target.value)
+                      }
+                      placeholder="Search by Invoice No, UHID, Patient Name, or Enc No..."
+                      className="h-8 text-xs bg-white border-slate-300 font-medium"
+                      autoFocus
+                    />
+                    {invoiceModalSearchTerm && (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => setInvoiceModalSearchTerm("")}
+                        className="h-6 text-xs text-slate-500"
+                      >
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-500 font-bold">
+                    Found{" "}
+                    <span className="text-blue-600 font-black">
+                      {filteredInvoices.length}
+                    </span>{" "}
+                    Invoices
+                  </div>
+                </div>
+
+                {/* Table Body */}
+                <div className="flex-1 overflow-auto bg-white p-4">
+                  <table className="w-full text-xs text-left border rounded-lg overflow-hidden">
+                    <thead className="bg-slate-100 text-slate-700 font-bold sticky top-0 border-b border-slate-200 uppercase text-[10px]">
+                      <tr>
+                        <th className="px-3 py-2 text-center w-16 border-r border-slate-200">
+                          Action
+                        </th>
+                        <th className="px-3 py-2 border-r border-slate-200">
+                          Invoice No
+                        </th>
+                        <th className="px-3 py-2 border-r border-slate-200">
+                          UHID
+                        </th>
+                        <th className="px-3 py-2 border-r border-slate-200">
+                          Patient Name
+                        </th>
+                        <th className="px-3 py-2 border-r border-slate-200">
+                          Type
+                        </th>
+                        <th className="px-3 py-2 border-r border-slate-200">
+                          Company
+                        </th>
+                        <th className="px-3 py-2 border-r border-slate-200 text-right">
+                          Gross (₹)
+                        </th>
+                        <th className="px-3 py-2 border-r border-slate-200 text-right">
+                          Net Amount (₹)
+                        </th>
+                        <th className="px-3 py-2 border-r border-slate-200 text-right">
+                          Paid (₹)
+                        </th>
+                        <th className="px-3 py-2 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                      {filteredInvoices.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={10}
+                            className="p-8 text-center text-slate-400 font-bold"
+                          >
+                            No matching invoices found in database.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredInvoices.map((inv, idx) => {
+                          const handleApplyInvoice = () => {
+                            if (activeTab === "Refund") {
+                              handleSelectRefundInvoice(inv.invoiceNo);
+                            } else if (activeTab === "Credit Note") {
+                              handleSelectCreditNoteInvoice(inv.invoiceNo);
+                            } else if (activeTab === "OP Billing") {
+                              setOpBillingInvoiceNo(inv.invoiceNo);
+                              setOpBillingUhid(inv.uhid);
+                            } else {
+                              setMalBillNo(inv.invoiceNo);
+                            }
+                            setIsInvoiceSearchModalOpen(false);
+                            toast.success(
+                              "Invoice Selected",
+                              `Invoice ${inv.invoiceNo} (${inv.patientName}) loaded.`,
+                            );
+                          };
+
+                          return (
+                            <tr
+                              key={inv.id || inv.invoiceNo}
+                              onClick={handleApplyInvoice}
+                              className={`hover:bg-blue-50/50 cursor-pointer ${idx % 2 === 0 ? "bg-white" : "bg-slate-50/40"}`}
+                            >
+                              <td className="px-3 py-2 text-center border-r border-slate-100">
+                                <Button
+                                  size="xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleApplyInvoice();
+                                  }}
+                                  className="h-5 text-[10px] px-2 bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                                >
+                                  Select
+                                </Button>
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-100 font-mono font-bold text-blue-700">
+                                {inv.invoiceNo}
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-100 font-mono text-slate-600">
+                                {inv.uhid}
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-100 font-bold text-slate-900">
+                                {inv.patientName}
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-100">
+                                {inv.type}
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-100 text-slate-600">
+                                {inv.company}
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-100 text-right font-mono text-slate-500">
+                                ₹{inv.grossAmt.toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-100 text-right font-mono font-bold text-slate-800">
+                                ₹{inv.netAmt.toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 border-r border-slate-100 text-right font-mono text-emerald-600 font-bold">
+                                ₹{inv.paidPatient.toFixed(2)}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    inv.status === "Settled"
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                      : inv.status === "Refundable"
+                                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                                        : inv.status === "Cancelled"
+                                          ? "bg-rose-50 text-rose-700 border-rose-200"
+                                          : "bg-blue-50 text-blue-700 border-blue-200"
+                                  }
+                                >
+                                  {inv.status}
+                                </Badge>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* Quick Add Doctor Modal */}
+      <AddDoctorModal
+        isOpen={isAddDoctorModalOpen}
+        onClose={() => setIsAddDoctorModalOpen(false)}
+        onDoctorCreated={(newDoc) => {
+          if (doctorTargetField === "prescribing") {
+            setOpBillingPrescribingDoctor(newDoc);
+          } else if (doctorTargetField === "opDoctor") {
+            setOpDoctor(newDoc);
+          } else if (doctorTargetField === "orderDoctor") {
+            setOrderDoctor(newDoc);
+          }
+        }}
+      />
     </div>
   );
 }

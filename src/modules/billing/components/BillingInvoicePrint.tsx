@@ -47,32 +47,37 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
     }
 
     return (
-      <div ref={ref} className="p-8 bg-white text-black font-sans text-[11px] leading-normal" style={{ width: '8.27in', minHeight: '11.69in' }}>
+      <div ref={ref} className="p-8 bg-white text-slate-900 font-sans text-[11px] leading-normal" style={{ width: '8.27in', minHeight: '11.69in' }}>
         
-        {/* Top Header matching Patient Registration Details Print */}
-        <div className="flex justify-between items-start mb-4 pb-3 border-b-[1.5px] border-black">
-          {/* Logo on Left */}
-          <div className="h-16 flex items-center justify-center">
-            <img 
-              src={`${window.location.origin}/cmk-logo.png`} 
-              alt="CMK Healthcare" 
-              className="h-full object-contain" 
-            />
-          </div>
+        {/* Hospital Header Matching Report Template */}
+        <div className="text-center space-y-0.5 pb-2">
+          <h1 className="text-xl font-black tracking-wide font-serif text-slate-900 uppercase">
+            CMK HEALTHCARE PVT. LTD.
+          </h1>
+          <p className="text-[11px] text-slate-600 font-medium">
+            Plot No. 12-A, Institutional Area, Sector 62, New Delhi, Delhi 110092
+          </p>
+          <p className="text-[10px] text-slate-500 font-medium">
+            NABH & NABL Accredited | GSTIN: 07AAAAC1234F1Z8 | Tel: +91 11 4988 5000
+          </p>
+        </div>
+        <hr className="border-t-2 border-slate-900 my-2" />
 
-          {/* Clinic Details on Right Corner */}
-          <div className="leading-tight text-right text-black">
-            <h1 className="font-extrabold text-[13px] uppercase tracking-wide">CMK HEALTHCARE PVT. LTD.</h1>
-            <p className="text-[10px]">M 158/5, Chittaranjan Park, New Delhi</p>
-            <p className="text-[10px]">Phone: 011-41552233, 88000200 | Fax:</p>
-            <p className="text-[10px]">Email: info@curemyknee.com | WebSite: www.curemyknee.com</p>
+        {/* Report Metadata Sub-Header */}
+        <div className="flex items-center justify-between text-xs font-sans pb-2 border-b border-slate-300 mb-4">
+          <div>
+            <h2 className="text-sm font-bold uppercase text-slate-900 tracking-wide">
+              {invoice.type === "IP" ? "INPATIENT (IP) OFFICIAL INVOICE & RECEIPT" : "OUTPATIENT (OP) OFFICIAL INVOICE & RECEIPT"}
+            </h2>
+            <p className="text-slate-500 text-[10px] mt-0.5">
+              Invoice #: <strong>{invoice.invoiceNo}</strong> | Payer: <strong>{invoice.company || "CASH"}</strong>
+            </p>
+          </div>
+          <div className="text-right text-slate-600 text-[10px]">
+            <p>Invoice Date: <strong>{formattedDate}</strong></p>
+            <p>Generated: <strong>{format(new Date(), "dd/MM/yyyy, HH:mm:ss")}</strong></p>
           </div>
         </div>
-
-        {/* Document Title */}
-        <h2 className="text-center font-bold text-[13px] mb-3 uppercase tracking-wide">
-          {invoice.type === "IP" ? "INPATIENT (IP) OFFICIAL INVOICE & RECEIPT" : "OUTPATIENT (OP) OFFICIAL INVOICE & RECEIPT"}
-        </h2>
 
         {/* Patient & Invoice Details Grid matching Registration Details layout */}
         <div className="border-t-[1.5px] border-b-[1.5px] border-black pt-2 pb-2 mb-4 space-y-1">
@@ -216,10 +221,22 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
           </div>
         )}
 
-        {/* Footer Signature Block */}
-        <div className="flex justify-end items-end pt-14 text-[11px]">
+        {/* Official 3-Column Signatures Matching Report Template */}
+        <div className="mt-14 pt-6 flex justify-between items-center text-center text-xs font-sans text-slate-800">
           <div>
-            <div className="border-t border-black w-44 pt-1 text-center font-bold">Authorized Cashier</div>
+            <div className="w-40 border-b border-slate-400 mb-1 mx-auto"></div>
+            <div className="font-bold">Prepared By</div>
+            <div className="text-[10px] text-slate-500">Billing Executive</div>
+          </div>
+          <div>
+            <div className="w-40 border-b border-slate-400 mb-1 mx-auto"></div>
+            <div className="font-bold">Verified By</div>
+            <div className="text-[10px] text-slate-500">Accounts Manager</div>
+          </div>
+          <div>
+            <div className="w-40 border-b border-slate-400 mb-1 mx-auto"></div>
+            <div className="font-bold">Authorized Signatory</div>
+            <div className="text-[10px] text-slate-500">Medical Superintendent</div>
           </div>
         </div>
 

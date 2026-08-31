@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -108,8 +109,16 @@ type TabKey = SettingsCategory | "bedCategories";
 // ─── Component ──────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab") as TabKey | null;
 
-  const [activeTab, setActiveTab] = useState<TabKey>("bedCategories");
+  const [activeTab, setActiveTab] = useState<TabKey>(() => urlTab || "bedCategories");
+
+  useEffect(() => {
+    if (urlTab) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
   const [items, setItems] = useState<MasterOption[]>([]);
   const [newItem, setNewItem] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -161,6 +170,9 @@ export default function SettingsPage() {
       setNewItem("");
       setIsAddModalOpen(false);
       toast.success("Option Added", `"${created.value}" has been added to ${CONFIGS[activeTab as SettingsCategory].title}.`);
+      if (activeTab === "branches") {
+        window.dispatchEvent(new CustomEvent("cmk:branches-updated"));
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to add item";
       toast.error("Add Failed", msg);
@@ -174,9 +186,12 @@ export default function SettingsPage() {
     if (activeTab === "bedCategories" || !itemToDelete) return;
     setDeletingId(itemToDelete.id);
     try {
-      await deleteSettingsItem(activeTab as SettingsCategory, itemToDelete.id);
+      await deleteSettingsItem(activeTab as SettingsCategory, itemToDelete.id, itemToDelete.value);
       setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
       toast.success("Option Removed", `"${itemToDelete.value}" has been deleted.`);
+      if (activeTab === "branches") {
+        window.dispatchEvent(new CustomEvent("cmk:branches-updated"));
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to delete item";
       toast.error("Delete Failed", msg);
@@ -194,69 +209,84 @@ export default function SettingsPage() {
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
-    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-7xl mx-auto animate-fade-in">
+    <div className="w-full flex-1 flex flex-col p-4 sm:p-6 space-y-5 animate-fade-in min-h-0">
       {/* Header Banner */}
-      <div className="flex items-center justify-between flex-wrap gap-4 pb-2 border-b border-slate-100">
+      <div className="flex items-center justify-between flex-wrap gap-4 p-4 bg-white border border-slate-200/80 rounded-xl shadow-2xs">
         <div className="flex items-center gap-3.5">
-          <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-blue-50 flex items-center justify-center text-primary shadow-sm border border-blue-100 shrink-0">
-            <Settings2 className="h-5 w-5 sm:h-6 sm:w-6" />
+          <div className="h-11 w-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+            <Settings2 className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">Application Settings</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <h2 className="text-lg font-black text-slate-800 tracking-tight">Application Settings</h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
               Configure CMK CareSuite master values, dropdown list options, and system parameters
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+          <span>Active Masters: <strong className="text-blue-600 font-black">10 Modules</strong></span>
+        </div>
       </div>
 
       {/* ── Responsive Layout ── */}
-      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-4 sm:gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5 items-start w-full flex-1">
 
-        {/* ── Sidebar Navigation (Horizontal scroll on mobile, vertical list on desktop) ── */}
-        <div className="flex md:flex-col overflow-x-auto gap-1 pb-2 md:pb-0 scrollbar-none shrink-0 border-b md:border-b-0 border-slate-200">
+        {/* ── Sidebar Navigation ── */}
+        <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-2xs flex lg:flex-col overflow-x-auto gap-1 scrollbar-none shrink-0">
+          <div className="hidden lg:block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1 mb-1">
+            Master Configurations
+          </div>
           <button
+            type="button"
             onClick={() => setActiveTab("bedCategories")}
-            className={`whitespace-nowrap text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+            className={`whitespace-nowrap text-left px-3.5 py-2.5 rounded-lg text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer ${
               activeTab === "bedCategories"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
             }`}
           >
-            <BedDouble className="h-4 w-4" />
-            Bed Categories
+            <div className="flex items-center gap-2.5">
+              <BedDouble className="h-4 w-4 shrink-0" />
+              <span>Bed Categories</span>
+            </div>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold ${activeTab === "bedCategories" ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-500"}`}>
+              ATD
+            </span>
           </button>
 
           {MASTER_TABS.map((tab) => (
             <button
               key={tab}
+              type="button"
               onClick={() => setActiveTab(tab)}
-              className={`whitespace-nowrap text-left px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              className={`whitespace-nowrap text-left px-3.5 py-2.5 rounded-lg text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer ${
                 activeTab === tab
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
               }`}
             >
-              {CONFIGS[tab].icon}
-              {SIDEBAR_LABELS[tab]}
+              <div className="flex items-center gap-2.5">
+                {CONFIGS[tab].icon}
+                <span>{SIDEBAR_LABELS[tab]}</span>
+              </div>
             </button>
           ))}
         </div>
 
         {/* ── Content Area ── */}
-        <div className="min-w-0">
+        <div className="min-w-0 w-full flex-1">
           {activeTab === "bedCategories" ? (
             <BedCategoriesPanel />
           ) : config ? (
-            <Card className="border border-slate-150 shadow-sm rounded-xl w-full">
-            <CardHeader className="p-6 pb-4 border-b border-slate-50 bg-slate-50/50 rounded-t-xl flex flex-row items-center justify-between">
+            <Card className="border border-slate-200/80 shadow-2xs rounded-xl w-full bg-white">
+            <CardHeader className="p-5 pb-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-base font-bold text-slate-800">{config.title}</CardTitle>
                 <CardDescription className="text-xs text-slate-500 mt-1">
                   {config.description}
                 </CardDescription>
               </div>
-              <Button onClick={() => setIsAddModalOpen(true)} size="sm" className="h-9 text-xs gap-1.5 shadow-sm bg-blue-600 hover:bg-blue-700">
+              <Button onClick={() => setIsAddModalOpen(true)} size="sm" className="h-9 text-xs gap-1.5 shadow-xs bg-blue-600 hover:bg-blue-700 font-bold">
                 <Plus className="h-4 w-4" />
                 Add Option
               </Button>
