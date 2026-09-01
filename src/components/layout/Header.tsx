@@ -278,8 +278,8 @@ export default function Header() {
                 }
               }}
             >
-              <SelectTrigger className="h-4 p-0 border-0 shadow-none bg-transparent text-xs font-black text-slate-800 focus:ring-0 gap-1">
-                <SelectValue />
+              <SelectTrigger title={activeBranch} className="h-4 p-0 border-0 shadow-none bg-transparent text-xs font-black text-slate-800 focus:ring-0 gap-1 max-w-[120px] sm:max-w-[180px]">
+                <span className="truncate block"><SelectValue /></span>
               </SelectTrigger>
               <SelectContent align="end" className="bg-white border-slate-200 min-w-[200px]">
                 {branchesList.map((b) => (
@@ -312,7 +312,7 @@ export default function Header() {
           </Avatar>
           <div className="hidden md:block text-right">
             <p className="text-xs font-semibold text-slate-700 leading-none">Dr. Admin</p>
-            <p className="text-[10px] text-blue-600 font-bold leading-none mt-0.5">{activeBranch}</p>
+            <p className="text-[10px] text-blue-600 font-bold leading-none mt-0.5 truncate max-w-[80px] lg:max-w-[120px]" title={activeBranch}>{activeBranch}</p>
           </div>
         </div>
       </div>

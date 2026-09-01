@@ -712,6 +712,10 @@ export default function BillingPage() {
   const [ipChecklistNursing, setIpChecklistNursing] = useState(true);
   const [ipChecklistAuditor, setIpChecklistAuditor] = useState(false);
 
+  // ─── Audit Bill Modal State ────────────────────────────────────────────────
+  const [isAuditBillModalOpen, setIsAuditBillModalOpen] = useState(false);
+  const [auditBillRemarks, setAuditBillRemarks] = useState("");
+
   // ─── IP Discharge Modal State ──────────────────────────────────────────────
   const [isIpDischargeModalOpen, setIsIpDischargeModalOpen] = useState(false);
   const [ipDischargeMode, setIpDischargeMode] = useState<
@@ -6097,7 +6101,7 @@ export default function BillingPage() {
                       IP Status:
                     </span>
                     <button
-                      onClick={() => setIpStatus("Audit Bill")}
+                      onClick={() => setIsAuditBillModalOpen(true)}
                       className={`h-5 px-2 text-[9px] font-bold rounded-sm border transition-colors ${ipStatus === "Audit Bill" ? "bg-red-500 text-white border-red-600" : "bg-white text-red-600 border-red-300 hover:bg-red-50"}`}
                     >
                       Audit Bill
@@ -8376,6 +8380,45 @@ export default function BillingPage() {
               ref={printInvoiceRef}
               invoice={printInvoiceData}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ─── MODAL 2.4: AUDIT BILL MODAL ───────────── */}
+      {isAuditBillModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4">
+          <div className="bg-[#ebf8fa] border-[3px] border-[#3bc6db] w-[550px] rounded shadow-2xl overflow-hidden flex flex-col">
+            <div className="bg-[#c2eff5] py-2 text-center text-[#1c6a78] font-semibold text-sm border-b border-[#3bc6db]">
+              Bill Audit (Audit Details)
+            </div>
+            <div className="p-6 pb-5 flex flex-col gap-4">
+              <div className="flex gap-4">
+                <span className="text-xs font-semibold text-slate-700 w-16 pt-2">Remarks</span>
+                <textarea
+                  className="flex-1 h-32 border border-slate-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#3bc6db] focus:border-[#3bc6db] bg-white shadow-sm resize-none"
+                  value={auditBillRemarks}
+                  onChange={(e) => setAuditBillRemarks(e.target.value)}
+                ></textarea>
+              </div>
+              <div className="flex justify-center gap-2.5 mt-2">
+                <button
+                  className="bg-[#2c65b5] hover:bg-[#1a4a8c] text-white px-7 py-1.5 rounded shadow-sm text-xs font-semibold transition-colors"
+                  onClick={() => {
+                    setIpStatus("Audit Bill");
+                    setIsAuditBillModalOpen(false);
+                    toast.success("Audit Details Saved", "The bill audit remarks have been recorded successfully.");
+                  }}
+                >
+                  Save
+                </button>
+                <button
+                  className="bg-[#3e566b] hover:bg-[#2a3c4c] text-white px-7 py-1.5 rounded shadow-sm text-xs font-semibold transition-colors"
+                  onClick={() => setIsAuditBillModalOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -1,4 +1,5 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   ClipboardList,
   BarChart3,
@@ -10,6 +11,7 @@ import {
   Settings,
   ArrowLeft,
   Search,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -63,6 +65,8 @@ const NAV_ITEMS = [
 ];
 
 export default function Sidebar() {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const navigate = useNavigate();
   const location = useLocation();
   const { isCollapsed, toggleSidebar, isMobileOpen, closeMobileSidebar } = useSidebar();
   const {
@@ -428,10 +432,33 @@ export default function Sidebar() {
       )}
 
       {/* Bottom Profile Section */}
-      <div className="p-3 border-t border-white/10 bg-slate-950/40">
+      <div className="p-3 border-t border-white/10 bg-slate-950/40 relative">
+        {showProfileMenu && (
+          <>
+            <div 
+              className="fixed inset-0 z-40" 
+              onClick={() => setShowProfileMenu(false)}
+            />
+            <div className="absolute bottom-[calc(100%-8px)] left-3 mb-2 w-[calc(100%-24px)] bg-slate-800 border border-slate-700 rounded-lg shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 origin-bottom-left">
+              <div className="p-1">
+                <button 
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    navigate("/login");
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-md transition-colors font-bold text-left"
+                >
+                  <LogOut className="h-4 w-4 shrink-0" />
+                  {!isCollapsed && <span>Sign out</span>}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
         <div
+          onClick={() => setShowProfileMenu(!showProfileMenu)}
           className={cn(
-            "flex items-center rounded-lg hover:bg-white/5 cursor-pointer transition-all duration-300",
+            "flex items-center rounded-lg hover:bg-white/5 cursor-pointer transition-all duration-300 relative z-50",
             isCollapsed ? "justify-center p-1" : "gap-3 px-2 py-1.5"
           )}
         >

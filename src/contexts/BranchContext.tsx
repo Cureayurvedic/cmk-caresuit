@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { getSettingsItems } from "@/api/settingsApi";
+import React, { createContext, useContext, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setActiveBranch as setReduxActiveBranch, fetchBranches } from "@/store/slices/branchSlice";
 
 interface BranchContextType {
   activeBranch: string;
@@ -11,42 +12,25 @@ interface BranchContextType {
 const BranchContext = createContext<BranchContextType | undefined>(undefined);
 
 export function BranchProvider({ children }: { children: React.ReactNode }) {
-  const [activeBranch, setActiveBranchState] = useState<string>(() => {
-    return localStorage.getItem("cmk_active_branch") || "CMK Main";
-  });
+  const dispatch = useAppDispatch();
+  const activeBranch = useAppSelector((state) => state.branch.activeBranch);
+  const branchesList = useAppSelector((state) => state.branch.branchesList);
 
-  const [branchesList, setBranchesList] = useState<string[]>(["CMK Main", "CMK Branch 1", "CMK Branch 2"]);
-
-  const refreshBranches = useCallback(async () => {
-    try {
-      const res = await getSettingsItems("branches");
-      if (res.items && res.items.length > 0) {
-        const fetched = res.items.map((i) => i.value);
-        setBranchesList(fetched);
-        // If current active branch is not in the list, default to first item
-        if (fetched.length > 0 && (!activeBranch || !fetched.includes(activeBranch))) {
-          setActiveBranchState(fetched[0]);
-          localStorage.setItem("cmk_active_branch", fetched[0]);
-        }
-      }
-    } catch (err) {
-      console.warn("Failed to load branches in BranchContext:", err);
-    }
-  }, [activeBranch]);
+  const refreshBranches = async () => {
+    await dispatch(fetchBranches());
+  };
 
   useEffect(() => {
-    refreshBranches();
+    dispatch(fetchBranches());
     const handleUpdate = () => {
-      refreshBranches();
+      dispatch(fetchBranches());
     };
     window.addEventListener("cmk:branches-updated", handleUpdate);
     return () => window.removeEventListener("cmk:branches-updated", handleUpdate);
-  }, [refreshBranches]);
+  }, [dispatch]);
 
   const setActiveBranch = (branch: string) => {
-    setActiveBranchState(branch);
-    localStorage.setItem("cmk_active_branch", branch);
-    window.dispatchEvent(new CustomEvent("cmk:branch-changed", { detail: branch }));
+    dispatch(setReduxActiveBranch(branch));
   };
 
   return (

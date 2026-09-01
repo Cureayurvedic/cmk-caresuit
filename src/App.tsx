@@ -1,4 +1,6 @@
 import { RouterProvider } from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "@/store";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ToastProvider } from "@/components/ui/toast-notification";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -7,14 +9,16 @@ import router from "@/router";
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ToastProvider>
-        <BranchProvider>
-          <TooltipProvider>
-            <RouterProvider router={router} />
-          </TooltipProvider>
-        </BranchProvider>
-      </ToastProvider>
-    </AuthProvider>
+    <Provider store={store}>
+      <AuthProvider>
+        <ToastProvider>
+          <BranchProvider>
+            <TooltipProvider>
+              <RouterProvider router={router} />
+            </TooltipProvider>
+          </BranchProvider>
+        </ToastProvider>
+      </AuthProvider>
+    </Provider>
   );
 }
