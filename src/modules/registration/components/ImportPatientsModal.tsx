@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { importPatientsBulk, PatientData } from "@/api/patientApi";
 import { useToast } from "@/components/ui/toast-notification";
+import { useBranch } from "@/contexts/BranchContext";
 
 interface ImportPatientsModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface ImportPatientsModalProps {
 
 export default function ImportPatientsModal({ isOpen, onClose, onSuccess }: ImportPatientsModalProps) {
   const toast = useToast();
+  const { activeBranch } = useBranch();
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<Partial<PatientData>[]>([]);
   const [isParsing, setIsParsing] = useState(false);
@@ -170,7 +172,11 @@ export default function ImportPatientsModal({ isOpen, onClose, onSuccess }: Impo
     if (parsedData.length === 0) return;
     setIsSubmitting(true);
     try {
-      const res = await importPatientsBulk(parsedData);
+      const formattedData = parsedData.map((p) => ({
+        ...p,
+        hcf: p.hcf || activeBranch,
+      }));
+      const res = await importPatientsBulk(formattedData);
       setImportResult(res);
       toast.success(
         "Bulk Import Completed!",

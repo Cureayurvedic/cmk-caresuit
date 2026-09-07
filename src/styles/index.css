@@ -35,13 +35,13 @@
 
     --radius: 0.5rem;
 
-    /* Sidebar */
-    --sidebar-bg: 222 47% 14%;
-    --sidebar-hover: 222 47% 20%;
-    --sidebar-active: 213 94% 52%;
-    --sidebar-text: 215 20% 75%;
+    /* Sidebar - Steel Blue Background (#81A4C7) & Deep Navy Active (#051A7C) */
+    --sidebar-bg: 210 40% 64%;
+    --sidebar-hover: 229 92% 25%;
+    --sidebar-active: 229 92% 25%;
+    --sidebar-text: 229 92% 25%;
     --sidebar-text-active: 0 0% 100%;
-    --sidebar-border: 222 47% 20%;
+    --sidebar-border: 229 92% 20%;
     --sidebar-width: 240px;
 
     /* Form fields */
@@ -114,17 +114,13 @@
 
   /* Sidebar nav item */
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer select-none;
-    color: hsl(var(--sidebar-text));
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 cursor-pointer select-none text-slate-200;
   }
   .nav-item:hover {
-    background: hsl(var(--sidebar-hover));
-    color: hsl(var(--sidebar-text-active));
+    @apply bg-white/10 text-white;
   }
   .nav-item.active {
-    background: hsl(var(--sidebar-active));
-    color: hsl(var(--sidebar-text-active));
-    @apply shadow-md;
+    @apply bg-blue-600 text-white font-extrabold shadow-md shadow-blue-950/40;
   }
 
   /* Card hover effect */

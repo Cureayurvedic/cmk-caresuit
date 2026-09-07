@@ -52,6 +52,7 @@ const router = createBrowserRouter([
             path: "billing",
             element: <BillingPage />,
           },
+          /* ATD and Wards commented out per user request
           {
             path: "atd",
             element: <AtdPage />,
@@ -60,6 +61,7 @@ const router = createBrowserRouter([
             path: "wards",
             element: <WardsPage />,
           },
+          */
           {
             path: "settings",
             element: <SettingsPage />,

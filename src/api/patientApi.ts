@@ -32,7 +32,7 @@ export interface PatientData {
   nationality?: string;
   aadhaarCard?: string;
   panNo?: string;
-  payerType: string;
+  payerType?: string;
   payer?: string;
   sponsor?: string;
   provider?: string;
@@ -50,6 +50,12 @@ export interface PatientData {
   handleWithCare?: boolean;
   sendPromoSms?: boolean;
   sendPromoEmail?: boolean;
+  voterId?: string;
+  covidStatus?: string;
+  passportNo?: string;
+  visaNo?: string;
+  passportExpiry?: string;
+  visaExpiry?: string;
   createdAt?: string;
 }
 
@@ -66,6 +72,8 @@ export interface PatientQueryParams {
   company?: string;
   identityNo?: string;
   address?: string;
+  hcf?: string;
+  branch?: string;
 }
 
 export async function createPatient(data: PatientData) {
@@ -98,6 +106,8 @@ export async function getPatients(params?: PatientQueryParams) {
   if (params?.company) query.append("company", params.company);
   if (params?.identityNo) query.append("identityNo", params.identityNo);
   if (params?.address) query.append("address", params.address);
+  if (params?.hcf) query.append("hcf", params.hcf);
+  if (params?.branch) query.append("branch", params.branch);
 
   const response = await fetch(`${API_BASE_URL}/patients?${query.toString()}`);
   const result = await response.json();

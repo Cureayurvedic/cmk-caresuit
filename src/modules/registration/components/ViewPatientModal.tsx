@@ -90,7 +90,7 @@ export default function ViewPatientModal({ isOpen, onClose, patient }: ViewPatie
                 <Separator />
                 <div className="grid grid-cols-2 gap-y-2.5 gap-x-4 text-xs">
                   <div>
-                    <span className="text-slate-400 block">Relation & Guardian</span>
+                    <span className="text-slate-400 block">Attendant Relation & Name</span>
                     <span className="font-medium text-slate-700">{patient.guardianRelation || "Relation"} — {patient.guardianName || "N/A"}</span>
                   </div>
                   <div>

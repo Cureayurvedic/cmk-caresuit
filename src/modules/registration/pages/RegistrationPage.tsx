@@ -4,9 +4,9 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  Save, Printer, Plus, Copy, Search, Upload, Trash2, Calendar,
-  User, Phone, AlertCircle, Shield, CreditCard,
-  Users, FileText, Tag, ChevronDown, Sliders, Loader2, FileSpreadsheet, Check, Building2
+  Save, Printer, Plus, Search, Upload, Trash2, Calendar,
+  User, Phone, AlertCircle, Shield,
+  FileText, ChevronDown, Loader2, FileSpreadsheet, Check, Building2
 } from "lucide-react";
 import { format } from "date-fns";
 import { Country, State, City } from "country-state-city";
@@ -29,9 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -43,9 +40,12 @@ interface SearchSelectProps {
   onChange: (val: string) => void;
   options: string[];
   placeholder?: string;
+  required?: boolean;
+  className?: string;
+  dropUp?: boolean;
 }
 
-function SearchSelect({ value, onChange, options, placeholder = "Select..." }: SearchSelectProps) {
+function SearchSelect({ value, onChange, options, placeholder = "Select...", required, className, dropUp }: SearchSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -72,15 +72,24 @@ function SearchSelect({ value, onChange, options, placeholder = "Select..." }: S
           setIsOpen(!isOpen);
           setSearchTerm("");
         }}
-        className="flex h-8 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-1 text-xs shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer"
+        className={cn(
+          "flex h-8.5 w-full items-center justify-between rounded-md border border-slate-300 px-3 py-1 text-xs sm:text-sm font-semibold text-slate-900 shadow-2xs cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring transition-colors",
+          required ? "bg-[#fffde6]" : "bg-white",
+          className
+        )}
       >
         <span className="truncate">{value || placeholder}</span>
-        <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0 ml-2" />
+        <ChevronDown className="h-3.5 w-3.5 opacity-60 shrink-0 ml-2" />
       </div>
 
       {/* Options overlay */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-slate-200 bg-white p-1 text-slate-900 shadow-md">
+        <div
+          className={cn(
+            "absolute z-50 max-h-60 w-full overflow-auto rounded-md border border-slate-300 bg-white p-1 text-slate-900 shadow-xl",
+            dropUp ? "bottom-full mb-1" : "top-full mt-1"
+          )}
+        >
           <div className="sticky top-0 bg-white pb-1 z-10">
             <input
               type="text"
@@ -88,7 +97,7 @@ function SearchSelect({ value, onChange, options, placeholder = "Select..." }: S
               placeholder="Search..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex h-7 w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus:border-blue-400"
+              className="flex h-7 w-full rounded-md border border-slate-200 bg-white px-2 py-1 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus:border-blue-400 font-medium"
             />
           </div>
           <div className="space-y-0.5 mt-1">
@@ -104,7 +113,10 @@ function SearchSelect({ value, onChange, options, placeholder = "Select..." }: S
                     onChange(opt);
                     setIsOpen(false);
                   }}
-                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-xs outline-none hover:bg-slate-100 hover:text-slate-900"
+                  className={cn(
+                    "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-xs font-semibold outline-none hover:bg-blue-50 hover:text-blue-900",
+                    value === opt && "bg-blue-100 text-blue-900 font-bold"
+                  )}
                 >
                   {opt}
                 </div>
@@ -126,8 +138,8 @@ const FIELD_LABELS: Record<string, string> = {
   gender: "Gender",
   dob: "Date of Birth",
   age: "Age",
-  guardianName: "Guardian Name",
-  guardianRelation: "Guardian Relation",
+  guardianName: "Attendant Name",
+  guardianRelation: "Attendant Relation",
   mobile: "Mobile Number",
   address: "Address",
   country: "Country",
@@ -159,7 +171,7 @@ const registrationSchema = z.object({
   maritalStatus: z.string().optional(),
   dob: z.string().optional(),
   age: z.string().optional(),
-  guardianName: z.string().min(1, "Guardian Name is required").regex(/^[A-Za-z\s]+$/, "Only alphabets are allowed in Guardian Name"),
+  guardianName: z.string().min(1, "Attendant Name is required").regex(/^[A-Za-z\s]+$/, "Only alphabets are allowed in Attendant Name"),
   guardianRelation: z.string().optional(),
   regDate: z.string(),
   // Contact
@@ -180,51 +192,20 @@ const registrationSchema = z.object({
   nationality: z.string(),
   aadhaarCard: z.string().regex(/^(\d{4} \d{4} \d{4})?$/, "Aadhaar must be exactly 12 digits").optional().or(z.literal("")),
   panNo: z.string().regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN format").optional().or(z.literal("")),
-  // Payer
-  payerType: z.string(),
-  payer: z.string().optional(),
-  sponsor: z.string().optional(),
-  // Referral
-  provider: z.string().optional(),
-  leadSource: z.string().optional(),
-  referredType: z.string().optional(),
-  referredBy: z.string().optional(),
-  hcf: z.string().optional(),
-  status: z.string(),
-  remarks: z.string().optional(),
-  // Other
-  religion: z.string().optional(),
-  occupation: z.string().optional(),
-  isVip: z.boolean(),
-  isAnimation: z.boolean(),
-  nameMasking: z.boolean(),
-  handleWithCare: z.boolean(),
-  sendPromoSms: z.boolean(),
-  sendPromoEmail: z.boolean(),
-  // Custom Fields
-  voterId: z.string().optional(),
-  covidStatus: z.string().optional(),
-  visaNo: z.string().optional(),
-  visaExpiry: z.string().optional(),
-  passportNo: z.string().optional(),
-  passportExpiry: z.string().optional(),
 });
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
 
 // ─── Helper Components ─────────────────────────────────────────────────────────
-function SectionHeader({ icon: Icon, title, color = "text-primary" }: {
+function SectionHeader({ icon: Icon, title, color = "text-[#0f2b48]" }: {
   icon: React.ElementType;
   title: string;
   color?: string;
 }) {
   return (
-    <div className={cn(
-      "flex items-center gap-2 text-xs font-semibold uppercase tracking-wider px-3 py-2 rounded-md mb-3",
-      "bg-primary/5 border-l-4 border-primary text-primary"
-    )}>
-      <Icon className={cn("h-3.5 w-3.5", color)} />
-      {title}
+    <div className="-mx-4 -mt-4 mb-3.5 px-4 py-2.5 bg-[#cee6f8] border-b border-[#a9d4f5] text-[#0f2b48] font-extrabold text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2 rounded-t-xl">
+      <Icon className={cn("h-4 w-4 text-[#1b3d5b]", color)} />
+      <span>{title}</span>
     </div>
   );
 }
@@ -255,13 +236,13 @@ function FormField({
 }) {
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <Label className={cn("text-[11px] font-medium text-slate-500", required && "after:content-['_*'] after:text-red-500")}>
+      <Label className={cn("text-xs font-bold text-slate-700", required && "after:content-['_*'] after:text-red-500 after:font-extrabold")}>
         {label}
       </Label>
       {children}
       {error && (
-        <span className="text-[10px] text-red-500 flex items-center gap-1 mt-0.5">
-          <AlertCircle className="h-3 w-3" />{error}
+        <span className="text-[11px] font-semibold text-red-600 flex items-center gap-1 mt-0.5">
+          <AlertCircle className="h-3 w-3 shrink-0" />{error}
         </span>
       )}
     </div>
@@ -448,7 +429,7 @@ const NATIONALITIES = [
   "Zimbabwean (Zimbabwe)",
   "Other"
 ];
-const GUARDIAN_RELATIONS = ["S/O", "D/O", "W/O", "C/O", "Father", "Mother", "Husband", "Wife", "Guardian", "Self", "Other"];
+const GUARDIAN_RELATIONS = ["Father", "Mother", "Son", "Daughter", "Husband", "Wife", "Brother", "Sister", "Guardian", "Self", "Other"];
 const EMERGENCY_RELATIONSHIPS = [
   "Aunty",
   "Brother",
@@ -463,48 +444,20 @@ const EMERGENCY_RELATIONSHIPS = [
   "GrandFather",
   "GrandMother",
   "GrandSon",
+  "Guardian",
   "Husband",
   "Interprator",
   "Mother",
   "Mother In Law",
   "Nephew",
   "Niece",
+  "Other",
   "Self",
   "Sister",
   "Sister In Law",
   "Son",
-  "Son In Law",
-  "Uncle",
   "Wife",
-  "Other",
 ];
-const RELIGIONS = ["Hindu", "Muslim", "Christian", "Sikh", "Buddhist", "Jain", "Other"];
-const OCCUPATIONS = [
-  "Astrologer",
-  "Banker",
-  "Business",
-  "Carpenter",
-  "Doctor",
-  "Driver",
-  "Engineer",
-  "Farmer",
-  "Fisherman",
-  "Hairdresser",
-  "Housewife",
-  "Labor",
-  "Lawyer",
-  "Mechanic",
-  "Nil",
-  "raf",
-  "Retired",
-  "Service",
-  "Student"
-];
-const PROVIDERS = ["Self", "Referral", "Camp", "OPD", "Emergency"];
-const LEAD_SOURCES = ["Walk-in", "Online", "Phone", "Camp", "Doctor Referral", "Insurance"];
-const REFERRED_TYPES = ["Doctor", "Hospital", "Patient", "Corporate", "Other"];
-const STATUSES = ["Active", "Inactive", "Discharged", "Deceased"];
-const HCF_OPTIONS = ["CMK Main", "CMK Branch 1", "CMK Branch 2"];
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function RegistrationPage() {
@@ -528,23 +481,26 @@ export default function RegistrationPage() {
   });
   const [modalPatients, setModalPatients] = useState<PatientData[]>([]);
   const [isModalLoading, setIsModalLoading] = useState(false);
+  const [modalPage, setModalPage] = useState(1);
+  const [modalTotalPages, setModalTotalPages] = useState(1);
 
   const fetchModalPatients = useCallback(async () => {
     setIsModalLoading(true);
     try {
-      // Clear out empty string filters
       const activeFilters = Object.fromEntries(
         Object.entries(modalFilters).filter(([_, v]) => v.trim() !== "")
       );
-      const data = await getPatients({ ...activeFilters, limit: 50 });
+      const data = await getPatients({ ...activeFilters, limit: 10, page: modalPage });
       setModalPatients(data.patients || []);
+      setModalTotalPages(data.pages || 1);
     } catch (err) {
       console.error(err);
       setModalPatients([]);
+      setModalTotalPages(1);
     } finally {
       setIsModalLoading(false);
     }
-  }, [modalFilters]);
+  }, [modalFilters, modalPage]);
 
   useEffect(() => {
     if (isPatientSearchModalOpen) {
@@ -553,12 +509,12 @@ export default function RegistrationPage() {
       }, 400);
       return () => clearTimeout(timer);
     }
-  }, [isPatientSearchModalOpen, modalFilters, fetchModalPatients]);
+  }, [isPatientSearchModalOpen, modalFilters, modalPage, fetchModalPatients]);
+
   const [isEditing, setIsEditing] = useState(false);
   const toast = useToast();
   const today = format(new Date(), "yyyy-MM-dd");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("other-info");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const printLabelRef = useRef<HTMLDivElement>(null);
@@ -580,91 +536,6 @@ export default function RegistrationPage() {
   });
 
   const { activeBranch } = useBranch();
-  const [dynamicProviders, setDynamicProviders] = useState<string[]>(PROVIDERS);
-  const [dynamicLeadSources, setDynamicLeadSources] = useState<string[]>(LEAD_SOURCES);
-  const [dynamicReligions, setDynamicReligions] = useState<string[]>(RELIGIONS);
-  const [dynamicOccupations, setDynamicOccupations] = useState<string[]>(OCCUPATIONS);
-  const [dynamicBranches, setDynamicBranches] = useState<string[]>(HCF_OPTIONS);
-  const [dynamicCompanies, setDynamicCompanies] = useState<string[]>(["TATA Consultancy Services", "Reliance Industries", "Infosys Ltd", "Wipro", "HDFC Bank"]);
-  const [dynamicInsurances, setDynamicInsurances] = useState<string[]>(["Star Health Insurance", "Niva Bupa Health Insurance", "Care Health Insurance", "HDFC ERGO", "ICICI Lombard", "Aditya Birla Health", "LIC of India"]);
-
-  useEffect(() => {
-    // Load Providers
-    const storedProviders = localStorage.getItem("cmk_providers");
-    if (storedProviders) {
-      try { setDynamicProviders(JSON.parse(storedProviders)); } catch (e) {}
-    } else {
-      localStorage.setItem("cmk_providers", JSON.stringify(PROVIDERS));
-    }
-
-    // Load Lead Sources
-    const storedLeadSources = localStorage.getItem("cmk_lead_sources");
-    if (storedLeadSources) {
-      try { setDynamicLeadSources(JSON.parse(storedLeadSources)); } catch (e) {}
-    } else {
-      localStorage.setItem("cmk_lead_sources", JSON.stringify(LEAD_SOURCES));
-    }
-
-    // Load Religions
-    const storedReligions = localStorage.getItem("cmk_religions");
-    if (storedReligions) {
-      try { setDynamicReligions(JSON.parse(storedReligions)); } catch (e) {}
-    } else {
-      localStorage.setItem("cmk_religions", JSON.stringify(RELIGIONS));
-    }
-
-    // Load Occupations
-    const storedOccupations = localStorage.getItem("cmk_occupations");
-    let loadedOccupations: string[] | null = null;
-    if (storedOccupations) {
-      try {
-        loadedOccupations = JSON.parse(storedOccupations);
-      } catch (e) {}
-    }
-    if (loadedOccupations && !loadedOccupations.includes("Astrologer")) {
-      loadedOccupations = null;
-    }
-    if (loadedOccupations) {
-      setDynamicOccupations(loadedOccupations);
-    } else {
-      setDynamicOccupations(OCCUPATIONS);
-      localStorage.setItem("cmk_occupations", JSON.stringify(OCCUPATIONS));
-    }
-
-    // Load Branches dynamically from Application Settings -> HCF Branches
-    getSettingsItems("branches")
-      .then((res) => {
-        if (res.items && res.items.length > 0) {
-          const fetched = res.items.map((i) => i.value);
-          setDynamicBranches(fetched);
-          localStorage.setItem("cmk_hcf_branches", JSON.stringify(fetched));
-        }
-      })
-      .catch((err) => {
-        const storedBranches = localStorage.getItem("cmk_hcf_branches");
-        if (storedBranches) {
-          try { setDynamicBranches(JSON.parse(storedBranches)); } catch (e) {}
-        } else {
-          localStorage.setItem("cmk_hcf_branches", JSON.stringify(HCF_OPTIONS));
-        }
-      });
-
-    // Load Corporate Companies
-    const storedCompanies = localStorage.getItem("cmk_payer_companies");
-    if (storedCompanies) {
-      try { setDynamicCompanies(JSON.parse(storedCompanies)); } catch (e) {}
-    } else {
-      localStorage.setItem("cmk_payer_companies", JSON.stringify(["TATA Consultancy Services", "Reliance Industries", "Infosys Ltd", "Wipro", "HDFC Bank"]));
-    }
-
-    // Load Insurances
-    const storedInsurances = localStorage.getItem("cmk_payer_insurances");
-    if (storedInsurances) {
-      try { setDynamicInsurances(JSON.parse(storedInsurances)); } catch (e) {}
-    } else {
-      localStorage.setItem("cmk_payer_insurances", JSON.stringify(["Star Health Insurance", "Niva Bupa Health Insurance", "Care Health Insurance", "HDFC ERGO", "ICICI Lombard", "Aditya Birla Health", "LIC of India"]));
-    }
-  }, []);
 
   const {
     register,
@@ -683,28 +554,33 @@ export default function RegistrationPage() {
       firstName: "",
       gender: "Male",
       maritalStatus: "Single",
-      guardianRelation: "S/O",
+      guardianRelation: "Father",
       country: "India",
       state: "Delhi",
       nationality: "Indian",
-      payerType: "direct",
-      payer: "CASH",
-      status: "Active",
-      isVip: false,
-      isAnimation: false,
-      nameMasking: false,
-      handleWithCare: false,
-      sendPromoSms: false,
-      sendPromoEmail: false,
       regDate: today,
-      voterId: "0",
-      covidStatus: "",
-      visaNo: "",
-      visaExpiry: "",
-      passportNo: "",
-      passportExpiry: "",
     },
   });
+
+  const [isEmergencyNameManuallyEdited, setIsEmergencyNameManuallyEdited] = useState(false);
+  const [isEmergencyRelationManuallyEdited, setIsEmergencyRelationManuallyEdited] = useState(false);
+
+  const watchedGuardianName = watch("guardianName");
+  const watchedGuardianRelation = watch("guardianRelation");
+
+  useEffect(() => {
+    if (!isEmergencyNameManuallyEdited) {
+      setValue("emergencyName", watchedGuardianName || "", { shouldValidate: false });
+    }
+  }, [watchedGuardianName, isEmergencyNameManuallyEdited, setValue]);
+
+  useEffect(() => {
+    if (!isEmergencyRelationManuallyEdited) {
+      if (watchedGuardianRelation) {
+        setValue("emergencyRelationship", watchedGuardianRelation, { shouldValidate: false });
+      }
+    }
+  }, [watchedGuardianRelation, isEmergencyRelationManuallyEdited, setValue]);
 
   useEffect(() => {
     if (editId) {
@@ -737,7 +613,7 @@ export default function RegistrationPage() {
             gender: patient.gender || "Male",
             maritalStatus: patient.maritalStatus || "Single",
             guardianName: patient.guardianName || "",
-            guardianRelation: patient.guardianRelation || "S/O",
+            guardianRelation: patient.guardianRelation || "Father",
             dob: formattedDob,
             age: patient.age ? `${patient.age} Y` : "",
             mobile: patient.mobile || "",
@@ -760,32 +636,17 @@ export default function RegistrationPage() {
               return parts.join(" ");
             }) : "",
             panNo: patient.panNo || "",
-            payerType: patient.payerType || "direct",
-            payer: patient.payer || "CASH",
-            sponsor: patient.sponsor || "",
-            provider: patient.provider || "",
-            leadSource: patient.leadSource || "",
-            referredType: patient.referredType || "",
-            referredBy: patient.referredBy || "",
-            hcf: patient.hcf || "",
-            status: patient.status || "Active",
-            remarks: patient.remarks || "",
-            religion: patient.religion || "",
-            occupation: patient.occupation || "",
-            isVip: !!patient.isVip,
-            isAnimation: !!patient.isAnimation,
-            nameMasking: !!patient.nameMasking,
-            handleWithCare: !!patient.handleWithCare,
-            sendPromoSms: !!patient.sendPromoSms,
-            sendPromoEmail: !!patient.sendPromoEmail,
             regDate: formattedRegDate,
-            voterId: patient.voterId || "0",
-            covidStatus: patient.covidStatus || "",
-            visaNo: patient.visaNo || "",
-            visaExpiry: patient.visaExpiry ? format(new Date(patient.visaExpiry), "yyyy-MM-dd") : "",
-            passportNo: patient.passportNo || "",
-            passportExpiry: patient.passportExpiry ? format(new Date(patient.passportExpiry), "yyyy-MM-dd") : "",
           });
+
+          const hasCustomEmergencyName = Boolean(
+            patient.emergencyName && patient.emergencyName !== patient.guardianName
+          );
+          const hasCustomEmergencyRelation = Boolean(
+            patient.emergencyRelationship && patient.emergencyRelationship !== patient.guardianRelation
+          );
+          setIsEmergencyNameManuallyEdited(hasCustomEmergencyName);
+          setIsEmergencyRelationManuallyEdited(hasCustomEmergencyRelation);
         } catch (err: any) {
           toast.error(
             "Failed to Load Patient",
@@ -886,6 +747,10 @@ export default function RegistrationPage() {
 
       const payload: any = {
         ...data,
+        hcf: (data as any).hcf || activeBranch,
+        payerType: "direct",
+        payer: "CASH",
+        status: "Active",
         photoUrl: photoPreview || null,
         aadhaarCard: sanitizeNumber(data.aadhaarCard),
         mobile: sanitizeNumber(data.mobile),
@@ -915,6 +780,8 @@ export default function RegistrationPage() {
       }
 
       // Reset form fields to clean state for both update and save
+      setIsEmergencyNameManuallyEdited(false);
+      setIsEmergencyRelationManuallyEdited(false);
       setPhotoPreview(null);
       reset({
         registrationType: "New Registration",
@@ -926,7 +793,7 @@ export default function RegistrationPage() {
         gender: "Male",
         maritalStatus: "Single",
         guardianName: "",
-        guardianRelation: "S/O",
+        guardianRelation: "Father",
         dob: "",
         age: "",
         mobile: "",
@@ -944,31 +811,7 @@ export default function RegistrationPage() {
         nationality: "Indian",
         aadhaarCard: "",
         panNo: "",
-        payerType: "direct",
-        payer: "CASH",
-        sponsor: "",
-        provider: "",
-        leadSource: "",
-        referredType: "",
-        referredBy: "",
-        hcf: "",
-        status: "Active",
-        remarks: "",
-        religion: "",
-        occupation: "",
-        isVip: false,
-        isAnimation: false,
-        nameMasking: false,
-        handleWithCare: false,
-        sendPromoSms: false,
-        sendPromoEmail: false,
         regDate: today,
-        voterId: "0",
-        covidStatus: "",
-        visaNo: "",
-        visaExpiry: "",
-        passportNo: "",
-        passportExpiry: "",
       });
 
       setPhotoPreview(null);
@@ -985,24 +828,8 @@ export default function RegistrationPage() {
     }
   };
 
-  const payerType = watch("payerType");
   const selectedCountryName = watch("country") || "India";
   const selectedStateName = watch("state");
-
-  useEffect(() => {
-    if (!isEditing && activeBranch) {
-      setValue("hcf", activeBranch);
-    }
-  }, [activeBranch, isEditing, setValue]);
-
-  useEffect(() => {
-    if (payerType === "direct") {
-      setValue("payer", "CASH");
-      setValue("sponsor", "");
-    } else {
-      setValue("payer", "");
-    }
-  }, [payerType, setValue]);
 
   const countries = Country.getAllCountries();
   const selectedCountry = countries.find(c => c.name === selectedCountryName) || countries.find(c => c.isoCode === "IN");
@@ -1013,16 +840,16 @@ export default function RegistrationPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-56px)]">
       {/* ── Top Toolbar ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-2 px-3 md:px-5 py-2 bg-white border-b border-slate-200 flex-shrink-0 overflow-x-auto">
+      <div className="flex flex-wrap items-center gap-2 px-3 md:px-5 py-2 bg-[#dceefb] border-b border-[#a9d4f5] flex-shrink-0 overflow-x-auto">
         {/* Registration Type */}
         <div className="flex items-center gap-2 shrink-0">
-          <Label className="text-xs text-slate-500 whitespace-nowrap">Registration Type</Label>
+          <Label className="text-xs font-bold text-slate-800 whitespace-nowrap">Registration Type</Label>
           <Controller
             control={control}
             name="registrationType"
             render={({ field }) => (
               <Select value={field.value} onValueChange={field.onChange}>
-                <SelectTrigger className="h-8 w-36 md:w-40 text-xs">
+                <SelectTrigger className="h-8.5 w-36 md:w-44 text-xs sm:text-sm font-bold text-slate-900 bg-white border-slate-300 shadow-2xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -1044,7 +871,7 @@ export default function RegistrationPage() {
         {/* UHID */}
         <div className="flex items-center gap-2 shrink-0">
           <Label 
-            className="text-xs text-blue-600 font-bold underline cursor-pointer"
+            className="text-xs text-blue-800 font-extrabold underline cursor-pointer hover:text-blue-900"
             onClick={() => setIsPatientSearchModalOpen(true)}
           >
             UHID
@@ -1052,15 +879,18 @@ export default function RegistrationPage() {
           <Input
             {...register("uhid")}
             placeholder="Auto-generated"
-            className="h-8 w-36 text-xs bg-slate-50"
+            className="h-8.5 w-36 text-xs sm:text-sm font-bold bg-white text-slate-900 border-slate-300 shadow-2xs"
             readOnly
           />
         </div>
 
         {/* Active Branch Badge */}
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs font-bold text-blue-700 ml-2">
+        <div 
+          className="hidden md:flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-md text-xs font-bold text-blue-700 ml-2 max-w-[150px] lg:max-w-[250px]"
+          title={`Branch: ${activeBranch}`}
+        >
           <Building2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-          <span>Branch: <strong className="font-extrabold text-blue-900">{activeBranch}</strong></span>
+          <span className="truncate">Branch: <strong className="font-extrabold text-blue-900">{activeBranch}</strong></span>
         </div>
 
         <div className="flex-1" />
@@ -1071,12 +901,10 @@ export default function RegistrationPage() {
         )}
 
         {/* Action Buttons */}
-
         <Button
           type="button"
-          variant="outline"
           size="sm"
-          className="h-8 text-xs gap-1.5"
+          className="h-8 text-xs gap-1.5 bg-[#1b3d5b] hover:bg-[#132d44] text-white font-bold shadow-xs transition-all border-none"
           onClick={() => {
             window.location.href = "/registration/demographics";
           }}
@@ -1088,7 +916,7 @@ export default function RegistrationPage() {
           type="button"
           variant="success"
           size="sm"
-          className="h-8 text-xs gap-1.5 min-w-[70px]"
+          className="h-8 text-xs gap-1.5 min-w-[70px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs transition-all"
           disabled={isSaving}
           onClick={handleSubmit(onSubmit, (formErrors) => {
             console.warn("Validation errors:", formErrors);
@@ -1120,43 +948,11 @@ export default function RegistrationPage() {
             </>
           )}
         </Button>
+
         <Button
           type="button"
-          variant="outline"
           size="sm"
-          className="h-8 text-xs gap-1.5"
-          onClick={() => {
-            if (!editId) {
-              toast.error("Please Select Patient !");
-              return;
-            }
-            handlePrintLabel();
-          }}
-        >
-          <Printer className="h-3.5 w-3.5" />
-          Print
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs gap-1.5"
-          onClick={() => {
-            if (!editId) {
-              toast.error("Please Select Patient !");
-              return;
-            }
-            handlePrintCard();
-          }}
-        >
-          <Printer className="h-3.5 w-3.5" />
-          Print Card
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs gap-1.5"
+          className="h-8 text-xs gap-1.5 bg-[#2b5f88] hover:bg-[#1f496a] text-white font-bold shadow-xs transition-all border-none"
           onClick={() => {
             if (!editId) {
               toast.error("Please Select Patient !");
@@ -1165,28 +961,11 @@ export default function RegistrationPage() {
             handlePrintDetails();
           }}
         >
-          <FileText className="h-3.5 w-3.5" />
-          Patient/Reg Details
+          <Printer className="h-3.5 w-3.5" />
+          Print Patient Details
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs gap-1.5"
-        >
-          <Copy className="h-3.5 w-3.5" />
-          Check Duplicate
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setIsImportModalOpen(true)}
-          className="h-8 text-xs gap-1.5 cursor-pointer"
-        >
-          <Search className="h-3.5 w-3.5" />
-          Borrow
-        </Button>
+
+
       </div>
 
       {/* ── Form Body ─────────────────────────────────────────────────────────── */}
@@ -1198,12 +977,12 @@ export default function RegistrationPage() {
             <div className="grid grid-cols-12 gap-3">
 
               {/* Patient Photo, Title & Reg Date */}
-              <div className="col-span-12 md:col-span-3 lg:col-span-2 xl:col-span-2 bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col items-center gap-2.5">
+              <div className="col-span-12 md:col-span-3 lg:col-span-2 xl:col-span-2 bg-white rounded-xl border border-[#a9d4f5] p-3 shadow-xs flex flex-col items-center gap-2.5 overflow-hidden">
                 {/* Title / Salutation Dropdown */}
                 <div className="w-full">
                   <div className="flex items-center gap-1 mb-1">
                     <span className="text-red-500 font-bold text-sm leading-none">*</span>
-                    <Label className="text-[11px] font-medium text-slate-600">Title</Label>
+                    <Label className="text-xs font-bold text-slate-700">Title</Label>
                   </div>
                   <Controller
                     control={control}
@@ -1220,7 +999,7 @@ export default function RegistrationPage() {
                           }
                         }}
                       >
-                        <SelectTrigger className={cn("h-8 w-full text-xs font-medium bg-amber-50/30 border-slate-300", errors.title && "border-red-400")}>
+                        <SelectTrigger className={cn("h-8.5 w-full text-xs sm:text-sm font-semibold text-slate-900 bg-[#fffde6] border-slate-300 shadow-2xs", errors.title && "border-red-400")}>
                           <SelectValue placeholder="[Select Title]" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1232,8 +1011,8 @@ export default function RegistrationPage() {
                     )}
                   />
                   {errors.title && (
-                    <span className="text-[10px] text-red-500 flex items-center gap-1 mt-0.5">
-                      <AlertCircle className="h-3 w-3" />{errors.title.message}
+                    <span className="text-[11px] font-semibold text-red-600 flex items-center gap-1 mt-0.5">
+                      <AlertCircle className="h-3 w-3 shrink-0" />{errors.title.message}
                     </span>
                   )}
                 </div>
@@ -1273,20 +1052,20 @@ export default function RegistrationPage() {
                     type="button"
                     variant="outline"
                     size="xs"
-                    className="text-[11px] h-7 gap-1 text-primary hover:text-primary hover:bg-primary/5 border-primary/40 font-medium"
+                    className="text-xs h-7.5 gap-1 text-primary hover:text-primary hover:bg-primary/5 border-primary/40 font-bold"
                     onClick={() => fileInputRef.current?.click()}
                   >
-                    <Upload className="h-3 w-3" />
+                    <Upload className="h-3.5 w-3.5" />
                     Upload
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     size="xs"
-                    className="text-[11px] h-7 gap-1 text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200 font-medium"
+                    className="text-xs h-7.5 gap-1 text-slate-700 hover:text-red-600 hover:bg-red-50 hover:border-red-200 font-bold"
                     onClick={handlePhotoRemove}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-3.5 w-3.5" />
                     Remove
                   </Button>
                 </div>
@@ -1296,33 +1075,33 @@ export default function RegistrationPage() {
                 {/* Registration Date below photo */}
                 <div className="w-full">
                   <div className="flex items-center justify-between mb-1">
-                    <Label className="text-[11px] font-medium text-slate-600">Reg. Date</Label>
+                    <Label className="text-xs font-bold text-slate-700">Reg. Date</Label>
                   </div>
                   <Input
                     {...register("regDate")}
                     type="date"
-                    className={cn("h-8 text-xs bg-slate-50 text-center font-medium cursor-pointer hover:bg-slate-100/80 transition-colors", errors.regDate && "border-red-400")}
+                    className={cn("h-8.5 text-xs sm:text-sm bg-[#fffde6] text-center font-bold text-slate-900 cursor-pointer border-slate-300 hover:bg-amber-50/70 transition-colors shadow-2xs", errors.regDate && "border-red-400")}
                     onClick={(e) => {
                       try { e.currentTarget.showPicker(); } catch {}
                     }}
                   />
                   {errors.regDate && (
-                    <span className="text-[10px] text-red-500 flex items-center gap-1 mt-0.5">
-                      <AlertCircle className="h-3 w-3" />{errors.regDate.message}
+                    <span className="text-[11px] font-semibold text-red-600 flex items-center gap-1 mt-0.5">
+                      <AlertCircle className="h-3 w-3 shrink-0" />{errors.regDate.message}
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Personal Information */}
-              <div className="col-span-12 md:col-span-9 lg:col-span-4 xl:col-span-4 bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="col-span-12 md:col-span-9 lg:col-span-4 xl:col-span-4 bg-white rounded-xl border border-[#a9d4f5] p-4 shadow-xs">
                 <SectionHeader icon={User} title="Personal Information" />
 
                 {/* First Name */}
                 <FormField label="First Name" required className="mb-3" error={errors.firstName?.message}>
                   <Input
                     {...register("firstName")}
-                    className={cn("h-8 text-xs bg-amber-50/20 border-slate-300 focus:bg-white", errors.firstName && "border-red-400")}
+                    className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-[#fffde6] border-slate-300 focus:bg-white shadow-2xs", errors.firstName && "border-red-400")}
                     placeholder="First name"
                     autoFocus
                   />
@@ -1333,14 +1112,14 @@ export default function RegistrationPage() {
                   <FormField label="Middle Name" error={errors.middleName?.message}>
                     <Input
                       {...register("middleName")}
-                      className={cn("h-8 text-xs", errors.middleName && "border-red-400")}
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs", errors.middleName && "border-red-400")}
                       placeholder="Middle name"
                     />
                   </FormField>
                   <FormField label="Last Name" error={errors.lastName?.message}>
                     <Input
                       {...register("lastName")}
-                      className={cn("h-8 text-xs", errors.lastName && "border-red-400")}
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs", errors.lastName && "border-red-400")}
                       placeholder="Last name"
                     />
                   </FormField>
@@ -1354,7 +1133,7 @@ export default function RegistrationPage() {
                       name="gender"
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger className={cn("h-8 text-xs bg-amber-50/20 border-slate-300", errors.gender && "border-red-400")}>
+                          <SelectTrigger className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-[#fffde6] border-slate-300 shadow-2xs", errors.gender && "border-red-400")}>
                             <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1372,7 +1151,7 @@ export default function RegistrationPage() {
                       name="maritalStatus"
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger className="h-8 text-xs">
+                          <SelectTrigger className="h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs">
                             <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1392,7 +1171,7 @@ export default function RegistrationPage() {
                     <Input
                       {...register("dob")}
                       type="date"
-                      className={cn("h-8 text-xs cursor-pointer bg-amber-50/20 border-slate-300 focus:bg-white hover:bg-slate-50/60 transition-colors", errors.dob && "border-red-400")}
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 cursor-pointer bg-[#fffde6] border-slate-300 focus:bg-white hover:bg-amber-50/70 transition-colors shadow-2xs", errors.dob && "border-red-400")}
                       onChange={(e) => {
                         register("dob").onChange(e);
                         handleDobChange(e);
@@ -1405,7 +1184,7 @@ export default function RegistrationPage() {
                   <FormField label="Age (Y-M-D)">
                     <Input
                       {...register("age")}
-                      className="h-8 text-xs bg-slate-50 font-medium"
+                      className="h-8.5 text-xs sm:text-sm font-bold text-slate-900 bg-slate-50 border-slate-300 shadow-2xs"
                       placeholder="Auto"
                       onChange={(e) => {
                         register("age").onChange(e);
@@ -1417,14 +1196,14 @@ export default function RegistrationPage() {
 
                 {/* Guardian Relation + Guardian Name */}
                 <FieldRow className="grid-cols-3 mb-3">
-                  <FormField label="Relation" className="col-span-1">
+                  <FormField label="Attendant Relation" className="col-span-1">
                     <Controller
                       control={control}
                       name="guardianRelation"
                       render={({ field }) => (
-                        <Select value={field.value ?? "S/O"} onValueChange={field.onChange}>
-                          <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="S/O" />
+                        <Select value={field.value ?? "Father"} onValueChange={field.onChange}>
+                          <SelectTrigger className="h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs">
+                            <SelectValue placeholder="Father" />
                           </SelectTrigger>
                           <SelectContent>
                             {GUARDIAN_RELATIONS.map((r) => (
@@ -1435,35 +1214,53 @@ export default function RegistrationPage() {
                       )}
                     />
                   </FormField>
-                  <FormField label="Guardian Name" required className="col-span-2" error={errors.guardianName?.message}>
+                  <FormField label="Attendant Name" required className="col-span-2" error={errors.guardianName?.message}>
                     <Input
                       {...register("guardianName")}
-                      className={cn("h-8 text-xs bg-amber-50/20 border-slate-300", errors.guardianName && "border-red-400")}
-                      placeholder="Guardian name"
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-[#fffde6] border-slate-300 focus:bg-white shadow-2xs", errors.guardianName && "border-red-400")}
+                      placeholder="Attendant name"
                     />
                   </FormField>
                 </FieldRow>
 
-                {/* Email */}
-                <FormField label="Email" error={errors.email?.message}>
-                  <Input
-                    {...register("email")}
-                    type="email"
-                    className={cn("h-8 text-xs", errors.email && "border-red-400")}
-                    placeholder="email@example.com"
-                  />
-                </FormField>
+                {/* Email & Nationality */}
+                <FieldRow className="grid-cols-2">
+                  <FormField label="Email" error={errors.email?.message}>
+                    <Input
+                      {...register("email")}
+                      type="email"
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs", errors.email && "border-red-400")}
+                      placeholder="email@example.com"
+                    />
+                  </FormField>
+                  <FormField label="Nationality" required error={errors.nationality?.message}>
+                    <Controller
+                      control={control}
+                      name="nationality"
+                      render={({ field }) => (
+                        <SearchSelect
+                          required
+                          dropUp
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={NATIONALITIES}
+                          placeholder="Select Nationality"
+                        />
+                      )}
+                    />
+                  </FormField>
+                </FieldRow>
               </div>
 
               {/* Contact Details */}
-              <div className="col-span-12 md:col-span-6 lg:col-span-3 xl:col-span-3 bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="col-span-12 md:col-span-6 lg:col-span-3 xl:col-span-3 bg-white rounded-xl border border-[#a9d4f5] p-4 shadow-xs">
                 <SectionHeader icon={Phone} title="Contact Details" />
 
                 <FormField label="Mobile" required className="mb-3" error={errors.mobile?.message}>
                   <Input
                     {...register("mobile")}
                     type="tel"
-                    className={cn("h-8 text-xs", errors.mobile && "border-red-400")}
+                    className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-[#fffde6] border-slate-300 focus:bg-white shadow-2xs", errors.mobile && "border-red-400")}
                     placeholder="10-digit mobile number"
                     maxLength={10}
                   />
@@ -1472,7 +1269,7 @@ export default function RegistrationPage() {
                 <FormField label="Address" required className="mb-3" error={errors.address?.message}>
                   <Textarea
                     {...register("address")}
-                    className={cn("text-xs min-h-[60px] resize-none", errors.address && "border-red-400")}
+                    className={cn("text-xs sm:text-sm font-semibold text-slate-900 bg-[#fffde6] border-slate-300 focus:bg-white min-h-[60px] resize-none shadow-2xs", errors.address && "border-red-400")}
                     placeholder="House no., Street, Locality..."
                     rows={2}
                   />
@@ -1485,6 +1282,7 @@ export default function RegistrationPage() {
                       name="country"
                       render={({ field }) => (
                         <SearchSelect
+                          required
                           value={field.value}
                           onChange={(val) => {
                             field.onChange(val);
@@ -1503,6 +1301,7 @@ export default function RegistrationPage() {
                       name="state"
                       render={({ field }) => (
                         <SearchSelect
+                          required
                           value={field.value ?? ""}
                           onChange={(val) => {
                             field.onChange(val);
@@ -1524,7 +1323,7 @@ export default function RegistrationPage() {
                         name="districtCity"
                         render={({ field }) => (
                           <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                            <SelectTrigger className="h-8 text-xs">
+                            <SelectTrigger className="h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs">
                               <SelectValue placeholder="Select City" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1538,7 +1337,7 @@ export default function RegistrationPage() {
                     ) : (
                       <Input
                         {...register("districtCity")}
-                        className="h-8 text-xs"
+                        className="h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs"
                         placeholder="City"
                       />
                     )}
@@ -1546,7 +1345,7 @@ export default function RegistrationPage() {
                   <FormField label="Area" error={errors.area?.message}>
                     <Input
                       {...register("area")}
-                      className="h-8 text-xs"
+                      className="h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs"
                       placeholder="Area / Locality"
                     />
                   </FormField>
@@ -1556,7 +1355,7 @@ export default function RegistrationPage() {
                   <FormField label="Pin Code" error={errors.pinCode?.message}>
                     <Input
                       {...register("pinCode")}
-                      className={cn("h-8 text-xs", errors.pinCode && "border-red-400")}
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs", errors.pinCode && "border-red-400")}
                       placeholder="6-digit pin"
                       maxLength={6}
                     />
@@ -1565,23 +1364,33 @@ export default function RegistrationPage() {
                     <Input
                       {...register("altPhone")}
                       type="tel"
-                      className={cn("h-8 text-xs", errors.altPhone && "border-red-400")}
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs", errors.altPhone && "border-red-400")}
                       placeholder="Alternate number"
                     />
                   </FormField>
                 </FieldRow>
               </div>
 
-              {/* Right column: Emergency + Identity */}
+              {/* Right column: Emergency */}
               <div className="col-span-12 lg:col-span-3 space-y-3">
                 {/* Emergency Contact */}
-                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+                <div className="bg-white rounded-xl border border-[#a9d4f5] p-4 shadow-xs overflow-hidden">
                   <SectionHeader icon={AlertCircle} title="Emergency Contact" />
 
                   <FormField label="Name" className="mb-3" error={errors.emergencyName?.message}>
                     <Input
-                      {...register("emergencyName")}
-                      className={cn("h-8 text-xs", errors.emergencyName && "border-red-400")}
+                      {...register("emergencyName", {
+                        onChange: (e) => {
+                          const val = e.target.value;
+                          if (val && val.trim() !== "") {
+                            setIsEmergencyNameManuallyEdited(true);
+                          } else {
+                            setIsEmergencyNameManuallyEdited(false);
+                            setValue("emergencyName", watchedGuardianName || "", { shouldValidate: false });
+                          }
+                        },
+                      })}
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs", errors.emergencyName && "border-red-400")}
                       placeholder="Emergency contact name"
                     />
                   </FormField>
@@ -1590,8 +1399,14 @@ export default function RegistrationPage() {
                       control={control}
                       name="emergencyRelationship"
                       render={({ field }) => (
-                        <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                          <SelectTrigger className="h-8 text-xs">
+                        <Select 
+                          value={field.value ?? ""} 
+                          onValueChange={(val) => {
+                            setIsEmergencyRelationManuallyEdited(true);
+                            field.onChange(val);
+                          }}
+                        >
+                          <SelectTrigger className="h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs">
                             <SelectValue placeholder="Select" />
                           </SelectTrigger>
                           <SelectContent className="max-h-64">
@@ -1607,492 +1422,15 @@ export default function RegistrationPage() {
                     <Input
                       {...register("emergencyContact")}
                       type="tel"
-                      className={cn("h-8 text-xs", errors.emergencyContact && "border-red-400")}
+                      className={cn("h-8.5 text-xs sm:text-sm font-semibold text-slate-900 bg-white border-slate-300 shadow-2xs", errors.emergencyContact && "border-red-400")}
                       placeholder="Emergency number"
-                    />
-                  </FormField>
-                </div>
-
-                {/* Patient Identity */}
-                <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-                  <SectionHeader icon={Shield} title="Patient Identity" />
-
-                  <FormField label="Nationality" required className="mb-3">
-                    <Controller
-                      control={control}
-                      name="nationality"
-                      render={({ field }) => (
-                        <SearchSelect
-                          value={field.value}
-                          onChange={field.onChange}
-                          options={NATIONALITIES}
-                          placeholder="Select Nationality"
-                        />
-                      )}
-                    />
-                  </FormField>
-                  <FormField label="Aadhaar Card" className="mb-3" error={errors.aadhaarCard?.message}>
-                    <Controller
-                      control={control}
-                      name="aadhaarCard"
-                      render={({ field }) => (
-                        <Input
-                          value={field.value ?? ""}
-                          onChange={(e) => {
-                            const raw = e.target.value.replace(/\D/g, "");
-                            // format in groups of 4 digits: e.g. 1234 5678 1234
-                            const formatted = raw
-                              .replace(/(\d{4})(\d{4})?(\d{4})?/, (_, p1, p2, p3) => {
-                                let parts = [p1];
-                                if (p2) parts.push(p2);
-                                if (p3) parts.push(p3);
-                                return parts.join(" ");
-                              })
-                              .substring(0, 14); // 12 digits + 2 spaces = 14
-                            field.onChange(formatted);
-                          }}
-                          className={cn("h-8 text-xs", errors.aadhaarCard && "border-red-400")}
-                          placeholder="7657 3453 3453"
-                          maxLength={14}
-                        />
-                      )}
-                    />
-                  </FormField>
-                  <FormField label="PAN No." error={errors.panNo?.message}>
-                    <Input
-                      {...register("panNo")}
-                      className={cn("h-8 text-xs", errors.panNo && "border-red-400")}
-                      placeholder="PAN number"
-                      style={{ textTransform: "uppercase" }}
                     />
                   </FormField>
                 </div>
               </div>
             </div>
 
-            {/* ── Section 2: Tabs (Payer / Referral / Other) ── */}
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <div className="border-b border-slate-200 px-3 md:px-4 pt-3 overflow-x-auto">
-                  <TabsList className="h-8 bg-transparent p-0 gap-1 flex-nowrap min-w-max">
-                    <TabsTrigger
-                      value="other-info"
-                      className="h-8 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-medium px-3"
-                    >
-                      <CreditCard className="h-3 w-3 mr-1.5" />
-                      Payer / Insurance
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="referral"
-                      className="h-8 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-medium px-3"
-                    >
-                      <Users className="h-3 w-3 mr-1.5" />
-                      Referral Info
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="other"
-                      className="h-8 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-medium px-3"
-                    >
-                      <Tag className="h-3 w-3 mr-1.5" />
-                      Other Details
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="permanent-address"
-                      className="h-8 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-medium px-3"
-                    >
-                      <FileText className="h-3 w-3 mr-1.5" />
-                      Permanent Address
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="custom-fields"
-                      className="h-8 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-medium px-3"
-                    >
-                      <Sliders className="h-3 w-3 mr-1.5" />
-                      Custom Fields
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
 
-                {/* Payer Tab */}
-                <TabsContent value="other-info" className="p-4 mt-0">
-                  <div className="grid grid-cols-3 gap-6">
-                    {/* Payer */}
-                    <div>
-                      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Payer</p>
-                      <FormField label="Payer Type" required className="mb-3">
-                        <Controller
-                          control={control}
-                          name="payerType"
-                          render={({ field }) => (
-                            <RadioGroup
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              className="flex flex-row gap-4"
-                            >
-                              {[
-                                { value: "direct", label: "Direct Patient" },
-                                { value: "company", label: "Company" },
-                                { value: "insurance", label: "Insurance" },
-                              ].map((opt) => (
-                                <div key={opt.value} className="flex items-center gap-1.5">
-                                  <RadioGroupItem value={opt.value} id={`payer-${opt.value}`} />
-                                  <Label htmlFor={`payer-${opt.value}`} className="text-xs cursor-pointer">
-                                    {opt.label}
-                                  </Label>
-                                </div>
-                              ))}
-                            </RadioGroup>
-                          )}
-                        />
-                      </FormField>
-                      <FormField label="Payer" required className="mb-3">
-                        <Controller
-                          control={control}
-                          name="payer"
-                          render={({ field }) => (
-                            <Select 
-                              value={field.value ?? ""} 
-                              onValueChange={field.onChange}
-                              disabled={payerType === "direct"}
-                            >
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder={payerType === "direct" ? "CASH" : "Select Payer"} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {payerType === "company" && dynamicCompanies.map((c) => (
-                                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                                ))}
-                                {payerType === "insurance" && dynamicInsurances.map((i) => (
-                                  <SelectItem key={i} value={i}>{i}</SelectItem>
-                                ))}
-                                {payerType === "direct" && (
-                                  <SelectItem value="CASH">CASH</SelectItem>
-                                )}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </FormField>
-                      <FormField label="Sponsor">
-                        <Input
-                          {...register("sponsor")}
-                          className="h-8 text-xs"
-                          placeholder="Sponsor / TPA"
-                          disabled={payerType === "direct"}
-                        />
-                      </FormField>
-                    </div>
-
-                    {/* Referral quick view */}
-                    <div className="col-span-2">
-                      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Quick Referral</p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <FormField label="Provider">
-                          <Controller
-                            control={control}
-                            name="provider"
-                            render={({ field }) => (
-                              <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {dynamicProviders.map((p) => (
-                                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </FormField>
-                        <FormField label="Status" required>
-                          <Controller
-                            control={control}
-                            name="status"
-                            render={({ field }) => (
-                              <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {STATUSES.map((s) => (
-                                    <SelectItem key={s} value={s}>{s}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </FormField>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* Referral Info Tab */}
-                <TabsContent value="referral" className="p-4 mt-0">
-                  <div className="grid grid-cols-3 gap-3">
-                    <FormField label="Provider">
-                      <Controller
-                        control={control}
-                        name="provider"
-                        render={({ field }) => (
-                          <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {dynamicProviders.map((p) => (
-                                <SelectItem key={p} value={p}>{p}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </FormField>
-                    <FormField label="Lead Source">
-                      <Controller
-                        control={control}
-                        name="leadSource"
-                        render={({ field }) => (
-                          <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {dynamicLeadSources.map((l) => (
-                                <SelectItem key={l} value={l}>{l}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </FormField>
-                    <FormField label="Referred Type">
-                      <Controller
-                        control={control}
-                        name="referredType"
-                        render={({ field }) => (
-                          <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {REFERRED_TYPES.map((r) => (
-                                <SelectItem key={r} value={r}>{r}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </FormField>
-                    <FormField label="Referred By">
-                      <Input {...register("referredBy")} className="h-8 text-xs" placeholder="Doctor / Source name" />
-                    </FormField>
-                    <FormField label="HCF">
-                      <Controller
-                        control={control}
-                        name="hcf"
-                        render={({ field }) => (
-                          <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {dynamicBranches.map((h) => (
-                                <SelectItem key={h} value={h}>{h}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </FormField>
-                    <FormField label="Status" required>
-                      <Controller
-                        control={control}
-                        name="status"
-                        render={({ field }) => (
-                          <Select value={field.value} onValueChange={field.onChange}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUSES.map((s) => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </FormField>
-                    <FormField label="Remarks" className="col-span-3">
-                      <Textarea
-                        {...register("remarks")}
-                        className="text-xs resize-none min-h-[52px]"
-                        rows={2}
-                        placeholder="Additional notes about referral..."
-                      />
-                    </FormField>
-                  </div>
-                </TabsContent>
-
-                {/* Other Details Tab */}
-                <TabsContent value="other" className="p-4 mt-0">
-                  <div className="grid grid-cols-4 gap-6">
-                    <div className="col-span-2 space-y-3">
-                      <FormField label="Religion">
-                        <Controller
-                          control={control}
-                          name="religion"
-                          render={({ field }) => (
-                            <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Select" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {dynamicReligions.map((r) => (
-                                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </FormField>
-                      <FormField label="Occupation">
-                        <Controller
-                          control={control}
-                          name="occupation"
-                          render={({ field }) => (
-                            <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Select" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {dynamicOccupations.map((o) => (
-                                  <SelectItem key={o} value={o}>{o}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        />
-                      </FormField>
-                    </div>
-
-                    <div className="col-span-2">
-                      <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-3">Flags & Preferences</p>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { name: "isVip" as const, label: "VIP Patient" },
-                          { name: "isAnimation" as const, label: "Animation" },
-                          { name: "nameMasking" as const, label: "Name Masking" },
-                          { name: "handleWithCare" as const, label: "Handle With Care" },
-                          { name: "sendPromoSms" as const, label: "Send Promo — SMS" },
-                          { name: "sendPromoEmail" as const, label: "Send Promo — Email" },
-                        ].map((flag) => (
-                          <div key={flag.name} className="flex items-center gap-2">
-                            <Controller
-                              control={control}
-                              name={flag.name}
-                              render={({ field }) => (
-                                <Checkbox
-                                  id={flag.name}
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              )}
-                            />
-                            <Label htmlFor={flag.name} className="text-xs cursor-pointer">
-                              {flag.label}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* Permanent Address Tab */}
-                <TabsContent value="permanent-address" className="p-4 mt-0">
-                  <div className="grid grid-cols-3 gap-3">
-                    <FormField label="Same as Contact Address" className="col-span-3">
-                      <div className="flex items-center gap-2">
-                        <Checkbox id="same-address" />
-                        <Label htmlFor="same-address" className="text-xs cursor-pointer">
-                          Use same address as contact details
-                        </Label>
-                      </div>
-                    </FormField>
-                    <FormField label="Address" className="col-span-3">
-                      <Textarea className="text-xs resize-none min-h-[60px]" rows={2} placeholder="Permanent address..." />
-                    </FormField>
-                    <FormField label="Country">
-                      <Select defaultValue="India">
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {COUNTRIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </FormField>
-                    <FormField label="State">
-                      <Select>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-                        <SelectContent>
-                          {STATES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </FormField>
-                    <FormField label="City">
-                      <Input className="h-8 text-xs" placeholder="City" />
-                    </FormField>
-                    <FormField label="Area">
-                      <Input className="h-8 text-xs" placeholder="Area / Locality" />
-                    </FormField>
-                    <FormField label="Pin Code">
-                      <Input className="h-8 text-xs" placeholder="Pin code" maxLength={6} />
-                    </FormField>
-                  </div>
-                </TabsContent>
-
-                {/* Custom Fields Tab */}
-                <TabsContent value="custom-fields" className="p-4 mt-0">
-                  <div className="grid grid-cols-3 gap-3">
-                    <FormField label="Voter ID">
-                      <Input {...register("voterId")} className="h-8 text-xs" placeholder="Voter ID number" />
-                    </FormField>
-                    <FormField label="Covid Status">
-                      <Controller
-                        control={control}
-                        name="covidStatus"
-                        render={({ field }) => (
-                          <Select value={field.value ?? ""} onValueChange={field.onChange}>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Select Covid Status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Positive">Positive</SelectItem>
-                              <SelectItem value="Negative">Negative</SelectItem>
-                              <SelectItem value="Vaccinated">Vaccinated</SelectItem>
-                              <SelectItem value="Not Vaccinated">Not Vaccinated</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                    </FormField>
-                    <FormField label="Visa No">
-                      <Input {...register("visaNo")} className="h-8 text-xs" placeholder="Visa Number" />
-                    </FormField>
-                    <FormField label="Visa Expiry Date">
-                      <Input {...register("visaExpiry")} type="date" className="h-8 text-xs" />
-                    </FormField>
-                    <FormField label="Passport Isssue No.">
-                      <Input {...register("passportNo")} className="h-8 text-xs" placeholder="Passport number" />
-                    </FormField>
-                    <FormField label="Passport Expiry Date">
-                      <Input {...register("passportExpiry")} type="date" className="h-8 text-xs" />
-                    </FormField>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
           </div>
         </form>
       </div>
@@ -2141,8 +1479,8 @@ export default function RegistrationPage() {
                   </Select>
                 </div>
                 <div className="flex-1" />
-                <Button size="sm" variant="outline" className="h-6 px-4 text-[11px] font-bold border-slate-300" onClick={fetchModalPatients}>Filter</Button>
-                <Button size="sm" variant="outline" className="h-6 px-4 text-[11px] font-bold border-slate-300" onClick={() => setModalFilters({ uhid: "", patientName: "", mobile: "", dob: "", email: "", company: "", identityNo: "", address: "", phone: "" })}>Clear Filter</Button>
+                <Button size="sm" variant="outline" className="h-6 px-4 text-[11px] font-bold border-slate-300 cursor-pointer hover:bg-slate-50" onClick={() => { setModalPage(1); fetchModalPatients(); }}>Filter</Button>
+                <Button size="sm" variant="outline" className="h-6 px-4 text-[11px] font-bold border-slate-300 cursor-pointer hover:bg-slate-50" onClick={() => { setModalPage(1); setModalFilters({ uhid: "", patientName: "", mobile: "", dob: "", email: "", company: "", identityNo: "", address: "", phone: "" }); }}>Clear Filter</Button>
               </div>
 
               {/* Radio Group Row */}
@@ -2230,12 +1568,21 @@ export default function RegistrationPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {isModalLoading ? (
-                    <tr>
-                      <td colSpan={11} className="py-8 text-center text-slate-400">
-                        <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
-                        Searching...
-                      </td>
-                    </tr>
+                    Array.from({ length: 10 }).map((_, i) => (
+                      <tr key={`skel-${i}`} className="animate-pulse border-b border-slate-50 last:border-0 bg-white">
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-8 mx-auto" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-24" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-32" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-16" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-24" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-20" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-24" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-20" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-40" /></td>
+                        <td className="px-2 py-2 border-r border-slate-100"><div className="h-3.5 bg-slate-200 rounded w-16" /></td>
+                        <td className="px-2 py-2"><div className="h-3.5 bg-slate-200 rounded w-24" /></td>
+                      </tr>
+                    ))
                   ) : modalPatients.length === 0 ? (
                     <tr>
                       <td colSpan={11} className="py-8 text-center text-slate-400">
@@ -2271,6 +1618,33 @@ export default function RegistrationPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="p-2 border-t border-slate-200 bg-slate-50 flex items-center justify-between shrink-0 rounded-b-xl">
+              <span className="text-[11px] text-slate-600 font-semibold pl-2">
+                Page {modalPage} of {modalTotalPages}
+              </span>
+              <div className="flex gap-2 pr-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-7 text-[11px] bg-white cursor-pointer hover:bg-slate-100" 
+                  disabled={modalPage === 1}
+                  onClick={() => setModalPage(p => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="h-7 text-[11px] bg-white cursor-pointer hover:bg-slate-100" 
+                  disabled={modalPage >= modalTotalPages || modalTotalPages === 0}
+                  onClick={() => setModalPage(p => Math.min(modalTotalPages, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -2313,10 +1687,10 @@ export default function RegistrationPage() {
             guardianName: watch("guardianName") || "",
             genderAge: `${watch("gender") || ""} / ${watch("age") ? `${watch("age")} Yr` : ""}`.trim(),
             maritalStatus: watch("maritalStatus") || "",
-            religion: watch("religion") || "",
+            religion: "",
             aadhaarCard: watch("aadhaarCard") || "",
             nationality: watch("nationality") || "",
-            passportNo: watch("passportNo") || "",
+            passportNo: "",
             address: watch("address") || "",
             cityStateZip: `${watch("districtCity") || ""} - ${watch("pinCode") || ""}`.trim(),
             city: watch("districtCity") || "",
@@ -2325,8 +1699,8 @@ export default function RegistrationPage() {
             altPhone: watch("altPhone") || "",
             emergencyName: watch("emergencyName") || "",
             emergencyContact: watch("emergencyContact") || "",
-            sponsor: watch("sponsor") || watch("payer") || "",
-            referringDoctor: watch("provider") || ""
+            sponsor: "",
+            referringDoctor: ""
           }} 
         />
       </div>

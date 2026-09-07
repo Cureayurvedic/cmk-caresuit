@@ -32,6 +32,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import AddDoctorModal from "@/components/AddDoctorModal";
+import { ORTHOPEDICS_SERVICES } from "../data/orthopedicsServices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -203,7 +204,7 @@ const SERVICE_CATALOG = [
     code: "CON-01",
     name: "OPD Consultation - Senior Specialist",
     dept: "General OPD",
-    rate: 1000,
+    rate: 700,
   },
   {
     code: "CON-02",
@@ -297,8 +298,22 @@ const SERVICE_CATALOG = [
     dept: "Minor OT",
     rate: 600,
   },
-  { code: "PROC-03", name: "Nebulization Session", dept: "OPD", rate: 150 },
+  ...ORTHOPEDICS_SERVICES,
 ];
+
+const ALL_DEPARTMENTS = Array.from(new Set(SERVICE_CATALOG.map((s) => s.dept)));
+
+const DEFAULT_OPD_ITEM: InvoiceItem = {
+  code: "CON-01",
+  name: "OPD Consultation - Senior Specialist",
+  dept: "General OPD",
+  rate: 700,
+  qty: 1,
+  discountPercent: 0,
+  discountAmt: 0,
+  taxPercent: 0,
+  netAmt: 700,
+};
 
 export default function BillingPage() {
   const toast = useToast();
@@ -538,7 +553,9 @@ export default function BillingPage() {
     useState<number>(0);
   const [opBillingAppliedDeposit, setOpBillingAppliedDeposit] =
     useState<number>(0);
-  const [opBillingItems, setOpBillingItems] = useState<InvoiceItem[]>([]);
+  const [opBillingItems, setOpBillingItems] = useState<InvoiceItem[]>([
+    DEFAULT_OPD_ITEM,
+  ]);
   const [opBillingPaymentRows, setOpBillingPaymentRows] = useState<
     Array<{
       mode: string;
@@ -2399,11 +2416,12 @@ export default function BillingPage() {
             label: "Master Activity List",
             icon: ReceiptText,
           },
-          { id: "Create OP Visit", label: "Create OP Visit", icon: Calendar },
           { id: "OP Billing", label: "OP Billing", icon: FileText },
           { id: "IP Billing", label: "IP Billing", icon: Building2 },
           { id: "OP Order", label: "OP Order", icon: ClipboardList },
           { id: "Refund", label: "Refund", icon: RotateCcw },
+          /*
+          { id: "Create OP Visit", label: "Create OP Visit", icon: Calendar },
           {
             id: "Advance Collection",
             label: "Advance Collection",
@@ -2417,7 +2435,8 @@ export default function BillingPage() {
             icon: FileCheck,
             count: unbilledOrders.length,
           },
-        ].map((tab) => {
+          */
+        ].map((tab: { id: string; label: string; icon: any; count?: number }) => {
           const Icon = tab.icon;
           const isSelected = activeTab === tab.id;
           return (
@@ -2426,12 +2445,12 @@ export default function BillingPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`h-8 border-b-2 px-3 pb-1 text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
                 isSelected
-                  ? "border-blue-600 text-blue-600 bg-blue-50/50 rounded-t-md"
+                  ? "border-[#051A7C] text-[#051A7C] bg-blue-50/80 rounded-t-md"
                   : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               <Icon
-                className={`w-3.5 h-3.5 ${isSelected ? "text-blue-600" : "text-slate-400"}`}
+                className={`w-3.5 h-3.5 ${isSelected ? "text-[#051A7C]" : "text-slate-400"}`}
               />
               <span>{tab.label}</span>
               {tab.count !== undefined && tab.count > 0 && (
@@ -2673,17 +2692,6 @@ export default function BillingPage() {
                             }}
                           >
                             IP Bill
-                          </Button>
-                          <Button
-                            size="xs"
-                            variant="outline"
-                            className="h-6 text-[10px] font-bold bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-                            onClick={() => {
-                              setAdvUhid(p.uhid);
-                              setActiveTab("Advance Collection");
-                            }}
-                          >
-                            +Deposit
                           </Button>
                         </div>
                       </td>
@@ -4393,7 +4401,7 @@ export default function BillingPage() {
                     setOpBillingRefundedService(false);
                     setOpBillingAvailableDeposit(3000);
                     setOpBillingAppliedDeposit(0);
-                    setOpBillingItems([]);
+                    setOpBillingItems([DEFAULT_OPD_ITEM]);
                     setOpBillingPaymentRows([
                       {
                         mode: "Cash",
@@ -4815,69 +4823,69 @@ export default function BillingPage() {
                   <option value="">+ Add Service from Catalog...</option>
                   <optgroup label="Consultations">
                     <option value="CON-01">
-                      CON-01 - OPD Consultation - Senior Specialist (₹1000)
+                      OPD Consultation - Senior Specialist
                     </option>
                     <option value="CON-02">
-                      CON-02 - Emergency Consultation (₹1000)
+                      Emergency Consultation
                     </option>
                     <option value="CON-03">
-                      CON-03 - Super Specialist Consultation (₹1200)
+                      Super Specialist Consultation
                     </option>
                   </optgroup>
                   <optgroup label="Lab Tests">
                     <option value="LAB-01">
-                      LAB-01 - Complete Blood Count (CBC) (₹350)
+                      Complete Blood Count (CBC)
                     </option>
                     <option value="LAB-02">
-                      LAB-02 - Lipid Profile (Full Panel) (₹750)
+                      Lipid Profile (Full Panel)
                     </option>
                     <option value="LAB-03">
-                      LAB-03 - HbA1c Glycated Hemoglobin (₹550)
+                      HbA1c Glycated Hemoglobin
                     </option>
                     <option value="LAB-04">
-                      LAB-04 - Liver Function Test (LFT) (₹650)
+                      Liver Function Test (LFT)
                     </option>
                     <option value="LAB-05">
-                      LAB-05 - Kidney Function Test (KFT) (₹600)
+                      Kidney Function Test (KFT)
                     </option>
                     <option value="LAB-06">
-                      LAB-06 - Thyroid Profile (T3, T4, TSH) (₹700)
+                      Thyroid Profile (T3, T4, TSH)
                     </option>
                   </optgroup>
                   <optgroup label="Radiology & Imaging">
                     <option value="RAD-01">
-                      RAD-01 - Chest X-Ray PA View (₹450)
+                      Chest X-Ray PA View
                     </option>
                     <option value="RAD-02">
-                      RAD-02 - Ultrasound Whole Abdomen (₹1200)
+                      Ultrasound Whole Abdomen
                     </option>
                     <option value="RAD-03">
-                      RAD-03 - MRI Brain with Contrast (₹6500)
+                      MRI Brain with Contrast
                     </option>
                     <option value="RAD-04">
-                      RAD-04 - CT Scan Chest High Resolution (₹4500)
+                      CT Scan Chest High Resolution
                     </option>
                   </optgroup>
                   <optgroup label="Cardiology">
                     <option value="CARD-01">
-                      CARD-01 - 12-Lead ECG (₹300)
+                      12-Lead ECG
                     </option>
                     <option value="CARD-02">
-                      CARD-02 - 2D Echocardiography + Color Doppler (₹2200)
+                      2D Echocardiography + Color Doppler
                     </option>
                     <option value="CARD-03">
-                      CARD-03 - TMT Treadmill Stress Test (₹1800)
+                      TMT Treadmill Stress Test
                     </option>
                   </optgroup>
                   <optgroup label="Procedures & Nursing">
                     <option value="PROC-01">
-                      PROC-01 - IV Cannulation & Infusion (₹250)
+                      IV Cannulation & Infusion
                     </option>
                     <option value="PROC-02">
-                      PROC-02 - Wound Dressing & Suturing (₹600)
+                      Wound Dressing & Suturing
                     </option>
                     <option value="PROC-03">
-                      PROC-03 - Nebulization Session (₹150)
+                      Nebulization Session
                     </option>
                   </optgroup>
                   <option value="custom">+ Add Custom Service...</option>
@@ -4903,19 +4911,15 @@ export default function BillingPage() {
                   <table className="w-full text-xs text-left">
                     <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold uppercase text-[10px] sticky top-0 z-10">
                       <tr>
-                        <th className="px-2 py-2 tracking-wider w-28">Code</th>
+                        <th className="px-2 py-2 tracking-wider w-40">Dept</th>
                         <th className="px-2 py-2 tracking-wider">
                           Service Description
                         </th>
-                        <th className="px-2 py-2 tracking-wider w-32">Dept</th>
                         <th className="px-2 py-2 text-right tracking-wider w-24">
                           Rate (₹)
                         </th>
                         <th className="px-2 py-2 text-center tracking-wider w-16">
                           Qty
-                        </th>
-                        <th className="px-2 py-2 text-right tracking-wider w-20">
-                          Disc %
                         </th>
                         <th className="px-2 py-2 text-right tracking-wider w-28">
                           Net Amt (₹)
@@ -4927,7 +4931,7 @@ export default function BillingPage() {
                       {opBillingItems.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={8}
+                            colSpan={6}
                             className="py-10 text-center text-slate-500 bg-slate-50/40"
                           >
                             <div className="flex flex-col items-center justify-center space-y-2">
@@ -4949,22 +4953,72 @@ export default function BillingPage() {
                           </td>
                         </tr>
                       ) : (
-                        opBillingItems.map((it, idx) => (
+                        opBillingItems.map((it, idx) => {
+                          const filteredServices = it.dept
+                            ? SERVICE_CATALOG.filter((s) => s.dept === it.dept)
+                            : SERVICE_CATALOG;
+                          return (
                           <tr key={idx} className="hover:bg-teal-50/20">
+                            <td className="px-2 py-1.5">
+                              <select
+                                value={it.dept || ""}
+                                onChange={(e) => {
+                                  const newDept = e.target.value;
+                                  const updated = [...opBillingItems];
+                                  const matchingServices = SERVICE_CATALOG.filter(
+                                    (s) => s.dept === newDept
+                                  );
+                                  const firstService = matchingServices[0];
+                                  if (firstService) {
+                                    const qty = updated[idx].qty || 1;
+                                    const discPct =
+                                      updated[idx].discountPercent || 0;
+                                    const gross = firstService.rate * qty;
+                                    const discAmt = (gross * discPct) / 100;
+                                    updated[idx] = {
+                                      ...updated[idx],
+                                      code: firstService.code,
+                                      name: firstService.name,
+                                      dept: newDept,
+                                      rate: firstService.rate,
+                                      discountAmt: discAmt,
+                                      netAmt: Math.max(0, gross - discAmt),
+                                    };
+                                  } else {
+                                    updated[idx] = {
+                                      ...updated[idx],
+                                      dept: newDept,
+                                    };
+                                  }
+                                  setOpBillingItems(updated);
+                                }}
+                                className="h-6 w-full text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded px-1 focus:border-blue-500"
+                              >
+                                <option value="">Dept...</option>
+                                {ALL_DEPARTMENTS.map((d) => (
+                                  <option key={d} value={d}>
+                                    {d}
+                                  </option>
+                                ))}
+                                {it.dept && !ALL_DEPARTMENTS.includes(it.dept) && (
+                                  <option value={it.dept}>{it.dept}</option>
+                                )}
+                              </select>
+                            </td>
                             <td className="px-2 py-1.5">
                               <select
                                 value={
                                   SERVICE_CATALOG.some(
-                                    (s) => s.code === it.code,
+                                    (s) => s.name === it.name
                                   )
-                                    ? it.code
+                                    ? it.name
                                     : "custom"
                                 }
                                 onChange={(e) => {
-                                  const selectedCode = e.target.value;
-                                  if (selectedCode === "custom") return;
+                                  const selectedName = e.target.value;
+                                  if (selectedName === "custom") return;
                                   const found = SERVICE_CATALOG.find(
-                                    (s) => s.code === selectedCode,
+                                    (s) => s.name === selectedName
                                   );
                                   if (found) {
                                     const updated = [...opBillingItems];
@@ -4985,47 +5039,20 @@ export default function BillingPage() {
                                     setOpBillingItems(updated);
                                   }
                                 }}
-                                className="h-6 w-full text-[11px] font-mono font-bold text-blue-700 bg-white border border-slate-200 rounded px-1"
+                                className="h-6 w-full text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded px-1.5 focus:border-blue-500"
                               >
-                                {SERVICE_CATALOG.map((s) => (
-                                  <option key={s.code} value={s.code}>
-                                    {s.code}
+                                <option value="">Select Service...</option>
+                                {filteredServices.map((s) => (
+                                  <option key={s.code} value={s.name}>
+                                    {s.name}
                                   </option>
                                 ))}
                                 {!SERVICE_CATALOG.some(
-                                  (s) => s.code === it.code,
-                                ) && <option value="custom">{it.code}</option>}
+                                  (s) => s.name === it.name
+                                ) && (
+                                  <option value="custom">{it.name}</option>
+                                )}
                               </select>
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <Input
-                                type="text"
-                                value={it.name}
-                                onChange={(e) =>
-                                  handleUpdateOpItem(
-                                    idx,
-                                    "name",
-                                    e.target.value,
-                                  )
-                                }
-                                className="h-6 text-xs bg-white font-bold border-slate-200"
-                                placeholder="Select or enter service description..."
-                              />
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <Input
-                                type="text"
-                                value={it.dept}
-                                onChange={(e) =>
-                                  handleUpdateOpItem(
-                                    idx,
-                                    "dept",
-                                    e.target.value,
-                                  )
-                                }
-                                className="h-6 text-xs bg-white text-slate-600 border-slate-200"
-                                placeholder="Dept..."
-                              />
                             </td>
                             <td className="px-2 py-1.5 text-right">
                               <Input
@@ -5055,20 +5082,6 @@ export default function BillingPage() {
                                 className="h-6 w-full text-xs text-center bg-white font-mono"
                               />
                             </td>
-                            <td className="px-2 py-1.5 text-right">
-                              <Input
-                                type="number"
-                                value={it.discountPercent || 0}
-                                onChange={(e) =>
-                                  handleUpdateOpItem(
-                                    idx,
-                                    "discountPercent",
-                                    Number(e.target.value),
-                                  )
-                                }
-                                className="h-6 w-full text-xs text-right bg-white font-mono"
-                              />
-                            </td>
                             <td className="px-2 py-1.5 text-right font-mono font-bold text-slate-900">
                               ₹{it.netAmt?.toFixed(2)}
                             </td>
@@ -5081,7 +5094,8 @@ export default function BillingPage() {
                               </button>
                             </td>
                           </tr>
-                        ))
+                        );
+                      })
                       )}
                     </tbody>
                   </table>
@@ -8393,7 +8407,9 @@ export default function BillingPage() {
             </div>
             <div className="p-6 pb-5 flex flex-col gap-4">
               <div className="flex gap-4">
-                <span className="text-xs font-semibold text-slate-700 w-16 pt-2">Remarks</span>
+                <span className="text-xs font-semibold text-slate-700 w-16 pt-2">
+                  Remarks
+                </span>
                 <textarea
                   className="flex-1 h-32 border border-slate-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#3bc6db] focus:border-[#3bc6db] bg-white shadow-sm resize-none"
                   value={auditBillRemarks}
@@ -8406,7 +8422,10 @@ export default function BillingPage() {
                   onClick={() => {
                     setIpStatus("Audit Bill");
                     setIsAuditBillModalOpen(false);
-                    toast.success("Audit Details Saved", "The bill audit remarks have been recorded successfully.");
+                    toast.success(
+                      "Audit Details Saved",
+                      "The bill audit remarks have been recorded successfully.",
+                    );
                   }}
                 >
                   Save

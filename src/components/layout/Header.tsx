@@ -11,8 +11,8 @@ import { useSidebar } from "@/contexts/SidebarContext";
 import { useBranch } from "@/contexts/BranchContext";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  "/registration": { title: "Registration", subtitle: "Demographics — New Registration" },
-  "/registration/demographics": { title: "Registration", subtitle: "Demographics — New Registration" },
+  "/registration": { title: "Registration", subtitle: "Registration Form — New Registration" },
+  "/registration/demographics": { title: "Registration", subtitle: "Registration Form — New Registration" },
   "/registration/search": { title: "Registration", subtitle: "Patient Search" },
   "/reports": { title: "Reports", subtitle: "Analytics & Reports" },
   "/billing": { title: "Billing", subtitle: "Invoices & Payments" },
@@ -120,13 +120,13 @@ export default function Header() {
   });
 
   return (
-    <header className="fixed top-0 right-0 z-30 flex h-14 items-center gap-2 md:gap-3 border-b bg-white/95 backdrop-blur-sm px-3 md:px-5 shadow-sm transition-all duration-300 left-0 md:left-[var(--sidebar-width)]">
+    <header className="fixed top-0 right-0 z-30 flex h-14 items-center gap-2 md:gap-3 border-b border-[#5a97c8] bg-[#71ABDB] px-3 md:px-5 shadow-xs transition-all duration-300 left-0 md:left-[var(--sidebar-width)]">
       {/* Mobile Drawer Hamburger Button */}
       <Button
         variant="ghost"
         size="icon"
         onClick={toggleMobileSidebar}
-        className="md:hidden h-8 w-8 text-slate-700 hover:bg-slate-100 flex-shrink-0"
+        className="md:hidden h-8 w-8 text-slate-900 hover:bg-white/20 flex-shrink-0"
         title="Toggle Menu"
       >
         <Menu className="h-5 w-5" />
@@ -135,15 +135,15 @@ export default function Header() {
       {/* Page info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 md:gap-2 truncate">
-          <h1 className="text-xs md:text-sm font-bold text-slate-800 truncate">{page.title}</h1>
-          <span className="text-slate-300 hidden sm:inline">›</span>
-          <span className="text-[11px] md:text-xs text-slate-500 truncate hidden sm:inline">{page.subtitle}</span>
+          <h1 className="text-xs md:text-sm font-extrabold text-slate-900 truncate">{page.title}</h1>
+          <span className="text-slate-600 font-bold hidden sm:inline">›</span>
+          <span className="text-[11px] md:text-xs text-slate-800 font-medium truncate hidden sm:inline">{page.subtitle}</span>
         </div>
       </div>
 
       {/* Global Interactive Search */}
       <div ref={searchContainerRef} className="relative hidden md:flex items-center w-72">
-        <Search className="absolute left-2.5 h-3.5 w-3.5 text-slate-400 z-10" />
+        <Search className="absolute left-2.5 h-3.5 w-3.5 text-slate-500 z-10" />
         <Input
           type="text"
           value={searchQuery}
@@ -151,12 +151,12 @@ export default function Header() {
           onFocus={() => { if (searchQuery.trim()) setIsOpen(true); }}
           onKeyDown={handleKeyDown}
           placeholder="Search patients (Name, UHID, Mobile)..."
-          className="pl-8 pr-7 h-8 text-xs bg-slate-50 border-slate-200 focus:bg-white focus:border-blue-500 shadow-2xs font-medium"
+          className="pl-8 pr-7 h-8 text-xs bg-white/90 border-white/70 focus:bg-white focus:border-blue-700 shadow-2xs font-medium text-slate-900 placeholder:text-slate-500"
         />
         {searchQuery && (
           <button
             onClick={() => { setSearchQuery(""); setSearchResults([]); setIsOpen(false); }}
-            className="absolute right-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+            className="absolute right-2 text-slate-500 hover:text-slate-800 cursor-pointer"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -233,8 +233,8 @@ export default function Header() {
 
       {/* Date/Time */}
       <div className="hidden lg:flex flex-col items-end text-right">
-        <span className="text-xs font-semibold text-slate-700">{timeStr}</span>
-        <span className="text-[10px] text-slate-400">{dateStr}</span>
+        <span className="text-xs font-bold text-slate-900">{timeStr}</span>
+        <span className="text-[10px] font-medium text-slate-800">{dateStr}</span>
       </div>
 
       {/* Actions */}
@@ -244,30 +244,30 @@ export default function Header() {
           size="icon"
           onClick={handleGlobalRefresh}
           title="Refresh Module & Application Data"
-          className="h-8 w-8 text-slate-500 hover:text-slate-700"
+          className="h-8 w-8 text-slate-900 hover:text-black hover:bg-white/20"
         >
-          <RefreshCw className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin text-blue-600" : ""}`} />
+          <RefreshCw className={`h-4 w-4 transition-transform ${isRefreshing ? "animate-spin text-blue-900" : ""}`} />
         </Button>
 
-        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-slate-700">
+        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-900 hover:text-black hover:bg-white/20">
           <HelpCircle className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8 text-slate-500 hover:text-slate-700"
+          className="h-8 w-8 text-slate-900 hover:text-black hover:bg-white/20"
           onClick={() => navigate("/settings")}
         >
           <Settings className="h-4 w-4" />
         </Button>
 
-        <div className="w-px h-5 bg-slate-200 mx-1" />
+        <div className="w-px h-5 bg-slate-800/20 mx-1" />
 
         {/* Global Active Branch Switcher */}
-        <div className="hidden sm:flex items-center gap-1.5 bg-blue-50/80 border border-blue-200/80 rounded-lg px-2.5 py-1">
-          <Building2 className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+        <div className="hidden sm:flex items-center gap-1.5 bg-white/80 border border-white/90 rounded-lg px-2.5 py-1 shadow-2xs">
+          <Building2 className="h-3.5 w-3.5 text-blue-700 shrink-0" />
           <div className="flex flex-col text-left">
-            <span className="text-[9px] font-extrabold uppercase text-blue-600 leading-none tracking-wider">Branch</span>
+            <span className="text-[9px] font-extrabold uppercase text-blue-800 leading-none tracking-wider">Branch</span>
             <Select
               value={activeBranch}
               onValueChange={(val) => {
@@ -278,7 +278,7 @@ export default function Header() {
                 }
               }}
             >
-              <SelectTrigger title={activeBranch} className="h-4 p-0 border-0 shadow-none bg-transparent text-xs font-black text-slate-800 focus:ring-0 gap-1 max-w-[120px] sm:max-w-[180px]">
+              <SelectTrigger title={activeBranch} className="h-4 p-0 border-0 shadow-none bg-transparent text-xs font-black text-slate-900 focus:ring-0 gap-1 max-w-[120px] sm:max-w-[180px]">
                 <span className="truncate block"><SelectValue /></span>
               </SelectTrigger>
               <SelectContent align="end" className="bg-white border-slate-200 min-w-[200px]">
@@ -306,13 +306,13 @@ export default function Header() {
 
         <div className="flex items-center gap-2 cursor-pointer group pl-1">
           <Avatar className="h-7 w-7">
-            <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-bold">
+            <AvatarFallback className="bg-blue-900 text-white text-[10px] font-bold">
               DR
             </AvatarFallback>
           </Avatar>
           <div className="hidden md:block text-right">
-            <p className="text-xs font-semibold text-slate-700 leading-none">Dr. Admin</p>
-            <p className="text-[10px] text-blue-600 font-bold leading-none mt-0.5 truncate max-w-[80px] lg:max-w-[120px]" title={activeBranch}>{activeBranch}</p>
+            <p className="text-xs font-bold text-slate-900 leading-none">Dr. Admin</p>
+            <p className="text-[10px] text-blue-900 font-extrabold leading-none mt-0.5 truncate max-w-[80px] lg:max-w-[120px]" title={activeBranch}>{activeBranch}</p>
           </div>
         </div>
       </div>

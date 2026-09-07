@@ -353,7 +353,7 @@ export default function ReportsPage() {
 
         {/* Top Domain Switcher Tabs */}
         <div className="bg-white border-b border-slate-200 px-4 pt-2 flex items-center gap-2 flex-shrink-0 shadow-2xs">
-          {(["Registration", "ATD", "Billing"] as const).map((cat) => (
+          {(["Registration", "Billing"] as const).map((cat) => (
             <button
               key={cat}
               onClick={() => {
@@ -369,7 +369,6 @@ export default function ReportsPage() {
               }`}
             >
               {cat === "Registration" && <Users className="h-3.5 w-3.5" />}
-              {cat === "ATD" && <Building2 className="h-3.5 w-3.5" />}
               {cat === "Billing" && <DollarSign className="h-3.5 w-3.5" />}
               <span>{cat}</span>
             </button>
@@ -1051,8 +1050,8 @@ export default function ReportsPage() {
                           .filter(
                             (p) =>
                               (location === "-- ALL --" ||
-                                !p.hcf ||
-                                p.hcf === location) &&
+                                !(p as any).hcf ||
+                                (p as any).hcf === location) &&
                               (p.name
                                 .toLowerCase()
                                 .includes(tableSearchTerm.toLowerCase()) ||

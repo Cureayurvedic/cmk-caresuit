@@ -85,7 +85,7 @@ export default function PatientLedgerView({ patient, onClose }: PatientLedgerVie
             <Separator />
             <div className="space-y-2">
               <div>
-                <span className="text-slate-400 block text-[10px]">Relation & Guardian</span>
+                <span className="text-slate-400 block text-[10px]">Attendant Relation & Name</span>
                 <span className="font-medium text-slate-700">{patient.guardianRelation || "Relation"} — {patient.guardianName || "N/A"}</span>
               </div>
               <div>

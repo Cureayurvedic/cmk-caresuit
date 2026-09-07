@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, UserPlus, FileEdit, Trash2, Filter, FileSpreadsheet, Loader2 } from "lucide-react";
+import { Search, UserPlus, FileEdit, Trash2, Filter, FileSpreadsheet, Loader2, Printer, Building2 } from "lucide-react";
+import { useReactToPrint } from "react-to-print";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -16,11 +17,14 @@ import {
 import { getPatients, deletePatient, PatientData } from "@/api/patientApi";
 import ImportPatientsModal from "../components/ImportPatientsModal";
 import PatientLedgerView from "../components/PatientLedgerView";
+import { PatientRegistrationDetailsPrint, PatientRegDetailsData } from "../components/PatientRegistrationDetailsPrint";
+import { useBranch } from "@/contexts/BranchContext";
 
 export default function PatientSearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const toast = useToast();
+  const { activeBranch } = useBranch();
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get("query") || searchParams.get("search") || "");
   const [statusFilter, setStatusFilter] = useState("all");
   const [genderFilter, setGenderFilter] = useState("all");
@@ -29,14 +33,39 @@ export default function PatientSearchPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
+  const [printingPatient, setPrintingPatient] = useState<PatientData | null>(null);
 
- 
+  const printRef = useRef<HTMLDivElement>(null);
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+    documentTitle: "PatientRegistrationDetails"
+  });
+
+  useEffect(() => {
+    if (printingPatient) {
+      handlePrint();
+    }
+  }, [printingPatient, handlePrint]);
+
+  const handleDeletePatient = async (id?: string) => {
+    if (!id) return;
+    if (confirm("Are you sure you want to delete this patient?")) {
+      try {
+        await deletePatient(id);
+        toast.success("Patient Deleted", "Patient record has been deleted.");
+        fetchPatients();
+      } catch (err: any) {
+        toast.error("Delete Failed", err.message || "Could not delete patient.");
+      }
+    }
+  };
 
   const fetchPatients = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getPatients({
         search: searchTerm,
+        hcf: activeBranch,
         limit: 50,
       });
       setPatients(data.patients || []);
@@ -48,7 +77,7 @@ export default function PatientSearchPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm]);
+  }, [searchTerm, activeBranch]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -58,6 +87,16 @@ export default function PatientSearchPage() {
   }, [fetchPatients]);
 
   const filteredPatients = patients.filter((p) => {
+    const patientBranch = p.hcf || (p as any).branch || "CMK Main";
+    if (activeBranch.toLowerCase() === "cmk main") {
+      if (patientBranch && patientBranch.toLowerCase() !== "cmk main") {
+        return false;
+      }
+    } else {
+      if (patientBranch.toLowerCase() !== activeBranch.toLowerCase()) {
+        return false;
+      }
+    }
     if (statusFilter !== "all" && p.status?.toLowerCase() !== statusFilter.toLowerCase()) {
       return false;
     }
@@ -72,8 +111,16 @@ export default function PatientSearchPage() {
       {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Patient Search</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Search and manage registered patients in database</p>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-slate-800">Patient Search</h2>
+            <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 font-bold px-2 py-0.5 text-xs flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5 text-blue-600" />
+              {activeBranch}
+            </Badge>
+          </div>
+          <p className="text-sm text-slate-500 mt-0.5">
+            Showing patient records for <strong className="font-semibold text-slate-700">{activeBranch}</strong>
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -218,10 +265,20 @@ export default function PatientSearchPage() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                           <Button
                             variant="ghost"
                             size="icon"
+                            title="Print Patient Details"
+                            className="h-7 w-7 text-emerald-600 hover:bg-emerald-50"
+                            onClick={() => setPrintingPatient(patient)}
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title="Edit Patient"
                             className="h-7 w-7 text-blue-500 hover:bg-blue-50"
                             onClick={() => navigate(`/registration/demographics?edit=${patient.id}`)}
                           >
@@ -230,6 +287,7 @@ export default function PatientSearchPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            title="Delete Patient"
                             className="h-7 w-7 text-red-500 hover:bg-red-50"
                             onClick={() => {
                               handleDeletePatient(patient.id);
@@ -279,6 +337,37 @@ export default function PatientSearchPage() {
         onClose={() => setIsImportModalOpen(false)}
         onSuccess={fetchPatients}
       />
+
+      {/* Hidden Printable Component */}
+      {printingPatient && (
+        <div className="hidden">
+          <PatientRegistrationDetailsPrint
+            ref={printRef}
+            patient={{
+              uhid: printingPatient.uhid || "",
+              regDate: printingPatient.regDate || new Date().toISOString(),
+              name: `${printingPatient.title || ""} ${printingPatient.fullName || `${printingPatient.firstName} ${printingPatient.lastName || ""}`}`.trim(),
+              guardianName: printingPatient.guardianName || "",
+              genderAge: `${printingPatient.gender || ""} / ${printingPatient.age ? `${printingPatient.age} Yr` : ""}`.trim(),
+              maritalStatus: printingPatient.maritalStatus || "",
+              religion: printingPatient.religion || "",
+              aadhaarCard: printingPatient.aadhaarCard || "",
+              nationality: printingPatient.nationality || "",
+              passportNo: printingPatient.passportNo || "",
+              address: printingPatient.address || "",
+              cityStateZip: `${printingPatient.districtCity || ""} - ${printingPatient.pinCode || ""}`.trim(),
+              city: printingPatient.districtCity || "",
+              pinCode: printingPatient.pinCode || "",
+              mobile: printingPatient.mobile || "",
+              altPhone: printingPatient.altPhone || "",
+              emergencyName: printingPatient.emergencyName || "",
+              emergencyContact: printingPatient.emergencyContact || "",
+              sponsor: printingPatient.sponsor || printingPatient.payer || "",
+              referringDoctor: printingPatient.provider || ""
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }
