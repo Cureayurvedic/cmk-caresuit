@@ -1,4 +1,4 @@
-import { X, User, Phone, AlertCircle, Shield, CreditCard, Sliders, Calendar } from "lucide-react";
+import { X, User, Phone, AlertCircle, Shield, CreditCard, Sliders, Calendar, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -43,6 +43,10 @@ export default function PatientLedgerView({ patient, onClose }: PatientLedgerVie
               <Badge variant={patient.status === "Active" ? "success" : patient.status === "Inactive" ? "secondary" : "warning"} className="text-[8px] py-0.2 px-1.5">
                 {patient.status || "Active"}
               </Badge>
+              <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[8px] py-0.2 px-1.5 flex items-center gap-0.5 font-semibold">
+                <Building2 className="w-2.5 h-2.5 text-indigo-500 shrink-0" />
+                {patient.hcf || "CMK Main"}
+              </Badge>
             </div>
             <p className="text-[10px] text-slate-500 font-mono">UHID: {patient.uhid || "N/A"}</p>
           </div>
@@ -55,10 +59,17 @@ export default function PatientLedgerView({ patient, onClose }: PatientLedgerVie
       {/* Content Area */}
       <div className="p-5 space-y-5 overflow-y-auto flex-1 text-xs">
         {/* Quick Summary Grid */}
-        <div className="grid grid-cols-2 gap-3 bg-slate-50/60 p-3 rounded-lg border border-slate-100">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50/60 p-3 rounded-lg border border-slate-100">
           <div>
             <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider block">Registration Type</span>
             <span className="font-semibold text-slate-700 block mt-0.5">{patient.registrationType || "New Registration"}</span>
+          </div>
+          <div>
+            <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider block">Branch / HCF</span>
+            <span className="font-semibold text-indigo-700 block mt-0.5 flex items-center gap-1">
+              <Building2 className="h-3 w-3 text-indigo-500" />
+              {patient.hcf || "CMK Main"}
+            </span>
           </div>
           <div>
             <span className="text-[9px] text-slate-400 font-semibold uppercase tracking-wider block">Gender / Age</span>

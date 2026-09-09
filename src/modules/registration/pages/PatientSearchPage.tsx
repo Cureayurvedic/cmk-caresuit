@@ -30,6 +30,9 @@ export default function PatientSearchPage() {
   const [genderFilter, setGenderFilter] = useState("all");
   const [patients, setPatients] = useState<PatientData[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const PAGE_SIZE = 50;
   const [isLoading, setIsLoading] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
@@ -60,16 +63,19 @@ export default function PatientSearchPage() {
     }
   };
 
-  const fetchPatients = useCallback(async () => {
+  const fetchPatients = useCallback(async (page = currentPage) => {
     setIsLoading(true);
     try {
       const data = await getPatients({
         search: searchTerm,
         hcf: activeBranch,
-        limit: 50,
+        limit: PAGE_SIZE,
+        page,
       });
       setPatients(data.patients || []);
       setTotalCount(data.total || 0);
+      setTotalPages(data.pages || 1);
+      setCurrentPage(page);
     } catch (err) {
       console.error("Failed to fetch patients:", err);
       setPatients([]);
@@ -77,26 +83,17 @@ export default function PatientSearchPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchTerm, activeBranch]);
+  }, [searchTerm, activeBranch, currentPage]);
 
   useEffect(() => {
+    setCurrentPage(1);
     const timer = setTimeout(() => {
-      fetchPatients();
+      fetchPatients(1);
     }, 300);
     return () => clearTimeout(timer);
-  }, [fetchPatients]);
+  }, [searchTerm, activeBranch, statusFilter, genderFilter]);
 
   const filteredPatients = patients.filter((p) => {
-    const patientBranch = p.hcf || (p as any).branch || "CMK Main";
-    if (activeBranch.toLowerCase() === "cmk main") {
-      if (patientBranch && patientBranch.toLowerCase() !== "cmk main") {
-        return false;
-      }
-    } else {
-      if (patientBranch.toLowerCase() !== activeBranch.toLowerCase()) {
-        return false;
-      }
-    }
     if (statusFilter !== "all" && p.status?.toLowerCase() !== statusFilter.toLowerCase()) {
       return false;
     }
@@ -113,8 +110,8 @@ export default function PatientSearchPage() {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-800">Patient Search</h2>
-            <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200 font-bold px-2 py-0.5 text-xs flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5 text-blue-600" />
+            <Badge variant="outline" className="bg-indigo-50 text-indigo-800 border-indigo-200 font-bold px-2.5 py-0.5 text-xs flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-indigo-600" />
               {activeBranch}
             </Badge>
           </div>
@@ -183,7 +180,7 @@ export default function PatientSearchPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="outline" className="h-9 gap-2" onClick={fetchPatients}>
+            <Button variant="outline" className="h-9 gap-2" onClick={() => fetchPatients(currentPage)}>
               <Filter className="h-4 w-4" />
               Refresh
             </Button>
@@ -201,6 +198,7 @@ export default function PatientSearchPage() {
                 <tr>
                   <th className="px-4 py-3 font-semibold">UHID</th>
                   <th className="px-4 py-3 font-semibold">Patient Name</th>
+                  <th className="px-4 py-3 font-semibold">Branch</th>
                   {!selectedPatient && <th className="px-4 py-3 font-semibold">Age/Gender</th>}
                   {!selectedPatient && <th className="px-4 py-3 font-semibold">Mobile</th>}
                   {!selectedPatient && <th className="px-4 py-3 font-semibold">Address / State</th>}
@@ -211,14 +209,19 @@ export default function PatientSearchPage() {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr>
-                    <td colSpan={selectedPatient ? 4 : 8} className="px-4 py-12 text-center text-slate-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
-                        <p className="text-sm font-medium">Loading patients from database...</p>
-                      </div>
-                    </td>
-                  </tr>
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <tr key={i} className="border-b border-slate-100 animate-pulse">
+                      <td className="px-4 py-3"><div className="h-3.5 w-14 bg-slate-200 rounded" /></td>
+                      <td className="px-4 py-3"><div className="h-3.5 w-36 bg-slate-200 rounded" /></td>
+                      <td className="px-4 py-3"><div className="h-5 w-20 bg-slate-200 rounded-full" /></td>
+                      {!selectedPatient && <td className="px-4 py-3"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>}
+                      {!selectedPatient && <td className="px-4 py-3"><div className="h-3.5 w-24 bg-slate-200 rounded" /></td>}
+                      {!selectedPatient && <td className="px-4 py-3"><div className="h-3.5 w-32 bg-slate-200 rounded" /></td>}
+                      {!selectedPatient && <td className="px-4 py-3"><div className="h-3.5 w-20 bg-slate-200 rounded" /></td>}
+                      <td className="px-4 py-3"><div className="h-5 w-14 bg-slate-200 rounded-full" /></td>
+                      <td className="px-4 py-3 text-right"><div className="h-6 w-20 bg-slate-200 rounded ml-auto" /></td>
+                    </tr>
+                  ))
                 ) : filteredPatients.length > 0 ? (
                   filteredPatients.map((patient) => (
                     <tr
@@ -233,6 +236,15 @@ export default function PatientSearchPage() {
                       <td className="px-4 py-3 font-medium font-mono text-[10px] text-primary whitespace-nowrap" title={patient.uhid}>{patient.uhid}</td>
                       <td className="px-4 py-3 font-semibold text-slate-700">
                         {patient.title} {patient.fullName || `${patient.firstName} ${patient.lastName || ""}`}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <Badge
+                          variant="outline"
+                          className="bg-indigo-50 text-indigo-700 border-indigo-200 text-[10px] font-semibold px-2 py-0.5 inline-flex items-center gap-1"
+                        >
+                          <Building2 className="w-3 h-3 text-indigo-500 shrink-0" />
+                          {patient.hcf || "CMK Main"}
+                        </Badge>
                       </td>
                       {!selectedPatient && (
                         <td className="px-4 py-3 text-slate-600">
@@ -304,7 +316,7 @@ export default function PatientSearchPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={selectedPatient ? 4 : 8} className="px-4 py-12 text-center text-slate-500">
+                    <td colSpan={selectedPatient ? 5 : 9} className="px-4 py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center justify-center">
                         <Search className="h-10 w-10 text-slate-300 mb-3" />
                         <p className="text-base font-medium text-slate-600">No patients found in database</p>
@@ -316,8 +328,35 @@ export default function PatientSearchPage() {
               </tbody>
             </table>
           </div>
-          <div className="border-t border-slate-200 p-3 flex items-center justify-between bg-slate-50 text-xs text-slate-500">
-            <div>Showing {filteredPatients.length} of {totalCount} total entries</div>
+          <div className="border-t border-slate-200 p-3 flex items-center justify-between bg-slate-50 text-xs text-slate-500 flex-wrap gap-2">
+            <div className="font-medium">
+              Showing <span className="text-slate-700 font-semibold">{((currentPage - 1) * PAGE_SIZE) + 1}–{Math.min(currentPage * PAGE_SIZE, totalCount)}</span> of <span className="text-slate-700 font-semibold">{totalCount}</span> patients
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => fetchPatients(1)}
+                disabled={currentPage === 1 || isLoading}
+                className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+              >«</button>
+              <button
+                onClick={() => fetchPatients(currentPage - 1)}
+                disabled={currentPage === 1 || isLoading}
+                className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+              >‹ Prev</button>
+              <span className="px-3 py-1 rounded border border-blue-300 bg-blue-50 text-blue-700 font-semibold">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => fetchPatients(currentPage + 1)}
+                disabled={currentPage >= totalPages || isLoading}
+                className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+              >Next ›</button>
+              <button
+                onClick={() => fetchPatients(totalPages)}
+                disabled={currentPage >= totalPages || isLoading}
+                className="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+              >»</button>
+            </div>
           </div>
         </Card>
 

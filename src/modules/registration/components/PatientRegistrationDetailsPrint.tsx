@@ -77,13 +77,14 @@ export const PatientRegistrationDetailsPrint = forwardRef<HTMLDivElement, Props>
           }
         `}</style>
 
-        {/* ─── 1. Header with Logo & Hospital Details ─── */}
-        <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-400">
-          <div className="flex items-center gap-3">
+        {/* ─── 1. Header: Logo on Left, Hospital Details Centered (matches OP billing print) ─── */}
+        <div className="flex items-center justify-between pb-2 mb-2">
+          {/* Logo on Left */}
+          <div className="w-36 flex-shrink-0 flex items-center justify-start">
             <img
               src="/cmk-logo.png"
-              alt="Cure My Knee / CMK Logo"
-              className="h-16 w-auto object-contain shrink-0"
+              alt="CMK HealthCare Logo"
+              className="h-16 w-auto object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
                 if (!target.src.includes("cmk_caresuit_logo")) {
@@ -91,29 +92,35 @@ export const PatientRegistrationDetailsPrint = forwardRef<HTMLDivElement, Props>
                 }
               }}
             />
-            <div className="text-left leading-tight">
-              <h1 className="text-sm font-extrabold text-black uppercase tracking-tight">
-                CMK HEALTHCARE PVT. LTD.
-              </h1>
-              <p className="text-[10px] text-gray-800 font-medium">
-                H-1565,Chittaranjan Park,New Delhi
-              </p>
-              <p className="text-[10px] text-gray-800 font-medium">
-                Phone: 011-41552233,8800200 Fax:
-              </p>
-              <p className="text-[10px] text-gray-800 font-medium">
-                Email: info@curemyknee.com WebSite: www.curemyknee.com
-              </p>
-            </div>
           </div>
+
+          {/* Centered Hospital Details */}
+          <div className="flex-1 text-center space-y-0.5">
+            <h1 className="text-lg font-black text-slate-900 uppercase tracking-wide font-serif">
+              CMK HEALTH CARE PVT. LTD.
+            </h1>
+            <p className="text-xs font-bold text-slate-800 tracking-wide uppercase">
+              (ORTHO &amp; JOINT CARE CENTRE)
+            </p>
+            <p className="text-[11px] text-slate-700 font-medium">
+              H-1565 C.R. Park (Near Mela Ground) New Delhi-110019
+            </p>
+            <p className="text-[11px] text-slate-600 font-semibold underline">
+              www.curemyknee.com
+            </p>
+          </div>
+
+          {/* Right Spacer for balance */}
+          <div className="w-36 flex-shrink-0"></div>
         </div>
 
-        {/* ─── 2. Title ─── */}
-        <div className="text-center my-2">
-          <h2 className="text-sm font-bold text-black uppercase tracking-wide">
-            Patient Registration Details
+        {/* ─── 2. Centered Document Title (matches OP billing print) ─── */}
+        <div className="text-center pb-2 border-b border-slate-300 mb-3">
+          <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider underline decoration-slate-900 underline-offset-4 mb-2.5">
+            PATIENT REGISTRATION DETAILS
           </h2>
         </div>
+
 
         {/* ─── 3. MRDNo. & Date/Time Box ─── */}
         <table className="reg-table">

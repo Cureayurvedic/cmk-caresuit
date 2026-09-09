@@ -1993,7 +1993,7 @@ export const ORTHOPEDICS_SERVICES = [
   },
   {
     "code": "ORTHO-103915",
-    "name": "Illizarov\u2019s / External Fixation for Trauma(CGHS) (103915)",
+    "name": "Illizarov’s / External Fixation for Trauma(CGHS) (103915)",
     "dept": "Orthopedics",
     "rate": 1000
   },
@@ -2119,7 +2119,7 @@ export const ORTHOPEDICS_SERVICES = [
   },
   {
     "code": "ORTHO-103898",
-    "name": "Joints Aspiration(CGHS) (103898)",
+    "name": "Joints Aspiration(Cghs) (103898)",
     "dept": "Orthopedics",
     "rate": 1000
   },
@@ -2402,6 +2402,1494 @@ export const ORTHOPEDICS_SERVICES = [
   {
     "code": "ORTHO-103849",
     "name": "Myocutaneous Flap (103849)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103850",
+    "name": "NAIL PLATE FIXATIONS FOR FRACTURE NECK FEMUR  (ICICI) Procedure (103850)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103851",
+    "name": "Nailing/Plating of Fracture SOF/Subcondyler/Intercondyler/Sgl Condyle/Hoffas Fracture of Har Gov Pro (103851)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103852",
+    "name": "Nailing/Plating of Fracture Tibia (Haryana Govt) Procedure (103852)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103841",
+    "name": "Nerve Repair with Grafting(CGHS) (103841)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103842",
+    "name": "Neurolysis/Nerve repair(CGHS) (103842)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103843",
+    "name": "OPEN REDUCTION & INTERNAL FIXATION OF FINGERS & TOES  (ICICI) Procedure (103843)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103844",
+    "name": "Open Reduction & Internal Fixation of Fingurs & Toes(CGHS) (103844)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103845",
+    "name": "Open reduction of dislocation of elbow (Haryana Govt) Procedure (103845)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103846",
+    "name": "Open reduction of dislocation of HIP (Haryana Govt) Procedure (103846)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103835",
+    "name": "Open reduction of dislocation of Knee (Haryana Govt) Procedure (103835)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103836",
+    "name": "Open reduction of dislocation of Shoulder (Haryana Govt) Procedure (103836)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103837",
+    "name": "OPEN REDUCTION OF DISLOCATIONS DEEP  (ICICI) Procedure (103837)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103838",
+    "name": "OPEN REDUCTION OF DISLOCATIONS SUPPERFICAL  (ICICI) Procedure (103838)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103839",
+    "name": "Open Reduction of Dislocations(CGHS) (103839)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103840",
+    "name": "Open Reduction of Fracture Dislocation & Internal Fixation(CGHS) (103840)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103829",
+    "name": "OPEN REDUCTION OF FRACTURE DISLOCATION & INTERNAL FIXATIONS   (ICICI) Procedure (103829)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103830",
+    "name": "OPEN REDUCTION OF FRACTURE NECK FEMUR MUSCLE PEDICAL GRAFT & INTERNAL FIXATION (ICICI) Procedure (103830)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103831",
+    "name": "Open Reduction of Fracture Neck Femur Muscle PedicleGraft and Internal Fixations(CGHS) (103831)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103832",
+    "name": "Open Reduction of fracture of Long Bones of Upper / Lower Limb -AO Procedures(CGHS) (103832)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103833",
+    "name": "Open Reduction Of Joint (103833)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103834",
+    "name": "Open Reduction Of Joint Dislocation (Post Thr) (103834)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103823",
+    "name": "OPEN REDUCTION OF LONG BONES OF UPPER & LOWER LIMB  (ICICI) Procedure (103823)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103824",
+    "name": "Open Reduction offracture of Long Bones of Upper / Lower Limb -iling & Exterl Fixation(CGHS) (103824)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103825",
+    "name": "Open reduction/Close reduction/pinning of fracture/dislocation metacarpals+Phalanges Haryan Govt Pro (103825)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103826",
+    "name": "Open Rotator Cuff Repair For Small-Medium Tears (103826)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103827",
+    "name": "Open Synovectomy - Knee (103827)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103828",
+    "name": "Open Synovectomy - Wrist (103828)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103817",
+    "name": "Operations for Brachial Plexus & Cervical Rib(CGHS) (103817)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103818",
+    "name": "Orif # Both Bone Of Forearm (103818)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103819",
+    "name": "Orif # Both Bone Of Forearm Locking Plate (103819)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103820",
+    "name": "Orif # Olecranon (103820)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103821",
+    "name": "Orif # Patella (103821)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103822",
+    "name": "Orif Acetabulum (103822)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103811",
+    "name": "Orif Acetabulum (Complex) (103811)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103812",
+    "name": "Orif Calcaneum (103812)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103813",
+    "name": "Orif Clavicle (103813)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103814",
+    "name": "Orif Fracture Lateral Malleolus (103814)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103815",
+    "name": "Orif Fracture Lower End Radius (103815)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103816",
+    "name": "Orif Fracture Medial Malleolus (103816)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103805",
+    "name": "Orif Inter Condylar Region Of Humerus (103805)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103806",
+    "name": "Orif Long Bone - Lower Limb (103806)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103807",
+    "name": "Orif Long Bones - Upper Limbs (103807)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103808",
+    "name": "Orif Of Complex Fractures - Lower Limb (103808)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103809",
+    "name": "Orif Of Complex Fractures - Upper Limb (103809)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103810",
+    "name": "ORIF OF FRACTURE-K WIRE (Star Health) Procedure (103810)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103799",
+    "name": "ORIF OF FRACTURE-NAILING (Star Health) -PROCEDURE (103799)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103800",
+    "name": "Orif Radial Head (103800)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103801",
+    "name": "Orif Scaphoid (103801)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103802",
+    "name": "Orif Talus (103802)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103803",
+    "name": "Orthopedic Procedure Complex (103803)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103804",
+    "name": "Orthopedic Procedure Complicated (103804)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103793",
+    "name": "Orthopedic Procedure Major (103793)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103794",
+    "name": "Orthopedic Procedure Simple. (103794)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103795",
+    "name": "Orthoscopic Menisectomy Lateral Wedge Osteotomy Tibia (103795)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103796",
+    "name": "Osteomyelitis - Surgical Decompression (103796)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103797",
+    "name": "Osteotomy - Around Hip (103797)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103798",
+    "name": "Osteotomy - French (103798)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103787",
+    "name": "Osteotomy Calcaneal (103787)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103788",
+    "name": "Osteotomy Tibia (103788)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103789",
+    "name": "Other Major Surgery (ORTHO)(CGHS ) (103789)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103790",
+    "name": "Other Minor Surgery (ORTHO)(CGHS ) (103790)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103791",
+    "name": "Paediatric Hip Surgery - Open Reduction Of Cdh (103791)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103792",
+    "name": "Paediatric Hip Surgery - Perthes/Scfe (103792)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103781",
+    "name": "Paediatric Hip Surgery - Scfe (103781)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103782",
+    "name": "Patellar Realignment Procedure (103782)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103783",
+    "name": "Patellar Replacement (103783)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103784",
+    "name": "Patellectomy (103784)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103785",
+    "name": "PCL Reconstruction (Haryana Govt) Procedure (103785)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103786",
+    "name": "PCL Reconstruction(CGHS) (103786)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103775",
+    "name": "PCL REPAIR   (ICICI) Procedure (103775)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103776",
+    "name": "Pelvi-acetebular fracture -Internal fixation(CGHS) (103776)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103777",
+    "name": "Pelvis Fracture External Fixation (Including Implant) (Procedure) (103777)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103778",
+    "name": "Pelvis Fracture- External Fixation (Include Implant) (Gipsa) Procedure  (103778)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103779",
+    "name": "Percutaneous K - Wire Fixation Under C - Arm (103779)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103780",
+    "name": "Percutaneous Screw fixation of Fracture of Neck of Femur (Haryana Govt) Procedure (103780)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103769",
+    "name": "Periprosthetic Fracture (103769)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103770",
+    "name": "Pinning of Fracture Proximal Humerus (Haryana Govt) Procedure (103770)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103771",
+    "name": "Plaster Jacket(Cghs) (103771)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103772",
+    "name": "Plaster Work(Cghs) (103772)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103773",
+    "name": "Plate Fixations for Fracture Neck Femur(CGHS) (103773)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103774",
+    "name": "Plating Fixation (103774)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103763",
+    "name": "Plating of fracture Proximal Humerus (Haryana Govt) Procedure (103763)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103764",
+    "name": "Pop I (Ortho Opd) (103764)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103765",
+    "name": "Pop Ii (Ortho Opd) (103765)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103766",
+    "name": "Pop Iii (Ortho Opd) (103766)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103767",
+    "name": "Pop Ix (103767)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103768",
+    "name": "POP IX (Procedure) (103768)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103757",
+    "name": "Posterior Lumbar Intervertebral Body Fusion (103757)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103758",
+    "name": "Potts Fracture Ankle (Haryana Govt) Procedure (103758)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103759",
+    "name": "Primary Nerve Repair (103759)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103760",
+    "name": "Primary Total Joint Replacement - Unilateral - Ankle (103760)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103761",
+    "name": "Primary Total Joint Replacement - Unilateral - Shoulder (103761)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103762",
+    "name": "Proximal Femoral Nail (PFN for IT Fracture)(CGHS) (103762)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103751",
+    "name": "Prp Injection (Orthopedics) (103751)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103752",
+    "name": "Quadriceps Plasty / Repair (103752)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103753",
+    "name": "Rc Repair(Cghs) (103753)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103754",
+    "name": "Re - Adjustment Of Fixator (103754)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103755",
+    "name": "Reconstruction Plating Humerus Lower End (103755)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103756",
+    "name": "Recurrent Dislocation - Stablization - Shoulder - Elbow (Arthroscopic Method) (103756)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103745",
+    "name": "Recurrent Dislocation Of Patella Stabilization (Open Method) (103745)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103746",
+    "name": "Reduction OF Compound Fracture (Day Care) (Gipsa) Procedure (103746)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103747",
+    "name": "Reduction of Compound Fracture (Day Care) (Procedure) (103747)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103748",
+    "name": "REDUCTION OF COMPOUND FRACTURES WITH EXTERNAL FIXATION  (ICICI) Procedure (103748)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103749",
+    "name": "Reduction Of Compound Fractures(Cghs) (103749)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103750",
+    "name": "Reduction Of Dislocation in GA (Gipsa) Procedure (103750)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103739",
+    "name": "Reduction of Dislocation in GA (Procedure) (103739)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103740",
+    "name": "Release Of Ecrb For Tennis Elbow (103740)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103741",
+    "name": "Removal Of  Wires & Screw(Cghs) (103741)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103742",
+    "name": "Removal Of Exostosis (103742)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103743",
+    "name": "Removal Of Fixator (103743)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103744",
+    "name": "Removal Of Foreign Body (103744)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103733",
+    "name": "Removal Of Fracture Fragment - Hip (103733)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103734",
+    "name": "Removal Of Implants - Large(Procedure) (103734)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103735",
+    "name": "Removal Of Implants - Long Bones - Lower Limb (103735)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103736",
+    "name": "Removal Of Implants - Long Bones - Upper Limb (103736)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103737",
+    "name": "Removal Of Implants - Small(Procedure) (103737)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103738",
+    "name": "Removal of Plates/IL(CGHS) (103738)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103727",
+    "name": "REMOVAL OF PLATES/WIRE/SCREWS  (ICICI) Procedure (103727)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103728",
+    "name": "Repair Of Multiple Tendons Of Head (103728)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103729",
+    "name": "Resurface Hip Arthoplasty Unilateral (103729)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103730",
+    "name": "Revision Thr (103730)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103731",
+    "name": "Revision Tkr/Ul Single Stage (103731)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103732",
+    "name": "Rotation Flaps (103732)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103721",
+    "name": "S.P.NAILING FOR FRACTURE NECK FEMUR  (ICICI) Procedure (103721)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103722",
+    "name": "S/C French Osteotomy (103722)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103723",
+    "name": "Scaphoid Fracture Fixation (Gipsa) Procedure (103723)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103724",
+    "name": "Scaphold Fracture Fixation (Procedure) (103724)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103725",
+    "name": "Scoliosis Surgery/ Deformity Correction of Spine(CGHS) (103725)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103726",
+    "name": "Sequestrectomy & Saucerisation(CGHS) (103726)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103715",
+    "name": "Sequestrectomy & Saucerizations -Arthrotomy(CGHS) (103715)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103716",
+    "name": "Shoulder Arthroscopy  Rotator Cuff Repair (103716)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-104889",
+    "name": "SHOULDER PLASTER IMPORTED (104889)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-104890",
+    "name": "SHOULDER PLASTER LITE WEIGHTED (104890)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-104891",
+    "name": "SHOULDER PLASTER WATER PROOF (104891)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103717",
+    "name": "Shoulder Replacement (103717)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103718",
+    "name": "Shoulder Spica(Cghs) (103718)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103719",
+    "name": "Shoulder- Arthroscopy / Open- laterjet/ Bone Block (Gipsa) Procedure (103719)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103720",
+    "name": "Shoulder- Arthroscopy/ Open- Bankart (Procedure) (103720)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103709",
+    "name": "Shoulder- Arthroscopy/ Open- Cuff Repair (Gipsa) Procedure (103709)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103710",
+    "name": "Shoulder- Arthroscopy/ Open- Cuff Repair With Anchors (Gipsa) Procedure (103710)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103711",
+    "name": "Shoulder- Arthroscopy/ Open- Cut Repair With Anchors (Procedure) (103711)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103712",
+    "name": "Shoulder- Arthroscopy/ Open- Cutt Repair (Procedure) (103712)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103713",
+    "name": "Shoulder- Arthroscopy/ Open- laserjet/ Bone Block (Procedure) (103713)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103714",
+    "name": "Shoulder- Arthroscopy/ Open- Sub Acromial Decopressior (Procedure) (103714)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103703",
+    "name": "Shoulder- Arthroscopy/ Open- Sub Acrominal Decopressior (Gipsa) Procedure (103703)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103704",
+    "name": "Shoulder/ humerous/ Elbow/ Both Bones Forearms Fractures- Plates ANA  (Gipsa) (Procedure) (103704)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103705",
+    "name": "Shoulder/ Humerous/ Elbow/ Both Bones Forearms Fractures- Plates ANA (Procedure) (103705)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103706",
+    "name": "Single Bone (Monteggia or Galeezzi) Both Bones Forearm Plating (Haryana Govt) Procedure (103706)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103707",
+    "name": "Single Forearm Fracture/ wrist Fracture with Plate (Excluding Implants) (Procedure) (103707)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103708",
+    "name": "Single Forearm Fracture/Wrist Fracture with Plate (Excluding Implants) (Gipsa) Procedure (103708)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103697",
+    "name": "Single Hip Spica(Cghs) (103697)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103698",
+    "name": "Single Nerve Repair - Major Nerve (103698)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103699",
+    "name": "Single Tendon Grafting (103699)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103700",
+    "name": "Skeletal Traction (103700)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103701",
+    "name": "Skeletal Traction Application (103701)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103702",
+    "name": "Skull Traction (103702)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103691",
+    "name": "Small Bone Fractures-K-Wiring (To Be Covered AlongWith Other Injuries  Only And Not  As ExclusivePro (103691)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103692",
+    "name": "Small Joint Replacement (103692)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103693",
+    "name": "Soft Tissue   Reconstruction   Procedures For joints /Osteotomy  -  (ESIC-42) (103693)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103694",
+    "name": "Soft Tissue Operation on JOINTS -LARGE(CGHS) (103694)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103695",
+    "name": "Soft Tissue Operation on JOINTS -SMALL(CGHS) (103695)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103696",
+    "name": "Soft Tissue Operations for C.T.E.V.(CGHS) (103696)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103685",
+    "name": "Soft Tissue Operations for Polio(CGHS) (103685)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103686",
+    "name": "Soft Tissue Operations for Polio/ Cerebral Palsy(CGHS) (103686)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103687",
+    "name": "Spil Ostectomy and Internal Fixations(CGHS) (103687)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103688",
+    "name": "Spinal Fixation Cervical/dorsolumbar/ lumbosacral(CGHS) (103688)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103689",
+    "name": "Spinal Injections(Cghs) (103689)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103690",
+    "name": "Spinal Osteotomy(Cghs) (103690)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103679",
+    "name": "Stabilization of Spinal Cloumn (Procedure) (103679)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103680",
+    "name": "Stabilization of Spinal Column (Gipsa) Procedure (103680)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103681",
+    "name": "Standard Spine Instrumentation (103681)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103682",
+    "name": "Steroid Injection (103682)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103683",
+    "name": "Strapping Of  Ankle(Cghs) (103683)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103684",
+    "name": "Strapping Of  Elbow(Cghs) (103684)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103673",
+    "name": "Strapping Of  Toes(Cghs) (103673)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103674",
+    "name": "Strapping Of  Wrist(Cghs) (103674)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103675",
+    "name": "Strapping Of Chest(Cghs) (103675)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103676",
+    "name": "Strapping Of Finger(Cghs) (103676)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103677",
+    "name": "Strapping Of Knee(Cghs) (103677)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103678",
+    "name": "Strapping Of Shoulder(Cghs) (103678)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103667",
+    "name": "Subcondyler/Intra condyler Fracture of Humerus (Haryana Govt) Procedure (103667)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103668",
+    "name": "Supracondylar Nailing Femur (103668)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103669",
+    "name": "Surgery For Patella Fracture (To Be Covered AlongWith Other Injuries  Only And Not  As ExclusiveProc (103669)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103670",
+    "name": "Surgical Correction Of Pelvic Bone Fractures.  -  (ESIC-283) (103670)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103671",
+    "name": "Tendoachilles Repair (103671)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103672",
+    "name": "Tendon Lengthening/Tendon repair(CGHS) (103672)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103661",
+    "name": "Tendon Repair - Foot (103661)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103662",
+    "name": "Tendon Repair - Hand (103662)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103663",
+    "name": "Tendon Transfer (103663)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103664",
+    "name": "Tendon Transfer(CGHS) (103664)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103665",
+    "name": "Tendon with Transplant or Graft(CGHS) (103665)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103666",
+    "name": "Tenosynovectomy-(Procedure) (103666)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103655",
+    "name": "Tension Band Wiring (103655)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103656",
+    "name": "Tension Band Wirings(CGHS) (103656)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103657",
+    "name": "Therapeutic Arthroscopy  (Gipsa) (Procedure) (103657)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103658",
+    "name": "Therapeutic Arthroscopy (Procedure) (103658)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103659",
+    "name": "Thoraco/ Lumbar Anterior Interbody Fixation/ Bone Graft (Excluding Implants) (Procedure) (103659)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103660",
+    "name": "Thoraco/ Lumbar Global Fixation Bone Draft (Excluding Implants) (Gipsa) Procedure (103660)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103649",
+    "name": "Thoraco/ Lumbar Global Fixation/ Bone Draft (Excluding Implants) (Procedure) (103649)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103650",
+    "name": "Thoraco/ lumbar- Anterior Interobody Fixation/ Bone Draft (Excluding Implant) (Gipsa) Procedure (103650)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103651",
+    "name": "Tibia Fracture Proximal/ Middle/ Distal -Orif/ Crif With Nailing/ Locking (Procedure) (103651)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103652",
+    "name": "Tibia Fracture Proximal/Middle/Distal- ORIF/CRIF with Nailing /Locking (Gipsa) Procedure (103652)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103653",
+    "name": "TKR - Bilateral (Proc) (Implant Include) (103653)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103654",
+    "name": "Tkr - Bilateral(Procedure) (103654)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103643",
+    "name": "TKR - Unilateral (Proc) (Implant Include) (103643)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103644",
+    "name": "Tkr / Thr - Unilateral(Procedure) (103644)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103645",
+    "name": "TKR-BILATERAL  (ICICI) Procedure (103645)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103646",
+    "name": "TKR-UNILATERAL  (ICICI) Procedure (103646)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103647",
+    "name": "Tmj Reduction With Barrel Bandaging (103647)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103648",
+    "name": "Total Ankle Joint Replacement(CGHS) (103648)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103637",
+    "name": "Total Elbow Joint Replacement(CGHS) (103637)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103638",
+    "name": "Total finger joint replacement(CGHS) (103638)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103639",
+    "name": "TOTAL HIP REPLACEMENT  (Bajaj Allianz) Procedure (103639)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103640",
+    "name": "Total HIP Replacement Bilateral ( Implant Exclude )     (103640)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103641",
+    "name": "Total Hip Replacement Revision       Stage-I(CGHS) (103641)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103642",
+    "name": "Total Hip Replacement Revision       Stage-II(CGHS) (103642)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103631",
+    "name": "Total HIP Replacement Unilateral ( Implant Exclude ) (103631)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103632",
+    "name": "Total Hip Replacement(CGHS) (103632)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103633",
+    "name": "Total Knee Joint Replacement (Left) (Procedure) (103633)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103634",
+    "name": "Total Knee Joint Replacement (Right) (Procedure) (103634)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103635",
+    "name": "Total Knee Joint Replacement(CGHS) (103635)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103636",
+    "name": "TOTAL KNEE REPLACEMENT  (Bajaj Allianz) Procedure (103636)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103625",
+    "name": "Total Knee Replacement (Bilateral) (103625)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103626",
+    "name": "Total Knee Replacement (Bilateral) (Procedure) (103626)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103627",
+    "name": "Total Knee Replacement (Unilateral) (Procedure) (103627)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103628",
+    "name": "Total Knee Replacement (Unilateral) + Cost of Implant (Apollo) Procedure (103628)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103629",
+    "name": "Total Knee Replacement (Unilateral) Implant Excluded (Gipsa) Procedure (103629)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103630",
+    "name": "Total Knee Replacement - Bilateral (Implant Excluded) (Gipsa) Procedure (103630)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103619",
+    "name": "Total Knee Replacement Revision    Stage-I(CGHS) (103619)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103620",
+    "name": "Total Knee Replacement Revision    Stage-II(CGHS) (103620)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103621",
+    "name": "Total Knee Replacement UL + Cost of Implant HDFC Procedure (103621)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103622",
+    "name": "Total Nail Ablation (103622)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103623",
+    "name": "Total Shoulder Joint Replacement(CGHS) (103623)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103624",
+    "name": "Total Wrist Joint Replacement(CGHS) (103624)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103613",
+    "name": "Transforaminal Lumbar Intervertebral Body Fusion With Instrumentation (103613)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103614",
+    "name": "Transthoracic Anterior Decompression & Fusion (103614)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103615",
+    "name": "TRIGGER- FINGER  (ICICI) Procedure (103615)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103616",
+    "name": "Trochanteric Hook(Procedure) (103616)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103617",
+    "name": "Trochtrandic Hook (103617)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103618",
+    "name": "Tube Plaster (Or Plaster Cylinder)(Cghs) (103618)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103607",
+    "name": "Tubular external fixator(CGHS) (103607)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103608",
+    "name": "U/L Tkr + U/L Uka (103608)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103609",
+    "name": "Unicondylar Knee Replacement (U/L) (103609)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103610",
+    "name": "Unicondyler Fracture of Tibia (Haryana Govt) Procedure (103610)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103611",
+    "name": "Unilateral Thr (103611)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103612",
+    "name": "Unilateral-Total Elbow Joint Replacement (103612)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103605",
+    "name": "Vertebroplasty(CGHS) (103605)",
+    "dept": "Orthopedics",
+    "rate": 1000
+  },
+  {
+    "code": "ORTHO-103606",
+    "name": "Wound Debridement (Ortho) (Procedure) (103606)",
     "dept": "Orthopedics",
     "rate": 1000
   }

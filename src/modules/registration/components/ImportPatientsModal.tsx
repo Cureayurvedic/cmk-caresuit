@@ -53,7 +53,7 @@ export default function ImportPatientsModal({ isOpen, onClose, onSuccess }: Impo
         const val = values[idx] ? values[idx].trim() : "";
         if (!val) return;
 
-        if (h === "uhid" || h === "uhn" || h === "patientid") record.uhid = val;
+        if (h === "uhid" || h === "uhn" || h === "patientid" || h === "registrationno" || h === "regno") record.uhid = val;
         else if (h === "firstname" || h === "first_name" || h === "fname") record.firstName = val;
         else if (h === "middlename" || h === "middle_name" || h === "mname") record.middleName = val;
         else if (h === "lastname" || h === "last_name" || h === "lname") record.lastName = val;
@@ -62,28 +62,42 @@ export default function ImportPatientsModal({ isOpen, onClose, onSuccess }: Impo
         else if (h === "gender" || h === "sex") record.gender = val;
         else if (h === "maritalstatus" || h === "marital_status") record.maritalStatus = val;
         else if (h === "dob" || h === "dateofbirth" || h === "birthdate") record.dob = val;
-        else if (h === "age") record.age = val;
-        else if (h === "mobile" || h === "phone" || h === "contact" || h === "mobilenumber") record.mobile = val;
+        else if (h === "age" || h === "ageyear" || h === "age_year") record.age = val;
+        else if (h === "mobile" || h === "phone" || h === "contact" || h === "mobilenumber" || h === "mobileno") record.mobile = val;
         else if (h === "address" || h === "location") record.address = val;
-        else if (h === "state") record.state = val;
-        else if (h === "city" || h === "districtcity") record.districtCity = val;
-        else if (h === "pincode" || h === "zipcode") record.pinCode = val;
-        else if (h === "country") record.country = val;
+        else if (h === "state" || h === "statename") record.state = val;
+        else if (h === "city" || h === "districtcity" || h === "cityname") record.districtCity = val;
+        else if (h === "pincode" || h === "zipcode" || h === "localpin") record.pinCode = val;
+        else if (h === "country" || h === "countryname") record.country = val;
         else if (h === "guardianname" || h === "guardian_name" || h === "fathername") record.guardianName = val;
         else if (h === "guardianrelation" || h === "relation") record.guardianRelation = val;
         else if (h === "registrationtype" || h === "regtype") record.registrationType = val;
-        else if (h === "payertype" || h === "payer_type") record.payerType = val;
-        else if (h === "payer") record.payer = val;
+        else if (h === "payertype" || h === "payer_type" || h === "companytype") record.payerType = val;
+        else if (h === "payer" || h === "companyname" || h === "company") record.payer = val;
+        else if (h === "doctorname" || h === "doctor" || h === "referredby") record.referredBy = val;
         else if (h === "aadhaarcard" || h === "aadhaar" || h === "aadhar") record.aadhaarCard = val;
         else if (h === "status") record.status = val;
+        else if (h === "encodeddate" || h === "regdate") record.regDate = val;
       });
 
-      // Default required fallbacks
-      if (!record.firstName && record.fullName) {
-        const parts = record.fullName.split(" ");
-        record.firstName = parts[0];
-        if (parts.length > 1) record.lastName = parts.slice(1).join(" ");
+      // Default required fallbacks & name title extraction
+      if (record.fullName) {
+        let nameStr = record.fullName.trim();
+        const titleMatch = nameStr.match(/^(Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.)\s+/i);
+        if (titleMatch) {
+          if (!record.title) {
+            const rawTitle = titleMatch[1];
+            record.title = rawTitle.charAt(0).toUpperCase() + rawTitle.slice(1).toLowerCase();
+          }
+          nameStr = nameStr.replace(/^(Mr\.|Mrs\.|Ms\.|Dr\.|Prof\.)\s+/i, "").trim();
+        }
+        if (!record.firstName) {
+          const parts = nameStr.split(/\s+/).filter(Boolean);
+          record.firstName = parts[0] || "Patient";
+          if (parts.length > 1 && !record.lastName) record.lastName = parts.slice(1).join(" ");
+        }
       }
+
       if (!record.title) record.title = "Mr.";
       if (!record.gender) record.gender = "Male";
       if (!record.mobile) record.mobile = "9999999999";
