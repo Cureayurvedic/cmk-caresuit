@@ -12,10 +12,12 @@ import {
   ArrowLeft,
   Search,
   LogOut,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSidebar } from "@/contexts/SidebarContext";
+import { useIsAdmin } from "@/contexts/AuthContext";
 import { useReports, REPORT_TREE } from "@/contexts/ReportsContext";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -67,6 +69,8 @@ export default function Sidebar() {
     handleOpenReportsMenu,
     filteredTree,
   } = useReports();
+  
+  const isAdmin = useIsAdmin();
 
   const isReportsRoute = location.pathname.startsWith("/reports");
   const isShowingReportsMenu = isReportsRoute && showReportsSidebar;
@@ -157,9 +161,15 @@ export default function Sidebar() {
                 <div className="flex-1 flex items-center justify-center h-full py-2">
                   <div className="w-full h-full flex items-center justify-center px-2 py-1 bg-white/95 rounded-lg shadow-xs overflow-hidden">
                     <img
-                      src="/cmk_caresuit_logo.png"
-                      alt="CMK CareSuite"
-                      className="w-full h-full object-contain"
+                      src="/cmk-logo.png"
+                      alt="CMK HealthCare"
+                      className="w-full h-full object-contain max-h-10"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (!target.src.includes("cmk_caresuit_logo")) {
+                          target.src = "/cmk_caresuit_logo.png";
+                        }
+                      }}
                     />
                   </div>
                 </div>

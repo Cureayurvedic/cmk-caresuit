@@ -4,9 +4,10 @@ import { User, Lock, Heart, ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
+import { authenticateUser } from "@/api/userApi";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -15,23 +16,27 @@ export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username.trim() || !password.trim()) {
-      setError("Please enter both username and password.");
+    if (!email.trim() || !password.trim()) {
+      setError("Please enter both email and password.");
       return;
     }
 
     setIsLoading(true);
     setError("");
 
-    // Simulate network request for premium feel
-    setTimeout(() => {
-      // For this phase, any non-empty credentials are correct
-      login(username);
+    try {
+      const user = await authenticateUser(email, password);
+      // login context might still expect username as a label, we'll pass email
+      login(user.name || user.email, user.role);
       navigate("/");
-    }, 800);
+    } catch (err: any) {
+      setError(err.message || "An error occurred during login.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -108,15 +113,18 @@ export default function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-6 mt-8">
             <div className="space-y-5">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700 ml-1">Username</label>
+                <label className="text-sm font-bold text-slate-700 ml-1">Email Address</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-400" />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-slate-400" />
+                  </div>
                   <Input 
-                    type="text" 
-                    placeholder="Enter your username" 
-                    className="pl-12 h-12 bg-white/90 border-slate-200 focus-visible:ring-teal-500 focus-visible:border-teal-500 shadow-sm rounded-xl text-base transition-all"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email" 
+                    className="pl-10 h-12 rounded-xl bg-white border-slate-200 focus:border-teal-500 focus:ring-teal-500 transition-all text-sm font-medium"
+                    required
                   />
                 </div>
               </div>

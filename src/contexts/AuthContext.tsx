@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  login: (username: string) => void;
+  role: 'admin' | 'data_entry' | null;
+  login: (username: string, role: 'admin' | 'data_entry') => void;
   logout: () => void;
 }
 
@@ -15,21 +16,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return saved === "true";
   });
 
+  const [role, setRole] = useState<'admin' | 'data_entry' | null>(() => {
+    const savedRole = localStorage.getItem("cmk_role");
+    return (savedRole as 'admin' | 'data_entry') || null;
+  });
+
   useEffect(() => {
     localStorage.setItem("cmk_auth", isAuthenticated.toString());
-  }, [isAuthenticated]);
+    if (role) {
+      localStorage.setItem("cmk_role", role);
+    } else {
+      localStorage.removeItem("cmk_role");
+    }
+  }, [isAuthenticated, role]);
 
-  const login = (username: string) => {
-    console.log("Logged in as:", username);
+  const login = (username: string, selectedRole: 'admin' | 'data_entry') => {
+    console.log(`Logged in as: ${username} (Role: ${selectedRole})`);
     setIsAuthenticated(true);
+    setRole(selectedRole);
   };
 
   const logout = () => {
     setIsAuthenticated(false);
+    setRole(null);
+    localStorage.removeItem("cmk_auth_token");
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, role, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -41,4 +55,9 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
+}
+
+export function useIsAdmin() {
+  const { role } = useAuth();
+  return role === 'admin';
 }

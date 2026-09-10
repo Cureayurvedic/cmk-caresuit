@@ -13,9 +13,11 @@ import {
   deleteBedCategory,
   type BedCategoryData,
 } from "@/api/bedCategoryApi";
+import { useIsAdmin } from "@/contexts/AuthContext";
 
 export default function BedCategoriesPanel() {
   const toast = useToast();
+  const isAdmin = useIsAdmin();
 
   const [categories, setCategories] = useState<BedCategoryData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -154,10 +156,12 @@ export default function BedCategoriesPanel() {
             Manage ward types, daily tariffs, and auto-generate beds for the ATD module.
           </CardDescription>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} size="sm" className="h-9 text-xs gap-1.5 shadow-xs bg-blue-600 hover:bg-blue-700 font-bold">
-          <Plus className="h-4 w-4" />
-          Add Category
-        </Button>
+        {isAdmin && (
+          <Button onClick={() => setIsAddModalOpen(true)} size="sm" className="h-9 text-xs gap-1.5 shadow-xs bg-blue-600 hover:bg-blue-700 font-bold">
+            <Plus className="h-4 w-4" />
+            Add Category
+          </Button>
+        )}
       </CardHeader>
 
       <CardContent className="p-5 space-y-6 flex-1">
@@ -273,25 +277,27 @@ export default function BedCategoriesPanel() {
                               </Button>
                             </>
                           ) : (
-                            <>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => startEdit(cat)}
-                                className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md"
-                              >
-                                <Edit2 className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleTrashClick(cat)}
-                                disabled={deletingId === cat.id}
-                                className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md"
-                              >
-                                {deletingId === cat.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                              </Button>
-                            </>
+                            isAdmin && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => startEdit(cat)}
+                                  className="h-7 w-7 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md"
+                                >
+                                  <Edit2 className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleTrashClick(cat)}
+                                  disabled={deletingId === cat.id}
+                                  className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-md"
+                                >
+                                  {deletingId === cat.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                </Button>
+                              </>
+                            )
                           )}
                         </div>
                       </td>

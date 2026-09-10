@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { createPatient, getPatientById, updatePatient, getPatients, PatientData } from "@/api/patientApi";
 import { getSettingsItems } from "@/api/settingsApi";
 import { useBranch } from "@/contexts/BranchContext";
+import { useIsAdmin } from "@/contexts/AuthContext";
 import ImportPatientsModal from "../components/ImportPatientsModal";
 import { useToast } from "@/components/ui/toast-notification";
 import { useReactToPrint } from "react-to-print";
@@ -515,6 +516,13 @@ export default function RegistrationPage() {
   const toast = useToast();
   const today = format(new Date(), "yyyy-MM-dd");
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
+
+  const isAdmin = useIsAdmin();
+
+  const [activeTab, setActiveTab] = useState("general");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const printLabelRef = useRef<HTMLDivElement>(null);
@@ -584,6 +592,12 @@ export default function RegistrationPage() {
 
   useEffect(() => {
     if (editId) {
+      if (!isAdmin) {
+        toast.error("Access Denied", "You do not have permission to edit patients.");
+        navigate("/registration/demographics");
+        return;
+      }
+      
       setIsEditing(true);
       const loadPatient = async () => {
         try {

@@ -65,11 +65,14 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
       qty?: number;
       amount?: number;
       netAmt?: number;
+      remark?: string;
     }> = [];
 
     try {
       if (invoice.itemsJson) {
         serviceItems = JSON.parse(invoice.itemsJson);
+      } else if ((invoice as any).items) {
+        serviceItems = (invoice as any).items;
       }
     } catch {
       serviceItems = [];
@@ -230,26 +233,29 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
             <thead>
               <tr className="bg-slate-100 font-bold text-slate-900 uppercase">
                 <th className="w-10 text-center py-1">S. No.</th>
-                <th className="w-28 text-center py-1">QTY.</th>
-                <th className="text-left py-1">DESCRIPTION</th>
-                <th className="w-32 text-right py-1">AMOUNT</th>
+                <th className="text-left py-1 w-2/5">NAME OF THE SERVICE</th>
+                <th className="w-16 text-center py-1">QTY</th>
+                <th className="text-left py-1">DESCRIPTION / NOTES</th>
+                <th className="w-28 text-right py-1">AMOUNT</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-300 font-medium">
               {STANDARD_IP_HEADS.map((headName, index) => {
                 const sNo = index + 1;
                 // Match items from JSON payload
-                const foundItem = serviceItems.find(
-                  (it) => it.sNo === sNo || it.name.trim().toLowerCase() === headName.toLowerCase()
+                const foundItem: any = serviceItems.find(
+                  (it: any) => it.sNo === sNo || (it.name && it.name.trim().toLowerCase() === headName.toLowerCase())
                 );
                 const amt = foundItem ? (foundItem.amount ?? foundItem.netAmt ?? foundItem.rate) : undefined;
-                const qtyDesc = foundItem ? (foundItem.qtyDesc || (foundItem.qty ? `Qty: ${foundItem.qty}` : "")) : "";
+                const qtyVal = foundItem ? (foundItem.qty !== undefined && foundItem.qty !== "" ? String(foundItem.qty) : (amt ? "1" : "")) : "";
+                const descVal = foundItem ? (foundItem.desc || foundItem.qtyDesc || "") : "";
 
                 return (
                   <tr key={sNo}>
                     <td className="text-center font-mono text-slate-700 py-1">{sNo}</td>
-                    <td className="text-center font-mono py-1">{qtyDesc || ""}</td>
                     <td className="py-1 font-semibold text-slate-900">{headName}</td>
+                    <td className="text-center font-mono py-1">{qtyVal}</td>
+                    <td className="py-1 font-mono text-slate-800">{descVal}</td>
                     <td className="text-right font-mono font-bold py-1">
                       {amt !== undefined && amt !== null && Number(amt) > 0
                         ? Number(amt).toFixed(0)
@@ -370,8 +376,8 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
         <div className="text-center pb-2 border-b border-slate-300 mb-3">
           <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider underline decoration-slate-900 underline-offset-4 mb-2.5">
             {invoice.type === "IP"
-              ? "INPATIENT (IP) OFFICIAL INVOICE & RECEIPT"
-              : "OUTPATIENT (OP) OFFICIAL INVOICE & RECEIPT"}
+              ? "IP INVOICE & RECEIPT"
+              : "OP INVOICE & RECEIPT"}
           </h2>
           <div className="flex justify-between items-center text-[10px] text-slate-600 pt-1 font-medium px-1">
             <span>Invoice #: <strong className="text-slate-900">{invoice.invoiceNo}</strong></span>
@@ -456,7 +462,7 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
         <table className="bill-table text-[11px] mb-4">
           <thead>
             <tr className="bg-slate-100 font-bold uppercase text-[10px] text-slate-800">
-              <th className="py-1.5 w-20 text-center">Code</th>
+              <th className="py-1.5 w-12 text-center">S. No.</th>
               <th className="py-1.5 text-left">Service Description</th>
               <th className="py-1.5 text-left w-28">Dept</th>
               <th className="py-1.5 text-right w-20">Rate (₹)</th>
@@ -468,8 +474,14 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
             {serviceItems.length > 0 ? (
               serviceItems.map((it, idx) => (
                 <tr key={idx}>
-                  <td className="py-1.5 text-center font-mono text-slate-600">{it.code || `SRV-0${idx + 1}`}</td>
-                  <td className="py-1.5 font-bold text-slate-900">{it.name}</td>
+                  <td className="py-1.5 text-center font-mono text-slate-600">{idx + 1}</td>
+                  <td className="py-1.5 font-bold text-slate-900">
+                    {it.name === "Others" || it.name === "Other"
+                      ? it.remark || "Others"
+                      : it.remark
+                      ? `${it.name} - ${it.remark}`
+                      : it.name}
+                  </td>
                   <td className="py-1.5 text-slate-700">{it.dept || "General OPD"}</td>
                   <td className="py-1.5 text-right font-mono">₹{(it.rate || 0).toFixed(2)}</td>
                   <td className="py-1.5 text-center font-mono">{it.qty || 1}</td>
@@ -480,7 +492,7 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
               ))
             ) : (
               <tr>
-                <td className="py-1.5 text-center font-mono text-slate-600">CON-01</td>
+                <td className="py-1.5 text-center font-mono text-slate-600">1</td>
                 <td className="py-1.5 font-bold text-slate-900">OPD Consultation - Senior Specialist</td>
                 <td className="py-1.5 text-slate-700">General OPD</td>
                 <td className="py-1.5 text-right font-mono">₹{invoice.netAmt.toFixed(2)}</td>

@@ -33,6 +33,7 @@ import {
   type SettingsCategory,
   type MasterOption,
 } from "@/api/settingsApi";
+import { useIsAdmin } from "@/contexts/AuthContext";
 import BedCategoriesPanel from "../components/BedCategoriesPanel";
 
 // ─── Category Configuration ────────────────────────────────────────────────────
@@ -137,6 +138,7 @@ type TabKey = SettingsCategory | "bedCategories";
 // ─── Component ──────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const toast = useToast();
+  const isAdmin = useIsAdmin();
   const [searchParams] = useSearchParams();
   const urlTab = searchParams.get("tab") as TabKey | null;
 
@@ -342,14 +344,16 @@ export default function SettingsPage() {
                     {config.description}
                   </CardDescription>
                 </div>
-                <Button
-                  onClick={() => setIsAddModalOpen(true)}
-                  size="sm"
-                  className="h-9 text-xs gap-1.5 shadow-xs bg-blue-600 hover:bg-blue-700 font-bold"
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Option
-                </Button>
+                {isAdmin && (
+                  <Button
+                    onClick={() => setIsAddModalOpen(true)}
+                    size="sm"
+                    className="h-9 text-xs gap-1.5 shadow-xs bg-blue-600 hover:bg-blue-700 font-bold"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Option
+                  </Button>
+                )}
               </CardHeader>
 
               <CardContent className="p-6 space-y-5">
@@ -430,19 +434,21 @@ export default function SettingsPage() {
                               {item.value}
                             </td>
                             <td className="px-4 py-3 text-right pr-4">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setItemToDelete(item)}
-                                disabled={deletingId === item.id}
-                                className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50/60 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                              >
-                                {deletingId === item.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
+                              {isAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => setItemToDelete(item)}
+                                  disabled={deletingId === item.id}
+                                  className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50/60 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                >
+                                  {deletingId === item.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              )}
                             </td>
                           </tr>
                         ))}

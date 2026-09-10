@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getPatients, deletePatient, PatientData } from "@/api/patientApi";
+import { useIsAdmin } from "@/contexts/AuthContext";
 import ImportPatientsModal from "../components/ImportPatientsModal";
 import PatientLedgerView from "../components/PatientLedgerView";
 import { PatientRegistrationDetailsPrint, PatientRegDetailsData } from "../components/PatientRegistrationDetailsPrint";
@@ -37,6 +38,8 @@ export default function PatientSearchPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<PatientData | null>(null);
   const [printingPatient, setPrintingPatient] = useState<PatientData | null>(null);
+  
+  const isAdmin = useIsAdmin();
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = useReactToPrint({
@@ -189,9 +192,9 @@ export default function PatientSearchPage() {
       </Card>
 
       {/* Results & Detail split layout */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-[620px]">
         {/* Results Table */}
-        <Card className={`flex flex-col overflow-hidden transition-all duration-300 ${selectedPatient ? "w-full lg:w-5/12" : "w-full"}`}>
+        <Card className={`flex flex-col overflow-hidden transition-all duration-300 ${selectedPatient ? "w-full lg:w-5/12 h-[calc(100vh-220px)] min-h-[600px]" : "w-full"}`}>
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
@@ -287,29 +290,33 @@ export default function PatientSearchPage() {
                           >
                             <Printer className="h-3.5 w-3.5" />
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Edit Patient"
-                            className="h-7 w-7 text-blue-500 hover:bg-blue-50"
-                            onClick={() => navigate(`/registration/demographics?edit=${patient.id}`)}
-                          >
-                            <FileEdit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            title="Delete Patient"
-                            className="h-7 w-7 text-red-500 hover:bg-red-50"
-                            onClick={() => {
-                              handleDeletePatient(patient.id);
-                              if (selectedPatient?.id === patient.id) {
-                                setSelectedPatient(null);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          {isAdmin && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Edit Patient"
+                                className="h-7 w-7 text-blue-500 hover:bg-blue-50"
+                                onClick={() => navigate(`/registration/demographics?edit=${patient.id}`)}
+                              >
+                                <FileEdit className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Delete Patient"
+                                className="h-7 w-7 text-red-500 hover:bg-red-50"
+                                onClick={() => {
+                                  handleDeletePatient(patient.id);
+                                  if (selectedPatient?.id === patient.id) {
+                                    setSelectedPatient(null);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -362,7 +369,7 @@ export default function PatientSearchPage() {
 
         {/* Right Side: Ledger View */}
         {selectedPatient && (
-          <Card className="w-full lg:w-7/12 flex flex-col overflow-hidden animate-slide-in-right bg-white border border-slate-200 shadow-sm rounded-xl">
+          <Card className="w-full lg:w-7/12 flex flex-col h-[calc(100vh-220px)] min-h-[600px] overflow-hidden animate-slide-in-right bg-white border border-slate-200 shadow-md rounded-xl">
             <PatientLedgerView
               patient={selectedPatient}
               onClose={() => setSelectedPatient(null)}

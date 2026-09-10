@@ -559,6 +559,12 @@ const SERVICE_CATALOG = [
     dept: "General OPD",
     rate: 1200,
   },
+  {
+    code: "OTH-01",
+    name: "Others",
+    dept: "General OPD",
+    rate: 0,
+  },
   ...ORTHOPEDICS_SERVICES,
 ];
 
@@ -1002,24 +1008,24 @@ export default function BillingPage() {
   const [ipStatus, setIpStatus] = useState("Bill Prepared");
 
   const [ipSurgeryItems, setIpSurgeryItems] = useState<
-    Array<{ sNo: number; name: string; qtyDesc: string; amount: number | "" }>
+    Array<{ sNo: number; name: string; qty?: string; desc?: string; qtyDesc: string; amount: number | "" }>
   >([
-    { sNo: 1, name: "Registration Fee", qtyDesc: "", amount: "" },
-    { sNo: 2, name: "Room / Bed Charges (Per Day)", qtyDesc: "", amount: "" },
-    { sNo: 3, name: "Hospital Consumables Charges", qtyDesc: "", amount: "" },
-    { sNo: 4, name: "OT/Ward Consumable Charges", qtyDesc: "", amount: "" },
-    { sNo: 5, name: "Pathology Investigation", qtyDesc: "", amount: "" },
-    { sNo: 6, name: "Radiology Investigation", qtyDesc: "", amount: "" },
-    { sNo: 7, name: "Cardiology Investigation", qtyDesc: "", amount: "" },
-    { sNo: 8, name: "OT Charges", qtyDesc: "", amount: "" },
-    { sNo: 9, name: "ICU Charges", qtyDesc: "", amount: "" },
-    { sNo: 10, name: "Implant / Instrument Charges", qtyDesc: "", amount: "" },
-    { sNo: 11, name: "Surgeon's Fee", qtyDesc: "", amount: "" },
-    { sNo: 12, name: "Assistant Surgeon's Fee", qtyDesc: "", amount: "" },
-    { sNo: 13, name: "Anesthetist Charges", qtyDesc: "", amount: "" },
-    { sNo: 14, name: "Physiotherapy Charges", qtyDesc: "", amount: "" },
-    { sNo: 15, name: "Consultation Fee Different Speciality", qtyDesc: "", amount: "" },
-    { sNo: 16, name: "Miscellaneous /Other Charges", qtyDesc: "", amount: "" },
+    { sNo: 1, name: "Registration Fee", qty: "1", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 2, name: "Room / Bed Charges (Per Day)", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 3, name: "Hospital Consumables Charges", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 4, name: "OT/Ward Consumable Charges", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 5, name: "Pathology Investigation", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 6, name: "Radiology Investigation", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 7, name: "Cardiology Investigation", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 8, name: "OT Charges", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 9, name: "ICU Charges", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 10, name: "Implant / Instrument Charges", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 11, name: "Surgeon's Fee", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 12, name: "Assistant Surgeon's Fee", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 13, name: "Anesthetist Charges", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 14, name: "Physiotherapy Charges", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 15, name: "Consultation Fee Different Speciality", qty: "", desc: "", qtyDesc: "", amount: "" },
+    { sNo: 16, name: "Miscellaneous /Other Charges", qty: "", desc: "", qtyDesc: "", amount: "" },
   ]);
 
   // ─── Patient Notes Modal States ──────────────────────────────────────────────
@@ -2774,7 +2780,7 @@ export default function BillingPage() {
             label: "Master Activity List",
             icon: ReceiptText,
           },
-          { id: "Refund", label: "Refund", icon: RotateCcw },
+          // { id: "Refund", label: "Refund", icon: RotateCcw },
           /*
           { id: "Create OP Visit", label: "Create OP Visit", icon: Calendar },
           {
@@ -5025,9 +5031,28 @@ export default function BillingPage() {
                         </tr>
                       ) : (
                         opBillingItems.map((it, idx) => {
-                          const filteredServices = it.dept
+                          const baseServices = it.dept
                             ? SERVICE_CATALOG.filter((s) => s.dept === it.dept)
                             : SERVICE_CATALOG;
+                          const hasOthersOption = baseServices.some(
+                            (s) => s.name === "Others" || s.name === "Other"
+                          );
+                          const filteredServices = hasOthersOption
+                            ? baseServices
+                            : [
+                                ...baseServices,
+                                {
+                                  code: `OTH-${it.dept ? it.dept.replace(/\s+/g, "").toUpperCase().slice(0, 4) : "999"}`,
+                                  name: "Others",
+                                  dept: it.dept || "General OPD",
+                                  rate: 0,
+                                },
+                              ];
+                          const isOtherSelected =
+                            it.name === "Others" ||
+                            it.name === "Other" ||
+                            (it.code && it.code.startsWith("OTH-"));
+
                           return (
                           <tr key={idx} className="hover:bg-teal-50/20">
                             <td className="px-2 py-1.5">
@@ -5041,69 +5066,84 @@ export default function BillingPage() {
                                   const matchingServices = SERVICE_CATALOG.filter(
                                     (s) => s.dept === newDept
                                   );
-                                  const firstService = matchingServices[0];
-                                  if (firstService) {
-                                    const qty = updated[idx].qty || 1;
-                                    const discPct =
-                                      updated[idx].discountPercent || 0;
-                                    const gross = firstService.rate * qty;
-                                    const discAmt = (gross * discPct) / 100;
-                                    updated[idx] = {
-                                      ...updated[idx],
-                                      code: firstService.code,
-                                      name: firstService.name,
-                                      dept: newDept,
-                                      rate: firstService.rate,
-                                      discountAmt: discAmt,
-                                      netAmt: Math.max(0, gross - discAmt),
-                                    };
-                                  } else {
-                                    updated[idx] = {
-                                      ...updated[idx],
-                                      dept: newDept,
-                                    };
-                                  }
+                                  const firstService = matchingServices[0] || {
+                                    code: `OTH-${newDept.replace(/\s+/g, "").toUpperCase().slice(0, 4)}`,
+                                    name: "Others",
+                                    dept: newDept,
+                                    rate: 0,
+                                  };
+                                  const qty = updated[idx].qty || 1;
+                                  const discPct =
+                                    updated[idx].discountPercent || 0;
+                                  const gross = firstService.rate * qty;
+                                  const discAmt = (gross * discPct) / 100;
+                                  updated[idx] = {
+                                    ...updated[idx],
+                                    code: firstService.code,
+                                    name: firstService.name,
+                                    dept: newDept,
+                                    rate: firstService.rate,
+                                    discountAmt: discAmt,
+                                    netAmt: Math.max(0, gross - discAmt),
+                                    remark: (firstService.name === "Others" || firstService.name === "Other") ? (updated[idx].remark || "") : undefined,
+                                  };
                                   setOpBillingItems(updated);
                                 }}
                               />
                             </td>
                             <td className="px-2 py-1.5">
-                              <SearchableServiceSelect
-                                value={it.name}
-                                options={filteredServices}
-                                onSelect={(found) => {
-                                  const updated = [...opBillingItems];
-                                  const qty = updated[idx].qty || 1;
-                                  const discPct =
-                                    updated[idx].discountPercent || 0;
-                                  const rate = found.rate || 0;
-                                  const gross = rate * qty;
-                                  const discAmt = (gross * discPct) / 100;
-                                  updated[idx] = {
-                                    ...updated[idx],
-                                    code: found.code,
-                                    name: found.name,
-                                    dept: found.dept || updated[idx].dept,
-                                    rate: rate,
-                                    discountAmt: discAmt,
-                                    netAmt: Math.max(0, gross - discAmt),
-                                  };
-                                  // Auto-append a blank row if this was the last row
-                                  if (idx === updated.length - 1) {
-                                    updated.push({
-                                      code: "",
-                                      name: "",
-                                      dept: "",
-                                      rate: 0,
-                                      qty: 1,
-                                      discountPercent: 0,
-                                      discountAmt: 0,
-                                      netAmt: 0,
-                                    });
-                                  }
-                                  setOpBillingItems(updated);
-                                }}
-                              />
+                              <div className="space-y-1">
+                                <SearchableServiceSelect
+                                  value={it.name}
+                                  options={filteredServices}
+                                  onSelect={(found) => {
+                                    const updated = [...opBillingItems];
+                                    const qty = updated[idx].qty || 1;
+                                    const discPct =
+                                      updated[idx].discountPercent || 0;
+                                    const rate = found.rate || 0;
+                                    const gross = rate * qty;
+                                    const discAmt = (gross * discPct) / 100;
+                                    updated[idx] = {
+                                      ...updated[idx],
+                                      code: found.code,
+                                      name: found.name,
+                                      dept: found.dept || updated[idx].dept,
+                                      rate: rate,
+                                      discountAmt: discAmt,
+                                      netAmt: Math.max(0, gross - discAmt),
+                                      remark: (found.name === "Others" || found.name === "Other") ? (updated[idx].remark || "") : undefined,
+                                    };
+                                    // Auto-append a blank row if this was the last row
+                                    if (idx === updated.length - 1) {
+                                      updated.push({
+                                        code: "",
+                                        name: "",
+                                        dept: "",
+                                        rate: 0,
+                                        qty: 1,
+                                        discountPercent: 0,
+                                        discountAmt: 0,
+                                        netAmt: 0,
+                                      });
+                                    }
+                                    setOpBillingItems(updated);
+                                  }}
+                                />
+                                {isOtherSelected && (
+                                  <Input
+                                    type="text"
+                                    placeholder="Type Custom / Other Service Details..."
+                                    value={it.remark || ""}
+                                    onChange={(e) => {
+                                      const updated = [...opBillingItems];
+                                      updated[idx].remark = e.target.value;
+                                      setOpBillingItems(updated);
+                                    }}
+                                    className="h-6.5 text-[11px] bg-amber-50/90 border-amber-400 font-semibold text-amber-950 placeholder:text-amber-700/60 focus:bg-white focus:border-amber-600 shadow-2xs transition-colors"
+                                  />
+                                )}
+                              </div>
                             </td>
                             <td className="px-2 py-1.5 text-right">
                               <Input
@@ -5116,7 +5156,11 @@ export default function BillingPage() {
                                     Number(e.target.value),
                                   )
                                 }
-                                className="h-6 w-full text-xs text-right bg-white font-mono font-bold"
+                                className={`h-6 w-full text-xs text-right font-mono font-bold transition-colors ${
+                                  isOtherSelected
+                                    ? "bg-amber-50/90 border-amber-400 text-amber-950 focus:bg-white focus:border-amber-600 ring-1 ring-amber-200"
+                                    : "bg-white text-slate-900 border-slate-200"
+                                }`}
                               />
                             </td>
                             <td className="px-2 py-1.5 text-center">
@@ -5212,6 +5256,9 @@ export default function BillingPage() {
                             );
                           const rawBalance = opNetPayable - cumulativePaid;
                           const rowBalance = rawBalance.toFixed(2);
+                          const isCash = r.mode === "Cash";
+                          const isCard =
+                            r.mode === "Credit Card" || r.mode === "Debit Card";
                           return (
                             <tr key={idx} className="hover:bg-teal-50/20">
                               <td className="px-2 py-1.5">
@@ -5221,7 +5268,13 @@ export default function BillingPage() {
                                     const u = [...opBillingPaymentRows];
                                     const newMode = e.target.value;
                                     u[idx].mode = newMode;
-                                    if (
+                                    if (newMode === "Cash") {
+                                      u[idx].bankName = "";
+                                      u[idx].beneficiaryName = "";
+                                      u[idx].refNo = "";
+                                      u[idx].description = "";
+                                      u[idx].cardSwipingValue = 0;
+                                    } else if (
                                       newMode === "Credit Card" ||
                                       newMode === "Debit Card"
                                     ) {
@@ -5229,7 +5282,7 @@ export default function BillingPage() {
                                     }
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
+                                  className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1 font-medium text-slate-800"
                                 >
                                   <option value="Cash">Cash</option>
                                   <option value="Cheque/DD">Cheque/DD</option>
@@ -5297,66 +5350,92 @@ export default function BillingPage() {
                               </td>
                               <td className="px-2 py-1.5">
                                 <select
-                                  value={r.bankName}
+                                  disabled={isCash}
+                                  value={isCash ? "" : r.bankName}
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     u[idx].bankName = e.target.value;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
+                                  className={`h-6 w-28 text-[11px] border border-slate-200 rounded px-1 transition-colors ${
+                                    isCash
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-medium focus:ring-1 focus:ring-teal-500"
+                                  }`}
                                 >
-                                  <option value="">-Select-</option>
-                                  <option>SBI</option>
-                                  <option>HDFC</option>
-                                  <option>ICICI</option>
-                                  <option>Axis</option>
+                                  <option value="">{isCash ? "-" : "-Select-"}</option>
+                                  <option value="SBI">SBI</option>
+                                  <option value="HDFC">HDFC</option>
+                                  <option value="ICICI">ICICI</option>
+                                  <option value="Axis">Axis</option>
+                                  <option value="Kotak">Kotak</option>
+                                  <option value="PNB">PNB</option>
+                                  <option value="BOB">BOB</option>
+                                  <option value="Other Bank">Other Bank</option>
                                 </select>
                               </td>
                               <td className="px-2 py-1.5">
                                 <select
-                                  value={r.beneficiaryName}
+                                  disabled={isCash}
+                                  value={isCash ? "" : r.beneficiaryName}
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     u[idx].beneficiaryName = e.target.value;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1"
+                                  className={`h-6 w-28 text-[11px] border border-slate-200 rounded px-1 transition-colors ${
+                                    isCash
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-medium focus:ring-1 focus:ring-teal-500"
+                                  }`}
                                 >
-                                  <option value="">-Select-</option>
-                                  <option>Self</option>
-                                  <option>Relative</option>
-                                  <option>Corporate</option>
+                                  <option value="">{isCash ? "-" : "-Select-"}</option>
+                                  <option value="Self">Self</option>
+                                  <option value="Relative">Relative</option>
+                                  <option value="Corporate">Corporate</option>
+                                  <option value="Hospital Account">Hospital Account</option>
                                 </select>
                               </td>
                               <td className="px-2 py-1.5">
                                 <Input
-                                  value={r.refNo}
+                                  disabled={isCash}
+                                  value={isCash ? "" : r.refNo}
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     u[idx].refNo = e.target.value;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  placeholder="Ref#"
-                                  className="h-6 w-24 text-[11px] font-mono"
+                                  placeholder={isCash ? "-" : "Ref# / Txn ID"}
+                                  className={`h-6 w-24 text-[11px] font-mono transition-colors ${
+                                    isCash
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-medium"
+                                  }`}
                                 />
                               </td>
                               <td className="px-2 py-1.5">
                                 <Input
-                                  value={r.description}
+                                  disabled={isCash}
+                                  value={isCash ? "" : r.description}
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     u[idx].description = e.target.value;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  placeholder="Description..."
-                                  className="h-6 w-32 text-[11px]"
+                                  placeholder={isCash ? "-" : "Holder / Description..."}
+                                  className={`h-6 w-32 text-[11px] transition-colors ${
+                                    isCash
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-medium"
+                                  }`}
                                 />
                               </td>
                               <td className="px-2 py-1.5 text-right">
                                 <Input
                                   type="number"
                                   min="0"
-                                  value={r.cardSwipingValue}
+                                  disabled={!isCard}
+                                  value={!isCard ? 0 : r.cardSwipingValue}
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     const val = Number(e.target.value);
@@ -5364,7 +5443,11 @@ export default function BillingPage() {
                                       isNaN(val) || val < 0 ? 0 : val;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className="h-6 w-16 text-[11px] text-right font-mono"
+                                  className={`h-6 w-16 text-[11px] text-right font-mono transition-colors ${
+                                    !isCard
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-bold"
+                                  }`}
                                 />
                               </td>
                               <td className="px-2 py-1.5">
@@ -6034,8 +6117,8 @@ export default function BillingPage() {
             </div>
 
             {/* Main Sheet Container */}
-            <div className="flex-1 overflow-y-auto bg-slate-100 p-4">
-              <div className="bg-white rounded-lg shadow border border-slate-300 max-w-4xl mx-auto p-5 space-y-4 text-xs">
+            <div className="flex-1 overflow-y-auto bg-slate-100 p-4 sm:p-5">
+              <div className="bg-white rounded-xl shadow-sm border border-slate-300 w-full p-5 space-y-5 text-xs">
                 
                 {/* Sheet Title */}
                 <div className="text-center border-b pb-2">
@@ -6048,31 +6131,31 @@ export default function BillingPage() {
                 </div>
 
                 {/* Patient & Admission Info Metadata Form */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-3 rounded border border-slate-200 text-[11px]">
-                  {/* Left Column */}
-                  <div className="space-y-1.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 bg-slate-50/90 p-4 rounded-lg border border-slate-200 text-[11px]">
+                  {/* Column 1 */}
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-28 shrink-0">Patient Name:</span>
+                      <span className="font-bold text-slate-700 w-28 shrink-0">Patient Name:</span>
                       <input
                         type="text"
                         value={ipPatientNameInput}
                         onChange={(e) => setIpPatientNameInput(e.target.value)}
-                        className="flex-1 h-6 bg-white border border-slate-300 rounded px-2 font-bold text-slate-900"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-bold text-slate-900 text-xs focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-2xs"
                         placeholder="e.g. MRS SUMITRA DAS"
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-28 shrink-0">Age / Sex:</span>
+                      <span className="font-bold text-slate-700 w-28 shrink-0">Age / Sex:</span>
                       <input
                         type="text"
                         value={ipAgeSexInput}
                         onChange={(e) => setIpAgeSexInput(e.target.value)}
-                        className="w-36 h-6 bg-white border border-slate-300 rounded px-2 font-medium"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-semibold text-slate-800 text-xs shadow-2xs"
                         placeholder="e.g. 61/FEMALE"
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-28 shrink-0">C.R. No / UHID:</span>
+                      <span className="font-bold text-slate-700 w-28 shrink-0">C.R. No / UHID:</span>
                       <input
                         type="text"
                         value={ipCrNoInput || ipBillingUhid}
@@ -6080,89 +6163,97 @@ export default function BillingPage() {
                           setIpCrNoInput(e.target.value);
                           setIpBillingUhid(e.target.value);
                         }}
-                        className="w-36 h-6 bg-white border border-slate-300 rounded px-2 font-mono font-bold"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-mono font-bold text-blue-700 text-xs shadow-2xs"
                         placeholder="e.g. 26/543"
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-28 shrink-0">Payer Category:</span>
+                      <span className="font-bold text-slate-700 w-28 shrink-0">Payer Category:</span>
                       <input
                         type="text"
                         value={ipBillingPayer}
                         onChange={(e) => setIpBillingPayer(e.target.value)}
-                        className="w-36 h-6 bg-white border border-slate-300 rounded px-2 font-medium"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-semibold text-slate-800 text-xs shadow-2xs"
                         placeholder="e.g. CASH"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-28 shrink-0">Address:</span>
-                      <input
-                        type="text"
-                        value={ipAddressInput}
-                        onChange={(e) => setIpAddressInput(e.target.value)}
-                        className="flex-1 h-6 bg-white border border-slate-300 rounded px-2 font-medium"
-                        placeholder="Enter patient address..."
                       />
                     </div>
                   </div>
 
-                  {/* Right Column */}
-                  <div className="space-y-1.5">
+                  {/* Column 2 */}
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-32 shrink-0">Admission Date/Time:</span>
+                      <span className="font-bold text-slate-700 w-32 shrink-0">Admission Date:</span>
                       <input
                         type="text"
                         value={ipAdmissionDateInput}
                         onChange={(e) => setIpAdmissionDateInput(e.target.value)}
-                        className="flex-1 h-6 bg-white border border-slate-300 rounded px-2 font-mono"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-mono text-slate-800 text-xs shadow-2xs"
                         placeholder="e.g. 13/04/2026 11:00 AM"
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-32 shrink-0">Discharge Date:</span>
+                      <span className="font-bold text-slate-700 w-32 shrink-0">Discharge Date:</span>
                       <input
                         type="text"
                         value={ipDischargeDateInput}
                         onChange={(e) => setIpDischargeDateInput(e.target.value)}
-                        className="w-36 h-6 bg-white border border-slate-300 rounded px-2 font-mono"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-mono text-slate-800 text-xs shadow-2xs"
                         placeholder="e.g. 18/04/2026"
                       />
-                      <span className="font-bold text-slate-600 shrink-0">Time:</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-700 w-32 shrink-0">Discharge Time:</span>
                       <input
                         type="text"
                         value={ipDischargeTimeInput}
                         onChange={(e) => setIpDischargeTimeInput(e.target.value)}
-                        className="w-24 h-6 bg-white border border-slate-300 rounded px-2 font-mono"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-mono text-slate-800 text-xs shadow-2xs"
                         placeholder="03:00 PM"
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-32 shrink-0">Room / Bed No:</span>
+                      <span className="font-bold text-slate-700 w-32 shrink-0">Room / Bed No:</span>
                       <input
                         type="text"
                         value={ipRoomNoInput}
                         onChange={(e) => setIpRoomNoInput(e.target.value)}
-                        className="w-36 h-6 bg-white border border-slate-300 rounded px-2 font-bold"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-bold text-slate-800 text-xs shadow-2xs"
                         placeholder="e.g. 311"
                       />
                     </div>
+                  </div>
+
+                  {/* Column 3 */}
+                  <div className="space-y-2 md:col-span-2 lg:col-span-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-32 shrink-0">Consultant Doctor:</span>
-                      <SearchableDropdown
-                        value={ipConsultantDrInput}
-                        options={availableDoctors}
-                        onSelect={(doc) => setIpConsultantDrInput(doc)}
-                        placeholder="Select Doctor..."
-                        width="w-48"
+                      <span className="font-bold text-slate-700 w-28 shrink-0">Consultant Dr:</span>
+                      <div className="flex-1">
+                        <SearchableDropdown
+                          value={ipConsultantDrInput}
+                          options={availableDoctors}
+                          onSelect={(doc) => setIpConsultantDrInput(doc)}
+                          placeholder="Select Doctor..."
+                          width="w-full"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-700 w-28 shrink-0">Address:</span>
+                      <input
+                        type="text"
+                        value={ipAddressInput}
+                        onChange={(e) => setIpAddressInput(e.target.value)}
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-medium text-slate-800 text-xs shadow-2xs"
+                        placeholder="Enter patient address..."
                       />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-600 w-32 shrink-0">Remarks / Note:</span>
+                      <span className="font-bold text-slate-700 w-28 shrink-0">Remarks / Note:</span>
                       <input
                         type="text"
                         value={ipRemarks}
                         onChange={(e) => setIpRemarks(e.target.value)}
-                        className="flex-1 h-6 bg-white border border-slate-300 rounded px-2 font-medium"
+                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-medium text-slate-800 text-xs shadow-2xs"
                         placeholder="e.g. Bill For Surgery"
                       />
                     </div>
@@ -6170,33 +6261,61 @@ export default function BillingPage() {
                 </div>
 
                 {/* 16 Standard Itemized Excel Form Table */}
-                <div className="border border-slate-300 rounded overflow-hidden">
+                <div className="border border-slate-300 rounded-lg overflow-hidden shadow-2xs">
                   <table className="w-full text-xs text-left border-collapse">
                     <thead>
-                      <tr className="bg-gradient-to-r from-teal-700 to-teal-800 text-white font-bold uppercase text-[10px]">
-                        <th className="py-2 px-2 text-center w-12 border-r border-teal-600">S. No.</th>
-                        <th className="py-2 px-3 border-r border-teal-600">QTY. / DETAILS (Notes)</th>
-                        <th className="py-2 px-3 border-r border-teal-600">DESCRIPTION (Surgery Head)</th>
-                        <th className="py-2 px-3 text-right w-36">AMOUNT (₹)</th>
+                      <tr className="bg-gradient-to-r from-teal-700 to-teal-800 text-white font-bold uppercase text-[10.5px]">
+                        <th className="py-2.5 px-3 text-center w-14 border-r border-teal-600">S. No.</th>
+                        <th className="py-2.5 px-4 border-r border-teal-600 w-3/12">NAME OF THE SERVICE</th>
+                        <th className="py-2.5 px-3 border-r border-teal-600 w-24 text-center">QTY</th>
+                        <th className="py-2.5 px-4 border-r border-teal-600 flex-1">DESCRIPTION / NOTES</th>
+                        <th className="py-2.5 px-4 text-right w-44">AMOUNT (₹)</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200 bg-white font-medium">
                       {ipSurgeryItems.map((item, index) => (
-                        <tr key={item.sNo} className="hover:bg-slate-50/80">
-                          <td className="py-1.5 px-2 text-center font-mono font-bold text-slate-700 border-r border-slate-200">
+                        <tr key={item.sNo} className="hover:bg-slate-50/90 transition-colors">
+                          <td className="py-1.5 px-3 text-center font-mono font-bold text-slate-700 border-r border-slate-200">
                             {item.sNo}
+                          </td>
+                          <td className="py-1.5 px-4 font-bold text-slate-900 border-r border-slate-200 text-xs">
+                            {item.name}
                           </td>
                           <td className="py-1 px-2 border-r border-slate-200">
                             <input
                               type="text"
-                              value={item.qtyDesc}
+                              value={item.qty ?? ""}
                               onChange={(e) => {
                                 const val = e.target.value;
                                 const updated = [...ipSurgeryItems];
-                                updated[index] = { ...updated[index], qtyDesc: val };
+                                const currentDesc = updated[index].desc || "";
+                                updated[index] = {
+                                  ...updated[index],
+                                  qty: val,
+                                  qtyDesc: val ? (currentDesc ? `${val} (${currentDesc})` : val) : currentDesc,
+                                };
                                 setIpSurgeryItems(updated);
                               }}
-                              className="w-full h-6 px-1.5 text-xs bg-white border border-slate-200 rounded focus:border-blue-500 focus:outline-none font-mono"
+                              className="w-full h-7 px-2 text-center text-xs bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none font-mono text-slate-800 font-bold shadow-2xs"
+                              placeholder="1"
+                            />
+                          </td>
+                          <td className="py-1 px-3 border-r border-slate-200">
+                            <input
+                              type="text"
+                              value={item.desc ?? item.qtyDesc ?? ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const updated = [...ipSurgeryItems];
+                                const currentQty = updated[index].qty || "";
+                                updated[index] = {
+                                  ...updated[index],
+                                  desc: val,
+                                  qtyDesc: currentQty ? `${currentQty} (${val})` : val,
+                                };
+                                setIpSurgeryItems(updated);
+                              }}
+                              className="w-full h-7 px-2.5 text-xs bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none font-mono text-slate-800 shadow-2xs"
                               placeholder={
                                 item.sNo === 2
                                   ? "e.g. 8000 X5 (SINGLE ROOM)"
@@ -6206,29 +6325,29 @@ export default function BillingPage() {
                                   ? "e.g. Xray"
                                   : item.sNo === 11
                                   ? "e.g. Dr. D K Das"
-                                  : "Notes..."
+                                  : "Write description / details if needed..."
                               }
                             />
                           </td>
-                          <td className="py-1.5 px-3 font-bold text-slate-900 border-r border-slate-200">
-                            {item.name}
-                          </td>
-                          <td className="py-1 px-2 text-right">
-                            <input
-                              type="number"
-                              value={item.amount}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                const updated = [...ipSurgeryItems];
-                                updated[index] = {
-                                  ...updated[index],
-                                  amount: val === "" ? "" : Number(val),
-                                };
-                                setIpSurgeryItems(updated);
-                              }}
-                              className="w-full h-6 px-2 text-right font-mono font-bold text-slate-900 bg-white border border-slate-200 rounded focus:border-blue-500 focus:outline-none"
-                              placeholder="0"
-                            />
+                          <td className="py-1 px-3 text-right">
+                            <div className="relative flex items-center">
+                              <span className="absolute left-2.5 text-slate-400 font-mono text-xs">₹</span>
+                              <input
+                                type="number"
+                                value={item.amount}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  const updated = [...ipSurgeryItems];
+                                  updated[index] = {
+                                    ...updated[index],
+                                    amount: val === "" ? "" : Number(val),
+                                  };
+                                  setIpSurgeryItems(updated);
+                                }}
+                                className="w-full h-7 pl-6 pr-2.5 text-right font-mono font-black text-slate-900 bg-white border border-slate-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none text-xs shadow-2xs"
+                                placeholder="0"
+                              />
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -6282,8 +6401,8 @@ export default function BillingPage() {
           </Card>
         )}
 
-        {/* ─── TAB 7: REFUND ──────────────────────────────────────────────── */}
-        {activeTab === "Refund" && (
+        {/* ─── TAB 7: REFUND (CURRENTLY COMMENTED OUT) ──────────────────────────────── */}
+        {/* activeTab === "Refund" && (
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
             <div className="p-4 border-b bg-slate-50 flex items-center justify-between">
               <div>
@@ -6298,7 +6417,6 @@ export default function BillingPage() {
             </div>
 
             <div className="p-4 bg-white border-b grid grid-cols-1 md:grid-cols-5 gap-3 items-start">
-              {/* Patient UHID Field */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">
@@ -6357,7 +6475,6 @@ export default function BillingPage() {
                 )}
               </div>
 
-              {/* Invoice No Field */}
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
                   <Label className="text-[10px] font-bold uppercase text-slate-500">
@@ -6435,7 +6552,6 @@ export default function BillingPage() {
                 )}
               </div>
 
-              {/* Refund Amount */}
               <div className="space-y-1">
                 <Label className="text-[10px] font-bold uppercase text-slate-500">
                   Refund Amount (₹)*
@@ -6448,7 +6564,6 @@ export default function BillingPage() {
                 />
               </div>
 
-              {/* Refund Mode */}
               <div className="space-y-1">
                 <Label className="text-[10px] font-bold uppercase text-slate-500">
                   Refund Mode
@@ -6467,7 +6582,6 @@ export default function BillingPage() {
                 </Select>
               </div>
 
-              {/* Action Button */}
               <div className="flex flex-col justify-end pt-5">
                 <Button
                   onClick={handleSaveRefund}
@@ -6538,7 +6652,7 @@ export default function BillingPage() {
               </table>
             </div>
           </Card>
-        )}
+        )} */}
 
         {/* ─── TAB 8: ADVANCE COLLECTION ──────────────────────────────────── */}
         {activeTab === "Advance Collection" && (
@@ -7574,98 +7688,121 @@ export default function BillingPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {paymentRows.map((row, idx) => (
-                          <tr key={idx}>
-                            <td className="p-2">
-                              <Select
-                                value={row.mode}
-                                onValueChange={(val) => {
-                                  const updated = [...paymentRows];
-                                  updated[idx].mode = val;
-                                  setPaymentRows(updated);
-                                }}
-                              >
-                                <SelectTrigger className="h-7 text-xs bg-white">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="Cash">Cash</SelectItem>
-                                  <SelectItem value="Cheque/DD">
-                                    Cheque/DD
-                                  </SelectItem>
-                                  <SelectItem value="Credit Card">
-                                    Credit Card
-                                  </SelectItem>
-                                  <SelectItem value="Debit Card">
-                                    Debit Card
-                                  </SelectItem>
-                                  <SelectItem value="NEFT/RTGS">
-                                    NEFT/RTGS
-                                  </SelectItem>
-                                  <SelectItem value="Foreign Receipt">
-                                    Foreign Receipt
-                                  </SelectItem>
-                                  <SelectItem value="Paytm">Paytm</SelectItem>
-                                  <SelectItem value="On Line Payment">
-                                    On Line Payment
-                                  </SelectItem>
-                                  <SelectItem value="CreditNote">
-                                    Credit Note
-                                  </SelectItem>
-                                  <SelectItem value="TDS">TDS</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </td>
-                            <td className="p-2 text-right">
-                              <Input
-                                type="number"
-                                value={row.amount}
-                                onChange={(e) => {
-                                  const updated = [...paymentRows];
-                                  updated[idx].amount = Number(e.target.value);
-                                  setPaymentRows(updated);
-                                }}
-                                className="h-7 text-xs text-right bg-white font-mono font-bold"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <Input
-                                placeholder="Bank name"
-                                value={row.bankName}
-                                onChange={(e) => {
-                                  const updated = [...paymentRows];
-                                  updated[idx].bankName = e.target.value;
-                                  setPaymentRows(updated);
-                                }}
-                                className="h-7 text-xs bg-white"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <Input
-                                placeholder="Transaction / Ref#"
-                                value={row.refNo}
-                                onChange={(e) => {
-                                  const updated = [...paymentRows];
-                                  updated[idx].refNo = e.target.value;
-                                  setPaymentRows(updated);
-                                }}
-                                className="h-7 text-xs bg-white font-mono"
-                              />
-                            </td>
-                            <td className="p-2">
-                              <Input
-                                placeholder="Remarks"
-                                value={row.description}
-                                onChange={(e) => {
-                                  const updated = [...paymentRows];
-                                  updated[idx].description = e.target.value;
-                                  setPaymentRows(updated);
-                                }}
-                                className="h-7 text-xs bg-white"
-                              />
-                            </td>
-                          </tr>
-                        ))}
+                        {paymentRows.map((row, idx) => {
+                          const isCashRow = row.mode === "Cash";
+                          return (
+                            <tr key={idx}>
+                              <td className="p-2">
+                                <Select
+                                  value={row.mode}
+                                  onValueChange={(val) => {
+                                    const updated = [...paymentRows];
+                                    updated[idx].mode = val;
+                                    if (val === "Cash") {
+                                      updated[idx].bankName = "";
+                                      updated[idx].refNo = "";
+                                      updated[idx].description = "";
+                                    }
+                                    setPaymentRows(updated);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-7 text-xs bg-white">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="Cheque/DD">
+                                      Cheque/DD
+                                    </SelectItem>
+                                    <SelectItem value="Credit Card">
+                                      Credit Card
+                                    </SelectItem>
+                                    <SelectItem value="Debit Card">
+                                      Debit Card
+                                    </SelectItem>
+                                    <SelectItem value="NEFT/RTGS">
+                                      NEFT/RTGS
+                                    </SelectItem>
+                                    <SelectItem value="Foreign Receipt">
+                                      Foreign Receipt
+                                    </SelectItem>
+                                    <SelectItem value="Paytm">Paytm</SelectItem>
+                                    <SelectItem value="On Line Payment">
+                                      On Line Payment
+                                    </SelectItem>
+                                    <SelectItem value="CreditNote">
+                                      Credit Note
+                                    </SelectItem>
+                                    <SelectItem value="TDS">TDS</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </td>
+                              <td className="p-2 text-right">
+                                <Input
+                                  type="number"
+                                  value={row.amount}
+                                  onChange={(e) => {
+                                    const updated = [...paymentRows];
+                                    updated[idx].amount = Number(e.target.value);
+                                    setPaymentRows(updated);
+                                  }}
+                                  className="h-7 text-xs text-right bg-white font-mono font-bold"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <Input
+                                  disabled={isCashRow}
+                                  placeholder={isCashRow ? "-" : "Bank name"}
+                                  value={isCashRow ? "" : row.bankName}
+                                  onChange={(e) => {
+                                    const updated = [...paymentRows];
+                                    updated[idx].bankName = e.target.value;
+                                    setPaymentRows(updated);
+                                  }}
+                                  className={`h-7 text-xs ${
+                                    isCashRow
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white"
+                                  }`}
+                                />
+                              </td>
+                              <td className="p-2">
+                                <Input
+                                  disabled={isCashRow}
+                                  placeholder={isCashRow ? "-" : "Transaction / Ref#"}
+                                  value={isCashRow ? "" : row.refNo}
+                                  onChange={(e) => {
+                                    const updated = [...paymentRows];
+                                    updated[idx].refNo = e.target.value;
+                                    setPaymentRows(updated);
+                                  }}
+                                  className={`h-7 text-xs font-mono ${
+                                    isCashRow
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white"
+                                  }`}
+                                />
+                              </td>
+                              <td className="p-2">
+                                <Input
+                                  disabled={isCashRow}
+                                  placeholder={isCashRow ? "-" : "Remarks"}
+                                  value={isCashRow ? "" : row.description}
+                                  onChange={(e) => {
+                                    const updated = [...paymentRows];
+                                    updated[idx].description = e.target.value;
+                                    setPaymentRows(updated);
+                                  }}
+                                  className={`h-7 text-xs ${
+                                    isCashRow
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white"
+                                  }`}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>

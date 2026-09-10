@@ -9,6 +9,7 @@ import BillingPage from "@/modules/billing/pages/BillingPage";
 import AtdPage from "@/modules/atd/pages/AtdPage";
 import WardsPage from "@/modules/wards/pages/WardsPage";
 import SettingsPage from "@/modules/settings/pages/SettingsPage";
+import UserManagementPage from "@/modules/users/pages/UserManagementPage";
 
 const router = createBrowserRouter([
   {
@@ -65,6 +66,10 @@ const router = createBrowserRouter([
           {
             path: "settings",
             element: <SettingsPage />,
+          },
+          {
+            path: "users",
+            element: <UserManagementPage />,
           },
         ]
       }
