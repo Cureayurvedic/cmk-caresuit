@@ -49,8 +49,8 @@ export default function UserManagementPage() {
     name: "",
     password: "",
     email: "",
-    role: "data_entry" as 'admin' | 'data_entry',
-    status: "Active" as 'Active' | 'Disabled',
+    role: "Receptionist" as 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist',
+    status: "Active" as 'Active' | 'Inactive',
   });
   const [formLoading, setFormLoading] = useState(false);
 
@@ -86,7 +86,7 @@ export default function UserManagementPage() {
       name: "",
       password: "",
       email: "",
-      role: "data_entry",
+      role: "Receptionist",
       status: "Active",
     });
     setIsModalOpen(true);
@@ -111,7 +111,7 @@ export default function UserManagementPage() {
     try {
       setFormLoading(true);
       if (editingUser) {
-        if (editingUser.id === "admin-1" && formData.role !== "admin") {
+        if (editingUser.id === "admin-1" && formData.role !== "Admin") {
           throw new Error("Cannot remove admin privileges from the primary administrator.");
         }
         // Only update password if a new one is typed
@@ -140,12 +140,11 @@ export default function UserManagementPage() {
   const handleToggleStatus = async (user: UserData) => {
     try {
       if (user.id === "admin-1") {
-        toast.error("Action Blocked", "Cannot disable the primary administrator.");
-        return;
+        throw new Error("Cannot toggle status of the primary administrator.");
       }
-      const newStatus = user.status === "Active" ? "Disabled" : "Active";
+      const newStatus = user.status === "Active" ? "Inactive" : "Active";
       await updateUser(user.id, { status: newStatus });
-      toast.success("Status Updated", `User has been ${newStatus.toLowerCase()}.`);
+      toast.success("Status Updated", `User is now ${newStatus}.`);
       loadUsers();
     } catch (error) {
       toast.error("Error", "Failed to update user status");
@@ -168,7 +167,6 @@ export default function UserManagementPage() {
 
   const filteredUsers = users.filter(u => 
     u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
     u.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -198,7 +196,7 @@ export default function UserManagementPage() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
             <Input
-              placeholder="Search by name, username, or email..."
+              placeholder="Search by name or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-9 h-10 border-slate-200 focus-visible:ring-emerald-500 rounded-xl bg-slate-50/50"
@@ -241,7 +239,7 @@ export default function UserManagementPage() {
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center border border-slate-200/60 shrink-0 shadow-sm">
-                          {user.role === 'admin' ? (
+                          {user.role === 'Admin' ? (
                             <ShieldCheck className="h-5 w-5 text-emerald-600" />
                           ) : (
                             <User className="h-5 w-5 text-blue-600" />
@@ -256,15 +254,17 @@ export default function UserManagementPage() {
                       </div>
                     </td>
                     <td className="px-5 py-4">
-                      {user.role === 'admin' ? (
-                        <Badge className="bg-emerald-100 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-none font-semibold">
-                          Administrator
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-blue-100 hover:bg-blue-100 text-blue-700 border border-blue-200 shadow-none font-semibold">
-                          Data Entry
-                        </Badge>
-                      )}
+                          <Badge 
+                            variant="outline" 
+                            className={`font-semibold bg-white
+                              ${user.role === 'Admin' ? 'text-indigo-700 border-indigo-200' : 
+                                user.role === 'Doctor' ? 'text-emerald-700 border-emerald-200' :
+                                user.role === 'Nurse' ? 'text-blue-700 border-blue-200' :
+                                'text-slate-700 border-slate-200'}
+                            `}
+                          >
+                            {user.role}
+                          </Badge>
                     </td>
                     <td className="px-5 py-4">
                       <Badge 
@@ -297,20 +297,23 @@ export default function UserManagementPage() {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title={user.status === 'Active' ? "Disable User" : "Enable User"}
-                          onClick={() => handleToggleStatus(user)}
-                          disabled={user.id === "admin-1"}
-                          className={`h-8 w-8 rounded-lg ${
-                            user.status === 'Active' 
-                              ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50' 
-                              : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
-                          } ${user.id === "admin-1" ? 'opacity-30 cursor-not-allowed' : ''}`}
-                        >
-                          <Power className="h-4 w-4" />
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600">
+                              <Power className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem 
+                              onClick={() => handleToggleStatus(user)}
+                              disabled={user.id === "admin-1"}
+                              className={user.status === "Active" ? "text-rose-600" : "text-emerald-600"}
+                            >
+                              {user.status === "Active" ? <Lock className="mr-2 h-4 w-4" /> : <Unlock className="mr-2 h-4 w-4" />}
+                              {user.status === "Active" ? "Deactivate User" : "Activate User"}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -389,33 +392,33 @@ export default function UserManagementPage() {
                   />
                 </div>
                 
-
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-slate-700">Role</label>
-                    <select
-                      value={formData.role}
-                      onChange={(e) => setFormData({...formData, role: e.target.value as any})}
-                      className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                      disabled={editingUser?.id === "admin-1"}
-                    >
-                      <option value="admin">Administrator</option>
-                      <option value="data_entry">Data Entry</option>
-                    </select>
+                    <Select value={formData.role} onValueChange={(val: any) => setFormData({...formData, role: val})}>
+                      <SelectTrigger className="h-11 rounded-xl shadow-sm border-slate-200">
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Admin">Administrator</SelectItem>
+                        <SelectItem value="Doctor">Doctor</SelectItem>
+                        <SelectItem value="Nurse">Nurse</SelectItem>
+                        <SelectItem value="Receptionist">Receptionist</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="space-y-1.5">
                     <label className="text-sm font-semibold text-slate-700">Status</label>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({...formData, status: e.target.value as any})}
-                      className="w-full h-11 px-3 rounded-xl border border-slate-200 bg-white text-sm shadow-sm outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
-                      disabled={editingUser?.id === "admin-1"}
-                    >
-                      <option value="Active">Active</option>
-                      <option value="Disabled">Disabled</option>
-                    </select>
+                    <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
+                      <SelectTrigger className="h-11 rounded-xl shadow-sm border-slate-200">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>

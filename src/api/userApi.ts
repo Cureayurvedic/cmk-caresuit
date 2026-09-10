@@ -5,8 +5,8 @@ export interface UserData {
   name: string;
   password?: string;
   email: string;
-  role: 'admin' | 'data_entry';
-  status: 'Active' | 'Disabled';
+  role: 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist';
+  status: 'Active' | 'Inactive';
   lastLogin: string | null;
   createdAt: string;
 }
