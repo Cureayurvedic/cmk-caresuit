@@ -13,6 +13,7 @@ import {
   Search,
   LogOut,
   Users,
+  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,6 +43,17 @@ const NAV_ITEMS = [
     label: "Reports",
     icon: BarChart3,
     path: "/reports",
+  },
+  {
+    label: "Accessories",
+    icon: Package,
+    path: "/accessories",
+  },
+  {
+    label: "User Management",
+    icon: Users,
+    path: "/users",
+    adminOnly: true,
   },
   {
     label: "Settings",
@@ -158,12 +170,12 @@ export default function Sidebar() {
             /* Main Menu Header */
             <>
               {!isCollapsed && (
-                <div className="flex-1 flex items-center justify-center h-full py-2">
-                  <div className="w-full h-full flex items-center justify-center px-2 py-1 bg-white/95 rounded-lg shadow-xs overflow-hidden">
+                <div className="flex-1 flex items-center min-w-0 py-1.5 px-1">
+                  <div className="bg-white px-3 py-1 rounded-xl flex items-center justify-center shadow-md h-10 w-auto max-w-full overflow-hidden">
                     <img
                       src="/cmk-logo.png"
                       alt="CMK HealthCare"
-                      className="w-full h-full object-contain max-h-10"
+                      className="h-full w-auto object-contain max-h-8"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         if (!target.src.includes("cmk_caresuit_logo")) {
@@ -334,7 +346,7 @@ export default function Sidebar() {
                 </p>
               )}
 
-              {NAV_ITEMS.map((item) => {
+              {NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => {
                 const Icon = item.icon;
                 const isActive =
                   location.pathname === item.path ||

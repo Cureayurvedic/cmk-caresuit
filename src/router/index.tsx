@@ -8,6 +8,7 @@ import ReportsPage from "@/modules/reports/pages/ReportsPage";
 import BillingPage from "@/modules/billing/pages/BillingPage";
 import AtdPage from "@/modules/atd/pages/AtdPage";
 import WardsPage from "@/modules/wards/pages/WardsPage";
+import AccessoriesPage from "@/modules/accessories/pages/AccessoriesPage";
 import SettingsPage from "@/modules/settings/pages/SettingsPage";
 import UserManagementPage from "@/modules/users/pages/UserManagementPage";
 
@@ -52,6 +53,10 @@ const router = createBrowserRouter([
           {
             path: "billing",
             element: <BillingPage />,
+          },
+          {
+            path: "accessories",
+            element: <AccessoriesPage />,
           },
           /* ATD and Wards commented out per user request
           {

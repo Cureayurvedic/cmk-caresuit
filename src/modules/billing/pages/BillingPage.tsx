@@ -33,8 +33,10 @@ import {
   UserPlus,
   ChevronDown,
   Stethoscope,
+  Package,
 } from "lucide-react";
 import AddDoctorModal from "@/components/AddDoctorModal";
+import { accessoriesApi } from "@/api/accessoriesApi";
 import { ORTHOPEDICS_SERVICES } from "../data/orthopedicsServices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -693,6 +695,7 @@ export default function BillingPage() {
     "create-op-visit": "Create OP Visit",
     "op-billing": "OP Billing",
     "ip-billing": "IP Billing",
+    "accessories-billing": "Accessories Billing",
     refund: "Refund",
     "advance-collection": "Advance Collection",
     "credit-note": "Credit Note",
@@ -706,6 +709,7 @@ export default function BillingPage() {
     "Create OP Visit": "create-op-visit",
     "OP Billing": "op-billing",
     "IP Billing": "ip-billing",
+    "Accessories Billing": "accessories-billing",
     Refund: "refund",
     "Advance Collection": "advance-collection",
     "Credit Note": "credit-note",
@@ -1079,6 +1083,299 @@ export default function BillingPage() {
       },
     ],
   });
+
+  // ── Accessories Billing State ──────────────────────────────────────────────
+  const [accBillingUhid, setAccBillingUhid] = useState<string>("");
+  const [accBillingPatient, setAccBillingPatient] = useState<BillingPatient | null>(null);
+  const [accBillingInvoiceNo, setAccBillingInvoiceNo] = useState<string>(
+    `ACC-INV-${Math.floor(1000 + Math.random() * 9000)}`
+  );
+  const [accBillingType, setAccBillingType] = useState<string>("Cash");
+  const [accBillingPayerType, setAccBillingPayerType] = useState<string>("Direct Patient");
+  const [accBillingPayer, setAccBillingPayer] = useState<string>("CASH");
+  const [accBillingDoctor, setAccBillingDoctor] = useState<string>("Dr. D K DAS");
+  const [accBillingNarration, setAccBillingNarration] = useState<string>("");
+  const [accBillingDiscount, setAccBillingDiscount] = useState<number>(0);
+
+  interface AccBillingRow {
+    id: string;
+    accessoryId: string;
+    accessoryName: string;
+    size: string;
+    unitPrice: number;
+    qty: number;
+    stockQuantity: number;
+    netAmt: number;
+  }
+
+  const [accBillingRows, setAccBillingRows] = useState<AccBillingRow[]>([
+    {
+      id: "row_1",
+      accessoryId: "",
+      accessoryName: "",
+      size: "",
+      unitPrice: 0,
+      qty: 1,
+      stockQuantity: 0,
+      netAmt: 0,
+    },
+  ]);
+
+  const handleSelectAccItem = (rowId: string, accessoryId: string) => {
+    const products = accessoriesApi.getProducts();
+    const found = products.find((p) => p.id === accessoryId);
+    setAccBillingRows((prev) =>
+      prev.map((row) => {
+        if (row.id === rowId) {
+          if (!found) {
+            return {
+              ...row,
+              accessoryId: "",
+              accessoryName: "",
+              size: "",
+              unitPrice: 0,
+              stockQuantity: 0,
+              netAmt: 0,
+            };
+          }
+          const defaultSizeObj = (found.sizes || []).find((s) => s.stockQuantity > 0) || (found.sizes || [])[0] || { size: "Universal", stockQuantity: 0 };
+          const defaultSize = defaultSizeObj.size;
+          const stockQuantity = defaultSizeObj.stockQuantity;
+          const qty = Math.min(row.qty || 1, Math.max(1, stockQuantity));
+          return {
+            ...row,
+            accessoryId: found.id,
+            accessoryName: found.name,
+            size: defaultSize,
+            unitPrice: found.price,
+            stockQuantity,
+            qty,
+            netAmt: found.price * qty,
+          };
+        }
+        return row;
+      })
+    );
+  };
+
+  const handleSelectAccSize = (rowId: string, size: string) => {
+    const products = accessoriesApi.getProducts();
+    setAccBillingRows((prev) =>
+      prev.map((row) => {
+        if (row.id === rowId && row.accessoryId) {
+          const found = products.find((p) => p.id === row.accessoryId);
+          if (found) {
+            const stockQuantity = accessoriesApi.getStockForSize(found, size);
+            const qty = Math.min(row.qty || 1, Math.max(1, stockQuantity));
+            return {
+              ...row,
+              size,
+              stockQuantity,
+              qty,
+              netAmt: row.unitPrice * qty,
+            };
+          }
+        }
+        return row;
+      })
+    );
+  };
+
+  const handleAccRowQtyChange = (rowId: string, newQty: number) => {
+    setAccBillingRows((prev) =>
+      prev.map((row) => {
+        if (row.id === rowId) {
+          const qty = Math.max(1, Math.min(newQty, row.stockQuantity || 999));
+          return {
+            ...row,
+            qty,
+            netAmt: row.unitPrice * qty,
+          };
+        }
+        return row;
+      })
+    );
+  };
+
+  const handleAccRowUnitPriceChange = (rowId: string, newPrice: number) => {
+    setAccBillingRows((prev) =>
+      prev.map((row) => {
+        if (row.id === rowId) {
+          const unitPrice = Math.max(0, newPrice);
+          return {
+            ...row,
+            unitPrice,
+            netAmt: unitPrice * row.qty,
+          };
+        }
+        return row;
+      })
+    );
+  };
+
+  const handleAccRowNetAmtChange = (rowId: string, newNetAmt: number) => {
+    setAccBillingRows((prev) =>
+      prev.map((row) => {
+        if (row.id === rowId) {
+          const netAmt = Math.max(0, newNetAmt);
+          const unitPrice = row.qty > 0 ? netAmt / row.qty : netAmt;
+          return {
+            ...row,
+            netAmt,
+            unitPrice,
+          };
+        }
+        return row;
+      })
+    );
+  };
+
+  const handleAddAccRow = () => {
+    setAccBillingRows((prev) => [
+      ...prev,
+      {
+        id: "row_" + Date.now() + "_" + Math.random().toString(36).substr(2, 4),
+        accessoryId: "",
+        accessoryName: "",
+        size: "",
+        unitPrice: 0,
+        qty: 1,
+        stockQuantity: 0,
+        netAmt: 0,
+      },
+    ]);
+  };
+
+  const handleRemoveAccRow = (rowId: string) => {
+    if (accBillingRows.length <= 1) return;
+    setAccBillingRows((prev) => prev.filter((r) => r.id !== rowId));
+  };
+
+  const resetAccBillingForm = () => {
+    setAccBillingUhid("");
+    setAccBillingPatient(null);
+    setAccBillingInvoiceNo(`ACC-INV-${Math.floor(1000 + Math.random() * 9000)}`);
+    setAccBillingNarration("");
+    setAccBillingDiscount(0);
+    setAccBillingRows([
+      {
+        id: "row_1",
+        accessoryId: "",
+        accessoryName: "",
+        size: "",
+        unitPrice: 0,
+        qty: 1,
+        stockQuantity: 0,
+        netAmt: 0,
+      },
+    ]);
+  };
+
+  const accBillingGrossTotal = accBillingRows.reduce((sum, r) => sum + r.netAmt, 0);
+  const accBillingNetBilledAmt = Math.max(0, accBillingGrossTotal - accBillingDiscount);
+
+  const handleSaveAccInvoice = (shouldPrint: boolean) => {
+    const validRows = accBillingRows.filter((r) => r.accessoryId && r.qty > 0);
+    if (validRows.length === 0) {
+      toast.error(
+        "Validation Error",
+        "Please select at least one accessory item to bill."
+      );
+      return;
+    }
+
+    // Check stock limits
+    for (const r of validRows) {
+      if (r.qty > r.stockQuantity) {
+        toast.error(
+          "Stock Warning",
+          `Insufficient stock for ${r.accessoryName}. Available: ${r.stockQuantity}, Requested: ${r.qty}`
+        );
+        return;
+      }
+    }
+
+    // Deduct stock levels in real-time
+    validRows.forEach((r) => {
+      accessoriesApi.adjustStock(r.accessoryId, r.size, -r.qty);
+    });
+
+    const newInvoice: InvoiceData = {
+      id: "inv_acc_" + Date.now(),
+      uhid: accBillingPatient ? accBillingPatient.uhid : "WALK-IN",
+      patientName: accBillingPatient ? accBillingPatient.patientName : "Walk-in Patient",
+      company: accBillingPayer || "CASH",
+      encNo: accBillingPatient ? accBillingPatient.ipNo || "ENC-ACC" : "ENC-ACC",
+      type: "OP",
+      invoiceNo: accBillingInvoiceNo,
+      date: new Date().toISOString(),
+      doctorName: accBillingDoctor,
+      department: "Orthopedics / Accessories",
+      grossAmt: accBillingGrossTotal,
+      discountAmt: accBillingDiscount,
+      taxAmt: 0,
+      netAmt: accBillingNetBilledAmt,
+      paidPatient: accBillingNetBilledAmt,
+      paidPayer: 0,
+      adjusted: 0,
+      refund: 0,
+      creditNote: 0,
+      balance: 0,
+      status: "Settled",
+      tdsAmt: 0,
+      isCancelled: false,
+      itemsJson: JSON.stringify(
+        validRows.map((r) => ({
+          serviceName: `${r.accessoryName}${r.size ? ` (${r.size})` : ""}`,
+          category: "Accessories",
+          rate: r.unitPrice,
+          quantity: r.qty,
+          amount: r.netAmt,
+        }))
+      ),
+      remarks: accBillingNarration,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    createInvoice(newInvoice);
+
+    toast.success(
+      "Accessories Invoice Created",
+      `Invoice #${accBillingInvoiceNo} saved & stock inventory updated successfully.`
+    );
+
+    if (shouldPrint) {
+      const printData: BillingInvoicePrintData = {
+        invoiceNo: accBillingInvoiceNo,
+        date: new Date().toISOString(),
+        type: "OP",
+        uhid: accBillingPatient ? accBillingPatient.uhid : "WALK-IN",
+        patientName: accBillingPatient ? accBillingPatient.patientName : "Walk-in Patient",
+        genderAge: accBillingPatient ? accBillingPatient.genderAge : "-",
+        address: "-",
+        company: accBillingPayer || "CASH",
+        doctorName: accBillingDoctor,
+        grossAmt: accBillingGrossTotal,
+        discountAmt: accBillingDiscount,
+        netAmt: accBillingNetBilledAmt,
+        balance: 0,
+        itemsJson: JSON.stringify(
+          validRows.map((r) => ({
+            serviceName: `${r.accessoryName}${r.size ? ` (${r.size})` : ""}`,
+            category: "Accessories",
+            rate: r.unitPrice,
+            quantity: r.qty,
+            amount: r.netAmt,
+          }))
+        ),
+        narration: accBillingNarration,
+      };
+      setPrintInvoiceData(printData as any);
+    }
+
+    resetAccBillingForm();
+  };
 
   const activePatientNotesUhid = (
     activeTab === "IP Billing" ? ipBillingUhid : opBillingUhid
@@ -2774,6 +3071,7 @@ export default function BillingPage() {
         {[
           { id: "OP Billing", label: "OP Billing", icon: FileText },
           { id: "IP Billing", label: "IP Billing", icon: Building2 },
+          { id: "Accessories Billing", label: "Accessories Billing", icon: Package },
           { id: "Patient Lists", label: "Patient Lists", icon: User },
           {
             id: "Master Activity List",
@@ -5285,19 +5583,11 @@ export default function BillingPage() {
                                   className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1 font-medium text-slate-800"
                                 >
                                   <option value="Cash">Cash</option>
-                                  <option value="Cheque/DD">Cheque/DD</option>
-                                  <option value="Credit Card">
-                                    Credit Card
-                                  </option>
+                                  <option value="Cheque">Cheque</option>
+                                  <option value="Credit Card">Credit Card</option>
                                   <option value="Debit Card">Debit Card</option>
-                                  <option value="NEFT/RTGS">NEFT/RTGS</option>
-                                  <option value="Foreign Receipt">
-                                    Foreign Receipt
-                                  </option>
-                                  <option value="Paytm">Paytm</option>
-                                  <option value="On Line Payment">
-                                    On Line Payment
-                                  </option>
+                                  <option value="UPI">UPI</option>
+                                  <option value="Net Banking">Net Banking</option>
                                 </select>
                               </td>
                               <td className="px-2 py-1.5 text-right">
@@ -6401,6 +6691,347 @@ export default function BillingPage() {
           </Card>
         )}
 
+        {/* ─── TAB: ACCESSORIES BILLING ────────────────────────────────────── */}
+        {activeTab === "Accessories Billing" && (
+          <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
+            {/* Header Bar */}
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-200 bg-[#cee6f8] text-xs font-bold text-slate-700 flex-shrink-0">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-bold text-slate-800 whitespace-nowrap flex items-center gap-1.5">
+                  <Package className="h-4 w-4 text-blue-700" />
+                  Accessories Invoice
+                </span>
+                {/* UHID Search Field */}
+                <div className="flex items-center gap-1 bg-white rounded border border-slate-300 px-1.5 py-0.5 shadow-2xs hover:border-blue-400 focus-within:border-blue-500">
+                  <button
+                    type="button"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                    className="text-[10px] text-blue-700 font-bold hover:underline"
+                  >
+                    UHID
+                  </button>
+                  <Input
+                    type="text"
+                    value={accBillingUhid}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAccBillingUhid(val);
+                      const pat = findPatientByUhid(val);
+                      if (pat) {
+                        setAccBillingPatient(pat);
+                      }
+                    }}
+                    className="h-5 text-xs w-28 border-0 p-0 shadow-none font-mono font-bold"
+                    placeholder="Enter UHID..."
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-4 w-4 text-slate-400"
+                    onClick={() => setIsPatientSearchModalOpen(true)}
+                  >
+                    <Search className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetAccBillingForm}
+                  className="h-6 text-xs bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2.5 rounded shadow-2xs"
+                >
+                  New
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => handleSaveAccInvoice(true)}
+                  className="h-6 text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 rounded shadow-2xs flex items-center gap-1"
+                >
+                  <Printer className="h-3 w-3" />
+                  Print
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => handleSaveAccInvoice(false)}
+                  className="h-6 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 rounded shadow-2xs"
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+
+            {/* Top Form Grid: Patient & Invoice Details */}
+            <div className="p-3 bg-slate-50/70 border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs flex-shrink-0">
+              {/* Box 1: Patient Details */}
+              <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">
+                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] flex items-center gap-1 border-b pb-1">
+                  <User className="h-3 w-3 text-blue-600" />
+                  Patient Details
+                </div>
+                {accBillingPatient ? (
+                  <div className="space-y-1 text-slate-800">
+                    <div className="font-extrabold text-sm text-blue-900">{accBillingPatient.patientName}</div>
+                    <div className="text-[11px] font-mono text-slate-500">UHID: <span className="font-bold text-slate-700">{accBillingPatient.uhid}</span></div>
+                    {accBillingPatient.genderAge && (
+                      <div className="text-[11px] text-slate-500">{accBillingPatient.genderAge}</div>
+                    )}
+                    {accBillingPatient.company && (
+                      <div className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded w-fit">{accBillingPatient.company}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="py-2 text-center text-slate-400 italic text-[11px]">
+                    Select patient via UHID
+                  </div>
+                )}
+              </div>
+
+              {/* Box 2: Invoice Details */}
+              <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] border-b pb-1">
+                  Invoice Details
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-semibold">Payment Mode</label>
+                    <select
+                      value={accBillingType}
+                      onChange={(e) => setAccBillingType(e.target.value)}
+                      className="w-full h-7 px-1.5 text-xs border border-slate-300 rounded bg-white font-medium"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Cheque">Cheque</option>
+                      <option value="Credit Card">Credit Card</option>
+                      <option value="Debit Card">Debit Card</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Net Banking">Net Banking</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-semibold">Invoice No</label>
+                    <input
+                      type="text"
+                      readOnly
+                      value={accBillingInvoiceNo}
+                      className="w-full h-7 px-1.5 text-xs border border-slate-200 rounded bg-slate-50 font-mono text-slate-600 font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Box 3: Payer Details */}
+              <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] border-b pb-1">
+                  Payer Details
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-semibold">Payer Type</label>
+                    <select
+                      value={accBillingPayerType}
+                      onChange={(e) => setAccBillingPayerType(e.target.value)}
+                      className="w-full h-7 px-1.5 text-xs border border-slate-300 rounded bg-white font-medium"
+                    >
+                      <option value="Direct Patient">Direct Patient</option>
+                      <option value="Insurance / TPA">Insurance / TPA</option>
+                      <option value="Corporate">Corporate</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-slate-500 font-semibold">Payer</label>
+                    <input
+                      type="text"
+                      value={accBillingPayer}
+                      onChange={(e) => setAccBillingPayer(e.target.value)}
+                      className="w-full h-7 px-1.5 text-xs border border-slate-300 rounded bg-white font-medium"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Box 4: Prescribing Doctor */}
+              <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] border-b pb-1">
+                  Prescribing Doctor
+                </div>
+                <div>
+                  <select
+                    value={accBillingDoctor}
+                    onChange={(e) => setAccBillingDoctor(e.target.value)}
+                    className="w-full h-7 px-1.5 text-xs border border-slate-300 rounded bg-white font-semibold text-slate-800"
+                  >
+                    {availableDoctors.map((doc) => (
+                      <option key={doc} value={doc}>
+                        {doc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Billed Accessories Itemized Table */}
+            <div className="flex-1 overflow-auto bg-white p-3 min-h-0">
+              <table className="w-full text-left border-collapse border border-slate-200 rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="bg-[#007b85] text-white text-xs uppercase font-extrabold tracking-wider">
+                    <th className="px-3 py-2 border-r border-teal-700">Accessory Item</th>
+                    <th className="px-3 py-2 border-r border-teal-700 w-28">Size</th>
+                    <th className="px-3 py-2 border-r border-teal-700 w-32 text-right">Unit Rate (₹)</th>
+                    <th className="px-3 py-2 border-r border-teal-700 w-24 text-center">Qty</th>
+                    <th className="px-3 py-2 border-r border-teal-700 w-36 text-right">Net Amount (₹)</th>
+                    <th className="px-3 py-2 w-16 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 text-xs">
+                  {accBillingRows.map((row) => {
+                    const availableProducts = accessoriesApi.getProducts();
+                    const selectedProduct = availableProducts.find((p) => p.id === row.accessoryId);
+
+                    return (
+                      <tr key={row.id} className="hover:bg-slate-50">
+                        {/* Accessory Item Dropdown */}
+                        <td className="p-1.5 border-r border-slate-200">
+                          <select
+                            value={row.accessoryId}
+                            onChange={(e) => handleSelectAccItem(row.id, e.target.value)}
+                            className="w-full h-8 px-2 text-xs border border-slate-300 rounded bg-white font-semibold text-slate-900 focus:border-blue-500"
+                          >
+                            <option value="">-- Select Accessory --</option>
+                            {availableProducts.map((p) => {
+                              const totalSt = accessoriesApi.getTotalStock(p);
+                              return (
+                                <option key={p.id} value={p.id} disabled={totalSt === 0}>
+                                  {p.name} - ₹{p.price} {totalSt === 0 ? "[OUT OF STOCK]" : ""}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </td>
+
+                        {/* Interactive Size Dropdown */}
+                        <td className="p-1.5 border-r border-slate-200 w-28">
+                          {selectedProduct ? (
+                            <select
+                              value={row.size}
+                              onChange={(e) => handleSelectAccSize(row.id, e.target.value)}
+                              className="w-full h-8 px-1 text-xs border border-slate-300 rounded bg-white font-bold text-slate-800 focus:border-blue-500 cursor-pointer"
+                            >
+                              {(selectedProduct.sizes || []).map((s) => (
+                                <option key={s.size} value={s.size} disabled={s.stockQuantity === 0}>
+                                  {s.size}{s.stockQuantity === 0 ? " — (Out of Stock)" : ""}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px] px-2">-</span>
+                          )}
+                        </td>
+
+                        {/* Unit Rate (₹) */}
+                        <td className="p-1.5 border-r border-slate-200 text-right">
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={row.unitPrice || ""}
+                            onChange={(e) => handleAccRowUnitPriceChange(row.id, parseFloat(e.target.value) || 0)}
+                            className="w-24 h-7 text-right px-2 border border-slate-300 rounded font-mono font-bold text-xs text-slate-800 focus:border-blue-500 bg-white"
+                          />
+                        </td>
+
+                        {/* Qty Input */}
+                        <td className="p-1.5 border-r border-slate-200 text-center">
+                          <input
+                            type="number"
+                            min="1"
+                            max={row.stockQuantity || 99}
+                            value={row.qty}
+                            onChange={(e) => handleAccRowQtyChange(row.id, parseInt(e.target.value, 10) || 1)}
+                            className="w-16 h-7 text-center border border-slate-300 rounded font-bold text-xs"
+                          />
+                        </td>
+
+                        {/* Net Amount (₹) */}
+                        <td className="p-1.5 border-r border-slate-200 text-right">
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={row.netAmt || ""}
+                            onChange={(e) => handleAccRowNetAmtChange(row.id, parseFloat(e.target.value) || 0)}
+                            className="w-28 h-7 text-right px-2 border border-slate-300 rounded font-mono font-extrabold text-xs text-blue-900 focus:border-blue-500 bg-white"
+                          />
+                        </td>
+
+                        {/* Delete Row Action */}
+                        <td className="p-1.5 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAccRow(row.id)}
+                            disabled={accBillingRows.length === 1}
+                            className="p-1 text-slate-400 hover:text-red-600 disabled:opacity-30 cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+
+              <div className="mt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddAccRow}
+                  className="h-7 text-xs text-blue-700 border-blue-300 bg-blue-50/50 hover:bg-blue-100 font-bold px-3 rounded"
+                >
+                  + Add Accessory Item Row
+                </Button>
+              </div>
+            </div>
+
+            {/* Bottom Summary Bar */}
+            <div className="p-3 bg-slate-100 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0 text-xs">
+              <div className="w-full md:w-1/2 space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Narration / Notes</label>
+                <textarea
+                  value={accBillingNarration}
+                  onChange={(e) => setAccBillingNarration(e.target.value)}
+                  placeholder="Additional notes for accessories billing..."
+                  className="w-full h-12 p-2 text-xs border border-slate-300 rounded bg-white"
+                />
+              </div>
+
+              <div className="w-full md:w-1/3 bg-white p-3 rounded-lg border border-slate-300 shadow-2xs space-y-1.5">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-600">Gross Total:</span>
+                  <span className="font-mono font-bold text-slate-900">₹{accBillingGrossTotal.toLocaleString("en-IN")}</span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-slate-600">Discount (₹):</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={accBillingDiscount}
+                    onChange={(e) => setAccBillingDiscount(parseFloat(e.target.value) || 0)}
+                    className="w-20 h-6 px-1.5 text-right border border-slate-300 rounded font-mono font-semibold"
+                  />
+                </div>
+                <div className="flex justify-between items-center text-sm border-t pt-1.5">
+                  <span className="font-extrabold text-slate-800">Net Billed Amount:</span>
+                  <span className="font-mono font-black text-blue-900 text-base">₹{accBillingNetBilledAmt.toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* ─── TAB 7: REFUND (CURRENTLY COMMENTED OUT) ──────────────────────────────── */}
         {/* activeTab === "Refund" && (
           <Card className="flex-1 flex flex-col overflow-hidden border-slate-200/80 shadow-2xs">
@@ -6753,11 +7384,11 @@ export default function BillingPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Cash">Cash</SelectItem>
-                    <SelectItem value="UPI">UPI / QR Code</SelectItem>
-                    <SelectItem value="Card">Card</SelectItem>
-                    <SelectItem value="Bank Transfer">
-                      Bank Transfer (NEFT)
-                    </SelectItem>
+                    <SelectItem value="Cheque">Cheque</SelectItem>
+                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                    <SelectItem value="Debit Card">Debit Card</SelectItem>
+                    <SelectItem value="UPI">UPI</SelectItem>
+                    <SelectItem value="Net Banking">Net Banking</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -7711,28 +8342,12 @@ export default function BillingPage() {
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="Cash">Cash</SelectItem>
-                                    <SelectItem value="Cheque/DD">
-                                      Cheque/DD
-                                    </SelectItem>
-                                    <SelectItem value="Credit Card">
-                                      Credit Card
-                                    </SelectItem>
-                                    <SelectItem value="Debit Card">
-                                      Debit Card
-                                    </SelectItem>
-                                    <SelectItem value="NEFT/RTGS">
-                                      NEFT/RTGS
-                                    </SelectItem>
-                                    <SelectItem value="Foreign Receipt">
-                                      Foreign Receipt
-                                    </SelectItem>
-                                    <SelectItem value="Paytm">Paytm</SelectItem>
-                                    <SelectItem value="On Line Payment">
-                                      On Line Payment
-                                    </SelectItem>
-                                    <SelectItem value="CreditNote">
-                                      Credit Note
-                                    </SelectItem>
+                                    <SelectItem value="Cheque">Cheque</SelectItem>
+                                    <SelectItem value="Credit Card">Credit Card</SelectItem>
+                                    <SelectItem value="Debit Card">Debit Card</SelectItem>
+                                    <SelectItem value="UPI">UPI</SelectItem>
+                                    <SelectItem value="Net Banking">Net Banking</SelectItem>
+                                    <SelectItem value="CreditNote">Credit Note</SelectItem>
                                     <SelectItem value="TDS">TDS</SelectItem>
                                   </SelectContent>
                                 </Select>
@@ -8235,24 +8850,12 @@ export default function BillingPage() {
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="Cash">
-                                          Cash
-                                        </SelectItem>
-                                        <SelectItem value="UPI / QR">
-                                          UPI / QR Code
-                                        </SelectItem>
-                                        <SelectItem value="Credit Card">
-                                          Credit Card
-                                        </SelectItem>
-                                        <SelectItem value="Debit Card">
-                                          Debit Card
-                                        </SelectItem>
-                                        <SelectItem value="Net Banking">
-                                          Net Banking
-                                        </SelectItem>
-                                        <SelectItem value="Cheque">
-                                          Cheque
-                                        </SelectItem>
+                                        <SelectItem value="Cash">Cash</SelectItem>
+                                        <SelectItem value="Cheque">Cheque</SelectItem>
+                                        <SelectItem value="Credit Card">Credit Card</SelectItem>
+                                        <SelectItem value="Debit Card">Debit Card</SelectItem>
+                                        <SelectItem value="UPI">UPI</SelectItem>
+                                        <SelectItem value="Net Banking">Net Banking</SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </td>

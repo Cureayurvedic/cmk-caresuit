@@ -5,7 +5,7 @@ export interface UserData {
   name: string;
   password?: string;
   email: string;
-  role: 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist';
+  role: 'Admin' | 'Operator';
   status: 'Active' | 'Inactive';
   lastLogin: string | null;
   createdAt: string;
@@ -40,7 +40,35 @@ export const authenticateUser = async (email: string, password?: string): Promis
   }
 
   // Return the user data (assuming it's in data.user or the root response)
-  return data.user || data;
+  return data.data?.user || data.user || data;
+};
+
+export const registerUser = async (data: {
+  name: string;
+  email: string;
+  password: string;
+  role?: 'Admin' | 'Operator';
+}): Promise<UserData> => {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => null);
+    throw new Error(errorData?.message || "Failed to create account");
+  }
+
+  const result = await response.json();
+  const token = result.data?.token || result.token;
+  const user = result.data?.user || result.user || result;
+
+  if (token) {
+    localStorage.setItem("cmk_auth_token", token);
+  }
+
+  return user;
 };
 
 export const getUsers = async (): Promise<UserData[]> => {

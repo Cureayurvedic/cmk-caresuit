@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Navigate } from "react-router-dom";
 import { useIsAdmin } from "@/contexts/AuthContext";
 import {
@@ -22,8 +23,16 @@ import {
   Trash2,
   Edit2,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Lock,
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   getUsers, 
   createUser, 
@@ -49,7 +58,7 @@ export default function UserManagementPage() {
     name: "",
     password: "",
     email: "",
-    role: "Receptionist" as 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist',
+    role: "Operator" as 'Admin' | 'Operator',
     status: "Active" as 'Active' | 'Inactive',
   });
   const [formLoading, setFormLoading] = useState(false);
@@ -86,7 +95,7 @@ export default function UserManagementPage() {
       name: "",
       password: "",
       email: "",
-      role: "Receptionist",
+      role: "Operator",
       status: "Active",
     });
     setIsModalOpen(true);
@@ -257,10 +266,7 @@ export default function UserManagementPage() {
                           <Badge 
                             variant="outline" 
                             className={`font-semibold bg-white
-                              ${user.role === 'Admin' ? 'text-indigo-700 border-indigo-200' : 
-                                user.role === 'Doctor' ? 'text-emerald-700 border-emerald-200' :
-                                user.role === 'Nurse' ? 'text-blue-700 border-blue-200' :
-                                'text-slate-700 border-slate-200'}
+                              ${user.role === 'Admin' ? 'text-indigo-700 border-indigo-200' : 'text-blue-700 border-blue-200'}
                             `}
                           >
                             {user.role}
@@ -297,23 +303,16 @@ export default function UserManagementPage() {
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600">
-                              <Power className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
-                              onClick={() => handleToggleStatus(user)}
-                              disabled={user.id === "admin-1"}
-                              className={user.status === "Active" ? "text-rose-600" : "text-emerald-600"}
-                            >
-                              {user.status === "Active" ? <Lock className="mr-2 h-4 w-4" /> : <Unlock className="mr-2 h-4 w-4" />}
-                              {user.status === "Active" ? "Deactivate User" : "Activate User"}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title={user.status === "Active" ? "Deactivate User" : "Activate User"}
+                          onClick={() => handleToggleStatus(user)}
+                          disabled={user.id === "admin-1"}
+                          className={`h-8 w-8 rounded-lg ${user.status === "Active" ? "text-amber-600 hover:text-amber-700 hover:bg-amber-50" : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"} ${user.id === "admin-1" ? "opacity-30 cursor-not-allowed" : ""}`}
+                        >
+                          <Power className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -339,8 +338,8 @@ export default function UserManagementPage() {
       </Card>
 
       {/* ── Add / Edit Modal ── */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 overflow-hidden">
             <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
               <div>
@@ -401,9 +400,7 @@ export default function UserManagementPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Admin">Administrator</SelectItem>
-                        <SelectItem value="Doctor">Doctor</SelectItem>
-                        <SelectItem value="Nurse">Nurse</SelectItem>
-                        <SelectItem value="Receptionist">Receptionist</SelectItem>
+                        <SelectItem value="Operator">Operator</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -453,7 +450,8 @@ export default function UserManagementPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

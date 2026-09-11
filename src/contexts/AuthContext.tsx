@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  role: 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist' | null;
-  login: (username: string, role: 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist') => void;
+  role: 'Admin' | 'Operator' | null;
+  login: (username: string, role: 'Admin' | 'Operator') => void;
   logout: () => void;
 }
 
@@ -16,9 +16,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return saved === "true";
   });
 
-  const [role, setRole] = useState<'Admin' | 'Doctor' | 'Nurse' | 'Receptionist' | null>(() => {
+  const [role, setRole] = useState<'Admin' | 'Operator' | null>(() => {
     const savedRole = localStorage.getItem("cmk_role");
-    return (savedRole as 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist') || null;
+    return (savedRole as 'Admin' | 'Operator') || null;
   });
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [isAuthenticated, role]);
 
-  const login = (username: string, selectedRole: 'Admin' | 'Doctor' | 'Nurse' | 'Receptionist') => {
+  const login = (username: string, selectedRole: 'Admin' | 'Operator') => {
     console.log(`Logged in as: ${username} (Role: ${selectedRole})`);
     setIsAuthenticated(true);
     setRole(selectedRole);

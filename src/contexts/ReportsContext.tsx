@@ -1,16 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Users, Building2, DollarSign } from "lucide-react";
+import { Users, DollarSign } from "lucide-react";
 
 export interface ReportTreeItem {
   id: string;
   name: string;
-  category: "Registration" | "ATD" | "Billing";
+  category: "Registration" | "Billing";
   description: string;
 }
 
 export interface ReportCategoryGroup {
-  category: "Registration" | "ATD" | "Billing";
+  category: "Registration" | "Billing";
   icon: any;
   items: ReportTreeItem[];
 }
@@ -20,20 +20,8 @@ export const REPORT_TREE: ReportCategoryGroup[] = [
     category: "Registration",
     icon: Users,
     items: [
-      { id: "Registration List", name: "Registration List", category: "Registration", description: "Comprehensive list of registered outpatients and inpatients" },
+      { id: "Registration List", name: "Registration List", category: "Registration", description: "Comprehensive list of registered patient demographics" },
       { id: "Registration Report", name: "Registration Report", category: "Registration", description: "Daily & monthly patient registration volume analysis" },
-    ],
-  },
-  {
-    category: "ATD",
-    icon: Building2,
-    items: [
-      { id: "Admission Form", name: "Admission Form", category: "ATD", description: "IP admission summaries, demographic intake and initial orders" },
-      { id: "Admission Report", name: "Admission Report", category: "ATD", description: "Inpatient admission census, doctor and ward distributions" },
-      { id: "Patient Transfer", name: "Patient Transfer", category: "ATD", description: "Bed and ward transfer logs with timestamps and reasons" },
-      { id: "Admitted List As On Date", name: "Admitted List As On Date", category: "ATD", description: "Live active in-hospital census as of selected date" },
-      { id: "Discharge Report", name: "Discharge Report", category: "ATD", description: "Discharged patient statistics, average length of stay" },
-      { id: "Bed Occupancy Details", name: "Bed Occupancy Details", category: "ATD", description: "Ward-wise bed utilization, vacancy and occupancy rates" },
     ],
   },
   {
@@ -43,14 +31,10 @@ export const REPORT_TREE: ReportCategoryGroup[] = [
       { id: "Cash Collection", name: "Cash Collection", category: "Billing", description: "Daily counter receipts breakdown by cash, card, UPI and cheque" },
       { id: "Credit Collection", name: "Credit Collection", category: "Billing", description: "Insurance, TPA and corporate company settlement receipts" },
       { id: "OP Visit", name: "OP Visit", category: "Billing", description: "Outpatient consultations, doctor fees and department traffic" },
-      { id: "Bill Register", name: "Bill Register", category: "Billing", description: "Master invoice log for all OP and IP bills with settlement status" },
-      { id: "Deposit Exhaust", name: "Deposit Exhaust", category: "Billing", description: "Advance deposit consumption against active inpatient bills" },
-      { id: "InvestigationWise Census", name: "InvestigationWise Census", category: "Billing", description: "Lab, Radiology and Diagnostics service utilization counts" },
+      { id: "Bill Register", name: "Bill Register", category: "Billing", description: "Master invoice log for all bills with settlement status" },
       { id: "Outstanding", name: "Outstanding", category: "Billing", description: "Aging ledger of unpaid balances from patients and payers" },
-      { id: "Discharge Without Billing", name: "Discharge Without Billing", category: "Billing", description: "Discharged patients with unsettled final bills" },
       { id: "Discount Report", name: "Discount Report", category: "Billing", description: "Authorized billing waivers, concessions and courtesy discounts" },
-      { id: "Revenue", name: "Revenue", category: "Billing", description: "Consolidated hospital gross, net revenue by department/doctor" },
-      { id: "IP TAT", name: "IP TAT", category: "Billing", description: "Inpatient billing turnaround time from discharge order to final bill" },
+      { id: "Revenue", name: "Revenue", category: "Billing", description: "Consolidated hospital gross and net revenue" },
       { id: "Bill Cancelled", name: "Bill Cancelled", category: "Billing", description: "Cancelled invoice audit trail with authorization reasons" },
       { id: "Refund", name: "Refund", category: "Billing", description: "Patient deposit and excess payment refund disbursement log" },
       { id: "Credit Note Report", name: "Credit Note Report", category: "Billing", description: "Credit notes issued with authorized reasons and adjustments" },
@@ -60,8 +44,8 @@ export const REPORT_TREE: ReportCategoryGroup[] = [
 ];
 
 interface ReportsContextType {
-  activeCategory: "Registration" | "ATD" | "Billing";
-  setActiveCategory: (cat: "Registration" | "ATD" | "Billing") => void;
+  activeCategory: "Registration" | "Billing";
+  setActiveCategory: (cat: "Registration" | "Billing") => void;
   selectedReportId: string;
   setSelectedReportId: (id: string) => void;
   collapsedCategories: { [key: string]: boolean };
@@ -79,11 +63,10 @@ const ReportsContext = createContext<ReportsContextType | undefined>(undefined);
 
 export function ReportsProvider({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const [activeCategory, setActiveCategory] = useState<"Registration" | "ATD" | "Billing">("Billing");
-  const [selectedReportId, setSelectedReportId] = useState<string>("Revenue");
+  const [activeCategory, setActiveCategory] = useState<"Registration" | "Billing">("Registration");
+  const [selectedReportId, setSelectedReportId] = useState<string>("Registration List");
   const [collapsedCategories, setCollapsedCategories] = useState<{ [key: string]: boolean }>({
     Registration: false,
-    ATD: false,
     Billing: false,
   });
   const [sidebarFilterSearch, setSidebarFilterSearch] = useState("");
