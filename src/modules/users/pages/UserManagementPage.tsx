@@ -293,7 +293,7 @@ export default function UserManagementPage() {
                       )}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-end gap-1.5 transition-opacity">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -355,30 +355,30 @@ export default function UserManagementPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Full Name</label>
+                  <label className="text-sm font-semibold text-slate-700 after:content-['_*'] after:text-red-500 after:font-extrabold">Full Name</label>
                   <Input 
                     required 
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="e.g. Jane Doe" 
-                    className="h-11 rounded-xl shadow-sm border-slate-200"
+                    className="h-11 rounded-xl shadow-sm border-slate-200 bg-[#fffde6]"
                   />
                 </div>
                 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Email Address</label>
+                  <label className="text-sm font-semibold text-slate-700 after:content-['_*'] after:text-red-500 after:font-extrabold">Email Address</label>
                   <Input 
                     type="email"
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                     placeholder="e.g. jane@example.com" 
-                    className="h-11 rounded-xl shadow-sm border-slate-200"
+                    className="h-11 rounded-xl shadow-sm border-slate-200 bg-[#fffde6]"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">
+                  <label className={`text-sm font-semibold text-slate-700 ${!editingUser ? "after:content-['_*'] after:text-red-500 after:font-extrabold" : ""}`}>
                     Password {editingUser && <span className="text-slate-400 font-normal">(Leave blank to keep unchanged)</span>}
                   </label>
                   <Input 
@@ -387,15 +387,15 @@ export default function UserManagementPage() {
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
                     placeholder={editingUser ? "••••••••" : "Create a strong password"} 
-                    className="h-11 rounded-xl shadow-sm border-slate-200"
+                    className={`h-11 rounded-xl shadow-sm border-slate-200 ${!editingUser ? "bg-[#fffde6]" : ""}`}
                   />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-slate-700">Role</label>
+                    <label className="text-sm font-semibold text-slate-700 after:content-['_*'] after:text-red-500 after:font-extrabold">Role</label>
                     <Select value={formData.role} onValueChange={(val: any) => setFormData({...formData, role: val})}>
-                      <SelectTrigger className="h-11 rounded-xl shadow-sm border-slate-200">
+                      <SelectTrigger className="h-11 rounded-xl shadow-sm border-slate-200 bg-[#fffde6]">
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
@@ -406,9 +406,9 @@ export default function UserManagementPage() {
                   </div>
                   
                   <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-slate-700">Status</label>
+                    <label className="text-sm font-semibold text-slate-700 after:content-['_*'] after:text-red-500 after:font-extrabold">Status</label>
                     <Select value={formData.status} onValueChange={(val: any) => setFormData({...formData, status: val})}>
-                      <SelectTrigger className="h-11 rounded-xl shadow-sm border-slate-200">
+                      <SelectTrigger className="h-11 rounded-xl shadow-sm border-slate-200 bg-[#fffde6]">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>

@@ -21,8 +21,8 @@ import {
   HeartHandshake,
   Loader2,
   AlertCircle,
+  AlertTriangle,
   RefreshCw,
-  BedDouble,
   X,
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast-notification";
@@ -33,8 +33,8 @@ import {
   type SettingsCategory,
   type MasterOption,
 } from "@/api/settingsApi";
+import { getPatients } from "@/api/patientApi";
 import { useIsAdmin } from "@/contexts/AuthContext";
-import BedCategoriesPanel from "../components/BedCategoriesPanel";
 
 // ─── Category Configuration ────────────────────────────────────────────────────
 const CONFIGS: Record<
@@ -133,7 +133,7 @@ const SIDEBAR_LABELS: Record<SettingsCategory, string> = {
   payers: "Payers List",
 };
 
-type TabKey = SettingsCategory | "bedCategories";
+type TabKey = SettingsCategory;
 
 // ─── Component ──────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
@@ -143,14 +143,15 @@ export default function SettingsPage() {
   const urlTab = searchParams.get("tab") as TabKey | null;
 
   const [activeTab, setActiveTab] = useState<TabKey>(
-    () => urlTab || "bedCategories",
+    () => (urlTab && MASTER_TABS.includes(urlTab as SettingsCategory) ? (urlTab as SettingsCategory) : "providers"),
   );
 
   useEffect(() => {
-    if (urlTab) {
-      setActiveTab(urlTab);
+    if (urlTab && MASTER_TABS.includes(urlTab as SettingsCategory)) {
+      setActiveTab(urlTab as SettingsCategory);
     }
   }, [urlTab]);
+
   const [items, setItems] = useState<MasterOption[]>([]);
   const [newItem, setNewItem] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -159,15 +160,16 @@ export default function SettingsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<MasterOption | null>(null);
+  const [associatedPatientsCount, setAssociatedPatientsCount] = useState<number | null>(null);
+  const [checkingPatients, setCheckingPatients] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // ── Load items from API whenever the active tab changes ──
   const loadItems = useCallback(async () => {
-    if (activeTab === "bedCategories") return; // Handled by BedCategoriesPanel internally
     setLoading(true);
     setError(null);
     try {
-      const data = await getSettingsItems(activeTab as SettingsCategory);
+      const data = await getSettingsItems(activeTab);
       setItems(data.items);
     } catch (err) {
       const msg =
@@ -181,7 +183,6 @@ export default function SettingsPage() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (activeTab === "bedCategories") return;
     setItems([]);
     setNewItem("");
     setSearchTerm("");
@@ -189,17 +190,55 @@ export default function SettingsPage() {
     loadItems();
   }, [activeTab, loadItems]);
 
+  // ── Check patient dependency when an item is selected for deletion ──
+  useEffect(() => {
+    if (!itemToDelete) {
+      setAssociatedPatientsCount(null);
+      setCheckingPatients(false);
+      return;
+    }
+
+    let isMounted = true;
+    const checkPatients = async () => {
+      setCheckingPatients(true);
+      setAssociatedPatientsCount(null);
+      try {
+        let count = 0;
+        if (activeTab === "branches") {
+          const res = await getPatients({ branch: itemToDelete.value, limit: 1 });
+          count = res.total ?? res.patients?.length ?? 0;
+        } else if (activeTab === "doctors" || activeTab === "providers") {
+          const res = await getPatients({ search: itemToDelete.value, limit: 1 });
+          count = res.total ?? res.patients?.length ?? 0;
+        } else if (activeTab === "companies" || activeTab === "insurances" || activeTab === "payers") {
+          const res = await getPatients({ company: itemToDelete.value, limit: 1 });
+          count = res.total ?? res.patients?.length ?? 0;
+        }
+        if (isMounted) setAssociatedPatientsCount(count);
+      } catch (err) {
+        if (isMounted) setAssociatedPatientsCount(0);
+      } finally {
+        if (isMounted) setCheckingPatients(false);
+      }
+    };
+
+    checkPatients();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [itemToDelete, activeTab]);
+
   // ── Add item ──
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (activeTab === "bedCategories") return;
     const trimmed = newItem.trim();
     if (!trimmed) return;
 
     setAdding(true);
     try {
       const created = await addSettingsItem(
-        activeTab as SettingsCategory,
+        activeTab,
         trimmed,
       );
       setItems((prev) => [...prev, created]);
@@ -207,7 +246,7 @@ export default function SettingsPage() {
       setIsAddModalOpen(false);
       toast.success(
         "Option Added",
-        `"${created.value}" has been added to ${CONFIGS[activeTab as SettingsCategory].title}.`,
+        `"${created.value}" has been added to ${CONFIGS[activeTab].title}.`,
       );
       if (activeTab === "branches") {
         window.dispatchEvent(new CustomEvent("cmk:branches-updated"));
@@ -222,11 +261,19 @@ export default function SettingsPage() {
 
   // ── Delete item ──
   const confirmDelete = async () => {
-    if (activeTab === "bedCategories" || !itemToDelete) return;
+    if (!itemToDelete) return;
+    if (associatedPatientsCount && associatedPatientsCount > 0) {
+      toast.error(
+        "Delete Blocked",
+        `Cannot delete "${itemToDelete.value}" because it has ${associatedPatientsCount} associated patient(s).`
+      );
+      return;
+    }
+
     setDeletingId(itemToDelete.id);
     try {
       await deleteSettingsItem(
-        activeTab as SettingsCategory,
+        activeTab,
         itemToDelete.id,
         itemToDelete.value,
       );
@@ -251,10 +298,7 @@ export default function SettingsPage() {
     item.value.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const config =
-    activeTab !== "bedCategories"
-      ? CONFIGS[activeTab as SettingsCategory]
-      : null;
+  const config = CONFIGS[activeTab];
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
@@ -278,7 +322,7 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
           <span>
             Active Masters:{" "}
-            <strong className="text-blue-600 font-black">10 Modules</strong>
+            <strong className="text-blue-600 font-black">9 Modules</strong>
           </span>
         </div>
       </div>
@@ -290,25 +334,6 @@ export default function SettingsPage() {
           <div className="hidden lg:block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1 mb-1">
             Master Configurations
           </div>
-          <button
-            type="button"
-            onClick={() => setActiveTab("bedCategories")}
-            className={`whitespace-nowrap text-left px-3.5 py-2.5 rounded-lg text-xs font-bold flex items-center justify-between gap-2 transition-all cursor-pointer ${
-              activeTab === "bedCategories"
-                ? "bg-blue-600 text-white shadow-xs"
-                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
-            }`}
-          >
-            <div className="flex items-center gap-2.5">
-              <BedDouble className="h-4 w-4 shrink-0" />
-              <span>Bed Categories</span>
-            </div>
-            <span
-              className={`text-[10px] px-1.5 py-0.5 rounded-md font-extrabold ${activeTab === "bedCategories" ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-500"}`}
-            >
-              ATD
-            </span>
-          </button>
 
           {MASTER_TABS.map((tab) => (
             <button
@@ -331,9 +356,7 @@ export default function SettingsPage() {
 
         {/* ── Content Area ── */}
         <div className="min-w-0 w-full flex-1">
-          {activeTab === "bedCategories" ? (
-            <BedCategoriesPanel />
-          ) : config ? (
+          {config && (
             <Card className="border border-slate-200/80 shadow-2xs rounded-xl w-full bg-white">
               <CardHeader className="p-5 pb-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl flex flex-row items-center justify-between">
                 <div>
@@ -567,6 +590,28 @@ export default function SettingsPage() {
                         "{itemToDelete.value}"
                       </p>
                     </div>
+
+                    {checkingPatients && (
+                      <div className="flex items-center justify-center gap-2 py-2 text-xs text-slate-500 font-medium my-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600" />
+                        <span>Checking patient dependencies...</span>
+                      </div>
+                    )}
+
+                    {!checkingPatients && associatedPatientsCount !== null && associatedPatientsCount > 0 && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 my-3 flex items-start gap-2.5 text-left">
+                        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="text-xs text-amber-800 font-medium">
+                          <p className="font-bold text-amber-900">
+                            Cannot Delete {activeTab === "branches" ? "Branch" : "Option"}
+                          </p>
+                          <p className="mt-0.5 leading-snug">
+                            This {activeTab === "branches" ? "branch" : "option"} is currently linked to <strong>{associatedPatientsCount} patient(s)</strong>. You cannot delete it while patients are assigned to it.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex justify-end gap-2">
                       <Button
                         variant="outline"
@@ -578,8 +623,12 @@ export default function SettingsPage() {
                       </Button>
                       <Button
                         onClick={confirmDelete}
-                        disabled={deletingId === itemToDelete.id}
-                        className="text-xs h-9 gap-1.5 bg-red-600 hover:bg-red-700 text-white cursor-pointer"
+                        disabled={
+                          deletingId === itemToDelete.id ||
+                          checkingPatients ||
+                          (associatedPatientsCount !== null && associatedPatientsCount > 0)
+                        }
+                        className="text-xs h-9 gap-1.5 bg-red-600 hover:bg-red-700 text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {deletingId === itemToDelete.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -593,7 +642,7 @@ export default function SettingsPage() {
                 </div>
               )}
             </Card>
-          ) : null}
+          )}
         </div>
       </div>
     </div>

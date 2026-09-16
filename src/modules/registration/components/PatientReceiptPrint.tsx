@@ -147,7 +147,7 @@ export const PatientReceiptPrint = forwardRef<HTMLDivElement, Props>(
           <h2 className="text-xs font-black text-slate-900 uppercase tracking-wider">
             {receipt.receiptType === "ADVANCE"
               ? "OFFICIAL ADVANCE DEPOSIT RECEIPT"
-              : "OFFICIAL MONEY / SETTLEMENT RECEIPT"}
+              : "OP RECEIPT"}
           </h2>
         </div>
 

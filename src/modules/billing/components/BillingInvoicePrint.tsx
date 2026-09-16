@@ -28,6 +28,8 @@ export interface BillingInvoicePrintData {
   roomNo?: string;
   crNo?: string;
   refNo?: string;
+  payments?: any[];
+  remarks?: string;
 }
 
 interface Props {
@@ -127,7 +129,7 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
 
           {/* ─── Header: Centered Hospital Details & Logo on Right ─── */}
           <div className="flex items-start justify-between border-b border-slate-400 pb-2 mb-2 relative">
-            <div className="w-24"></div>
+            <div className="w-28"></div>
             <div className="flex-1 text-center space-y-0.5">
               <h1 className="text-lg font-black text-slate-900 uppercase tracking-wide font-serif">
                 CMK HEALTH CARE PVT. LTD.
@@ -168,17 +170,11 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
                 <div className="font-extrabold uppercase text-slate-900 mb-0.5 tracking-wide">
                   PATIENT DETAILS:
                 </div>
-                <div className="grid grid-cols-[80px_1fr] gap-x-1 font-medium">
+                <div className="grid grid-cols-[100px_1fr] gap-x-1 font-medium">
                   <span className="text-slate-600 font-bold">Name:</span>
                   <span className="font-bold text-slate-900 uppercase">{invoice.patientName}</span>
                   <span className="text-slate-600 font-bold">Age/Sex:</span>
                   <span>{invoice.genderAge || "61/FEMALE"}</span>
-                  <span className="text-slate-600 font-bold">Payer:</span>
-                  <span>{invoice.company || "CASH"}</span>
-                  <span className="text-slate-600 font-bold">Remarks:</span>
-                  <span>{invoice.narration || "-"}</span>
-                  <span className="text-slate-600 font-bold">Address:</span>
-                  <span>{invoice.address || "-"}</span>
                 </div>
               </div>
 
@@ -186,7 +182,7 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
                 <div className="font-extrabold uppercase text-slate-900 mb-0.5 tracking-wide">
                   ADMISSION DETAILS:
                 </div>
-                <div className="grid grid-cols-[80px_1fr] gap-x-1 font-medium">
+                <div className="grid grid-cols-[100px_1fr] gap-x-1 font-medium">
                   <span className="text-slate-600 font-bold">C.R. No:</span>
                   <span className="font-mono font-bold">{invoice.crNo || invoice.uhid}</span>
                   <span className="text-slate-600 font-bold">Date/Time:</span>
@@ -198,31 +194,24 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
                 </div>
               </div>
             </div>
-
             {/* Right Column */}
-            <div className="space-y-2 text-right">
-              <div>
-                <div className="font-bold text-slate-700">
-                  Bill Number : <span className="font-mono font-bold text-slate-900">{invoice.invoiceNo}</span>
+            <div className="space-y-2">
+              <div className="text-right">
+                <div className="font-extrabold uppercase text-slate-900 mb-1 tracking-wide">
+                  Bill Number: <span className="font-mono font-bold text-slate-900">{invoice.invoiceNo}</span>
                 </div>
-                <div className="font-bold text-slate-700">
-                  Date : <span>{formattedDate.split(" ")[0]}</span>
+                <div className="font-extrabold uppercase text-slate-900 mb-1 tracking-wide">
+                  Date: <span className="font-bold">{formattedDate.split(" ")[0]}</span>
                 </div>
               </div>
 
-              <div className="pt-2">
-                <div className="font-extrabold uppercase text-slate-900 mb-0.5 tracking-wide">
+              <div>
+                <div className="font-extrabold uppercase text-slate-900 mb-0.5 tracking-wide text-right">
                   DISCHARGE:
                 </div>
-                <div className="grid grid-cols-[80px_1fr] gap-x-1 text-right font-medium justify-end">
+                <div className="grid grid-cols-[100px_1fr] gap-x-1 text-right font-medium justify-end">
                   <span className="text-slate-600 font-bold">Date:</span>
                   <span>{invoice.dischargeDate || formattedDate.split(" ")[0]}</span>
-                  <span className="text-slate-600 font-bold">Time:</span>
-                  <span>{invoice.dischargeTime || "03:00 PM"}</span>
-                  <span className="text-slate-600 font-bold">Bed:</span>
-                  <span>-</span>
-                  <span className="text-slate-600 font-bold">Room No.:</span>
-                  <span className="font-bold text-slate-900">{invoice.roomNo || "311"}</span>
                 </div>
               </div>
             </div>
@@ -285,15 +274,8 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
             </div>
           </div>
 
-          {/* ─── Bottom Footer: Hospital Seal & Signature Line ─── */}
-          <div className="flex justify-between items-end pt-6">
-            {/* Hospital Stamp / Seal */}
-            <div className="w-32 h-32 rounded-full border-2 border-slate-400 border-dashed flex flex-col items-center justify-center text-center text-[9px] font-bold text-slate-400 p-2 uppercase">
-              <div>CMK HEALTHCARE</div>
-              <div>PRIVATE LIMITED</div>
-              <div className="text-[8px] text-slate-400 mt-1">SEAL</div>
-            </div>
-
+          {/* ─── Bottom Footer: Signature Line ─── */}
+          <div className="flex justify-end items-end pt-6">
             {/* Signature Line */}
             <div className="text-center">
               <div className="w-44 border-b border-slate-500 mb-1"></div>
@@ -377,6 +359,8 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
           <h2 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider underline decoration-slate-900 underline-offset-4 mb-2.5">
             {invoice.type === "IP"
               ? "IP INVOICE & RECEIPT"
+              : invoice.type === "ACC"
+              ? "ACCESSORIES INVOICE & RECEIPT"
               : "OP INVOICE & RECEIPT"}
           </h2>
           <div className="flex justify-between items-center text-[10px] text-slate-600 pt-1 font-medium px-1">
@@ -390,33 +374,20 @@ export const BillingInvoicePrint = forwardRef<HTMLDivElement, Props>(
         <table className="bill-table text-[11px] mb-4">
           <tbody>
             <tr>
-              <td className="w-1/2 bg-slate-50/50">
+              <td colSpan={2} className="bg-slate-50/50">
                 <div className="flex items-center">
                   <span className="font-bold w-32">UHID No.</span>
                   <span className="font-bold mr-2">:</span>
                   <span className="font-bold text-slate-900 font-mono">{invoice.uhid}</span>
                 </div>
               </td>
-              <td className="w-1/2 bg-slate-50/50">
-                <div className="flex items-center">
-                  <span className="font-bold w-32">Invoice No.</span>
-                  <span className="font-bold mr-2">:</span>
-                  <span className="font-bold text-slate-900 font-mono">{invoice.invoiceNo}</span>
-                </div>
-              </td>
             </tr>
             <tr>
-              <td>
+              <td colSpan={2}>
                 <div className="flex items-center">
                   <span className="font-bold w-32">Patient's Name</span>
                   <span className="font-bold mr-2">:</span>
                   <span className="font-bold text-slate-900">{invoice.patientName}</span>
-                </div>
-              </td>
-              <td>
-                <div className="flex items-center">
-                  <span className="font-bold w-32">Date / Time</span>
-                  <span className="font-semibold text-slate-800">{formattedDate}</span>
                 </div>
               </td>
             </tr>

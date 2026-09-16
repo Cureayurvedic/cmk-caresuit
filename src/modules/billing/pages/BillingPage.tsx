@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
+import { useBranch } from "@/contexts/BranchContext";
 import { BillingInvoicePrint, BillingInvoicePrintData } from "../components/BillingInvoicePrint";
 import {
   ReceiptText,
@@ -38,6 +39,8 @@ import {
 import AddDoctorModal from "@/components/AddDoctorModal";
 import { accessoriesApi } from "@/api/accessoriesApi";
 import { ORTHOPEDICS_SERVICES } from "../data/orthopedicsServices";
+import { LABORATORY_SERVICES, LABORATORY_SUB_DEPARTMENTS } from "../data/laboratoryServices";
+import { RADIOLOGY_SERVICES, RADIOLOGY_SUB_DEPARTMENTS } from "../data/radiologyServices";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -357,9 +360,8 @@ function SearchableServiceSelect({
                         setIsOpen(false);
                         setSearchTerm("");
                       }}
-                      className={`px-2.5 py-1.5 cursor-pointer flex items-center justify-between hover:bg-blue-50 transition-colors ${
-                        isSelected ? "bg-blue-100/70 font-bold text-blue-900" : "text-slate-700"
-                      }`}
+                      className={`px-2.5 py-1.5 cursor-pointer flex items-center justify-between hover:bg-blue-50 transition-colors ${isSelected ? "bg-blue-100/70 font-bold text-blue-900" : "text-slate-700"
+                        }`}
                     >
                       <span className="truncate pr-2">{s.name}</span>
                       {s.dept !== "Orthopedics" && (
@@ -523,9 +525,8 @@ function SearchableDropdown({
                       onSelect(opt);
                       setIsOpen(false);
                     }}
-                    className={`w-full text-left px-2.5 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center justify-between text-xs transition-colors cursor-pointer ${
-                      value === opt ? "bg-blue-50/80 font-bold text-blue-700" : "text-slate-700"
-                    }`}
+                    className={`w-full text-left px-2.5 py-1.5 hover:bg-blue-50 hover:text-blue-700 flex items-center justify-between text-xs transition-colors cursor-pointer ${value === opt ? "bg-blue-50/80 font-bold text-blue-700" : "text-slate-700"
+                      }`}
                   >
                     <span className="truncate">{opt}</span>
                     {value === opt && (
@@ -567,7 +568,229 @@ const SERVICE_CATALOG = [
     dept: "General OPD",
     rate: 0,
   },
+  // Administration Charges Department
+  {
+    code: "102156",
+    name: "Administration Charges",
+    dept: "Administration Charges",
+    rate: 0,
+  },
+  // Administrator Department
+  {
+    code: "102157-ADM",
+    name: "Administrator Charges",
+    dept: "Administrator",
+    rate: 0,
+  },
+  // ADMISSION Department
+  {
+    code: "102157",
+    name: "Admission & File Charges",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102158",
+    name: "Attendant Pass",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102159",
+    name: "Bed Transfer Charges",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102160",
+    name: "Dietician Charges",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102161",
+    name: "International Patient Diet",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102162",
+    name: "Mortuary Charges (After 12 Hours)",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102163",
+    name: "Patient ID Band Charges",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102164",
+    name: "Recovery Of Attendant Pass",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102165",
+    name: "Recovery Of Visitor Pass",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  {
+    code: "102166",
+    name: "Visitor Pass",
+    dept: "ADMISSION",
+    rate: 0,
+  },
+  // CARDIOLOGY Department
+  {
+    code: "104912",
+    name: "CARDIOLOGY INVESTIGATION",
+    dept: "CARDIOLOGY",
+    rate: 0,
+  },
+  {
+    code: "104913",
+    name: "ECG",
+    dept: "CARDIOLOGY",
+    rate: 300,
+  },
+  {
+    code: "104914",
+    name: "2D ECHO with Color Doppler",
+    dept: "CARDIOLOGY",
+    rate: 2500,
+  },
+  {
+    code: "104915",
+    name: "TMT (Treadmill Test)",
+    dept: "CARDIOLOGY",
+    rate: 1800,
+  },
+  {
+    code: "104916",
+    name: "Holter Monitoring 24 Hours",
+    dept: "CARDIOLOGY",
+    rate: 3500,
+  },
+  // CMK SERVICE CHARGES Department
+  {
+    code: "104930",
+    name: "CMK Service Charge",
+    dept: "CMK SERVICE CHARGES",
+    rate: 0,
+  },
+  {
+    code: "104931",
+    name: "Hospital Service Charges",
+    dept: "CMK SERVICE CHARGES",
+    rate: 0,
+  },
+  // Consumables Department
+  {
+    code: "104923",
+    name: "CONSUMEABLES",
+    dept: "CONSUMABLES",
+    rate: 0,
+  },
+  {
+    code: "104906",
+    name: "Hospital Consumable Charges",
+    dept: "CONSUMABLES",
+    rate: 0,
+  },
+  {
+    code: "104929",
+    name: "OT & WARD CONSUMABLES",
+    dept: "CONSUMABLES",
+    rate: 0,
+  },
+  // O T CHARGES Department
+  {
+    code: "104927",
+    name: "Assistant Surgeon Fees",
+    dept: "O T CHARGES",
+    rate: 0,
+  },
+  {
+    code: "104907",
+    name: "OT / Ward Consumable Charges",
+    dept: "O T CHARGES",
+    rate: 0,
+  },
+  {
+    code: "104910",
+    name: "OT Charge",
+    dept: "O T CHARGES",
+    rate: 0,
+  },
+  {
+    code: "102167",
+    name: "OT Charges",
+    dept: "O T CHARGES",
+    rate: 0,
+  },
+  {
+    code: "104928",
+    name: "Registration fee.",
+    dept: "O T CHARGES",
+    rate: 0,
+  },
+  {
+    code: "104926",
+    name: "Surgeon Fee.",
+    dept: "O T CHARGES",
+    rate: 0,
+  },
+  // PROCEDURE CHARGE Department
+  {
+    code: "104922",
+    name: "B/L KNEE - INJECTION",
+    dept: "PROCEDURE CHARGE",
+    rate: 0,
+  },
+  {
+    code: "104924",
+    name: "PROCEDURE CHARGES",
+    dept: "PROCEDURE CHARGE",
+    rate: 0,
+  },
+  // REGISTRATION Department
+  {
+    code: "102150",
+    name: "Patient Registration Fee",
+    dept: "REGISTRATION",
+    rate: 100,
+  },
+  {
+    code: "102151",
+    name: "OP Registration Charges",
+    dept: "REGISTRATION",
+    rate: 100,
+  },
+  {
+    code: "102152",
+    name: "Renewal Registration Fee",
+    dept: "REGISTRATION",
+    rate: 50,
+  },
+  // REHABILITATION Department
+  {
+    code: "102153",
+    name: "Rehabilitation Therapy",
+    dept: "REHABILITATION",
+    rate: 0,
+  },
+  {
+    code: "102154",
+    name: "Physiotherapy & Rehab Session",
+    dept: "REHABILITATION",
+    rate: 0,
+  },
   ...ORTHOPEDICS_SERVICES,
+  ...LABORATORY_SERVICES,
+  ...RADIOLOGY_SERVICES,
 ];
 
 const MEDICAL_SPECIALISATIONS = [
@@ -668,8 +891,33 @@ const MEDICAL_SPECIALISATIONS = [
   "Vascular and Endovascular Surgery",
 ];
 
+const RAW_DEPARTMENTS = [
+  "Administration Charges",
+  "Administrator",
+  "ADMISSION",
+  "CARDIOLOGY",
+  "CMK SERVICE CHARGES",
+  "CONSUMABLES",
+  "Laboratory",
+  "O T CHARGES",
+  "Orthopedics",
+  "PROCEDURE CHARGE",
+  "RADIODIAGNOSIS AND IMAGING",
+  "REGISTRATION",
+  "REHABILITATION",
+  "Accessories",
+  "General OPD",
+  ...MEDICAL_SPECIALISATIONS.filter((s) => s !== "All"),
+];
+
 const ALL_DEPARTMENTS = Array.from(
-  new Set(["General OPD", "Orthopedics", ...MEDICAL_SPECIALISATIONS.filter((s) => s !== "All")])
+  RAW_DEPARTMENTS.reduce((acc, curr) => {
+    const key = curr.toLowerCase().trim();
+    if (!acc.has(key)) {
+      acc.set(key, curr);
+    }
+    return acc;
+  }, new Map<string, string>()).values()
 );
 
 const DEFAULT_OPD_ITEM: InvoiceItem = {
@@ -686,6 +934,7 @@ const DEFAULT_OPD_ITEM: InvoiceItem = {
 
 export default function BillingPage() {
   const toast = useToast();
+  const { activeBranch } = useBranch();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Map tab URL params to tab names
@@ -765,10 +1014,7 @@ export default function BillingPage() {
   const [malDateRangePreset, setMalDateRangePreset] = useState("Date Range");
   const [malFromDate, setMalFromDate] = useState("");
   const [malToDate, setMalToDate] = useState("");
-  const [malFacility, setMalFacility] = useState("CMK HEALTHCARE PVT. LTD.");
   const [malPayerType, setMalPayerType] = useState("Select All");
-  const [malPayer, setMalPayer] = useState("Select All");
-  const [malSponsor, setMalSponsor] = useState("Select All");
   const [malPatientType, setMalPatientType] = useState("Both");
   const [malPrintAs, setMalPrintAs] = useState<"Summary" | "Detail">("Summary");
   const [malPatientRefundableOnly, setMalPatientRefundableOnly] =
@@ -797,6 +1043,24 @@ export default function BillingPage() {
     contentRef: printInvoiceRef,
     documentTitle: `Invoice_${printInvoiceData?.invoiceNo || "Receipt"}`,
   });
+
+  // ─── Accessories Direct Print (no preview modal) ─────────────────────────
+  const [accPrintData, setAccPrintData] = useState<BillingInvoicePrintData | null>(null);
+  const accPrintRef = useRef<HTMLDivElement>(null);
+  const handleAccPrint = useReactToPrint({
+    contentRef: accPrintRef,
+    documentTitle: `Accessories_Invoice_${accPrintData?.invoiceNo || "Receipt"}`,
+  });
+  useEffect(() => {
+    if (accPrintData && handleAccPrint) {
+      // Small delay to ensure the hidden element renders with fresh data
+      const t = setTimeout(() => {
+        handleAccPrint();
+        setAccPrintData(null);
+      }, 150);
+      return () => clearTimeout(t);
+    }
+  }, [accPrintData]);
   const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   const [isPatientSearchModalOpen, setIsPatientSearchModalOpen] =
     useState(false);
@@ -1001,9 +1265,8 @@ export default function BillingPage() {
   const [ipAgeSexInput, setIpAgeSexInput] = useState("61/FEMALE");
   const [ipAddressInput, setIpAddressInput] = useState("");
   const [ipCrNoInput, setIpCrNoInput] = useState("");
-  const [ipAdmissionDateInput, setIpAdmissionDateInput] = useState("13/04/2026");
-  const [ipDischargeDateInput, setIpDischargeDateInput] = useState("18/04/2026");
-  const [ipDischargeTimeInput, setIpDischargeTimeInput] = useState("03:00 PM");
+  const [ipAdmissionDateInput, setIpAdmissionDateInput] = useState("2026-04-13T11:00");
+  const [ipDischargeDateInput, setIpDischargeDateInput] = useState("2026-04-18T15:00");
   const [ipRoomNoInput, setIpRoomNoInput] = useState("311");
   const [ipConsultantDrInput, setIpConsultantDrInput] = useState("Dr. D K DAS");
   const [ipBillingPayer, setIpBillingPayer] = useState("CASH");
@@ -1093,9 +1356,39 @@ export default function BillingPage() {
   const [accBillingType, setAccBillingType] = useState<string>("Cash");
   const [accBillingPayerType, setAccBillingPayerType] = useState<string>("Direct Patient");
   const [accBillingPayer, setAccBillingPayer] = useState<string>("CASH");
+  const [accBillingSponsor, setAccBillingSponsor] = useState<string>("CASH");
+  const [accBillingNetwork, setAccBillingNetwork] = useState<string>("");
+  const [accBillingReferredType, setAccBillingReferredType] = useState<string>("SELF");
+  const [accBillingReferredName, setAccBillingReferredName] = useState<string>("");
   const [accBillingDoctor, setAccBillingDoctor] = useState<string>("Dr. D K DAS");
   const [accBillingNarration, setAccBillingNarration] = useState<string>("");
   const [accBillingDiscount, setAccBillingDiscount] = useState<number>(0);
+  const [accBillingSubTab, setAccBillingSubTab] = useState<string>("Service");
+  const [accBillingPaymentRows, setAccBillingPaymentRows] = useState<
+    Array<{
+      mode: string;
+      amount: number;
+      balance: number;
+      date: string;
+      bankName: string;
+      beneficiaryName: string;
+      refNo: string;
+      description: string;
+      cardSwipingValue: number;
+    }>
+  >([
+    {
+      mode: "Cash",
+      amount: 0,
+      balance: 0,
+      date: new Date().toLocaleDateString("en-GB"),
+      bankName: "",
+      beneficiaryName: "",
+      refNo: "",
+      description: "",
+      cardSwipingValue: 0,
+    },
+  ]);
 
   interface AccBillingRow {
     id: string;
@@ -1257,6 +1550,20 @@ export default function BillingPage() {
     setAccBillingInvoiceNo(`ACC-INV-${Math.floor(1000 + Math.random() * 9000)}`);
     setAccBillingNarration("");
     setAccBillingDiscount(0);
+    setAccBillingSubTab("Service");
+    setAccBillingPaymentRows([
+      {
+        mode: "Cash",
+        amount: 0,
+        balance: 0,
+        date: new Date().toLocaleDateString("en-GB"),
+        bankName: "",
+        beneficiaryName: "",
+        refNo: "",
+        description: "",
+        cardSwipingValue: 0,
+      },
+    ]);
     setAccBillingRows([
       {
         id: "row_1",
@@ -1273,8 +1580,16 @@ export default function BillingPage() {
 
   const accBillingGrossTotal = accBillingRows.reduce((sum, r) => sum + r.netAmt, 0);
   const accBillingNetBilledAmt = Math.max(0, accBillingGrossTotal - accBillingDiscount);
+  const accPaidTotal = accBillingPaymentRows.reduce(
+    (sum, r) => sum + Number(r.amount || 0),
+    0
+  );
+  const accOutstandingBalance = Math.max(
+    0,
+    accBillingNetBilledAmt - accPaidTotal
+  );
 
-  const handleSaveAccInvoice = (shouldPrint: boolean) => {
+  const handleSaveAccInvoice = async (shouldPrint: boolean) => {
     const validRows = accBillingRows.filter((r) => r.accessoryId && r.qty > 0);
     if (validRows.length === 0) {
       toast.error(
@@ -1306,7 +1621,7 @@ export default function BillingPage() {
       patientName: accBillingPatient ? accBillingPatient.patientName : "Walk-in Patient",
       company: accBillingPayer || "CASH",
       encNo: accBillingPatient ? accBillingPatient.ipNo || "ENC-ACC" : "ENC-ACC",
-      type: "OP",
+      type: "ACC",
       invoiceNo: accBillingInvoiceNo,
       date: new Date().toISOString(),
       doctorName: accBillingDoctor,
@@ -1315,13 +1630,13 @@ export default function BillingPage() {
       discountAmt: accBillingDiscount,
       taxAmt: 0,
       netAmt: accBillingNetBilledAmt,
-      paidPatient: accBillingNetBilledAmt,
+      paidPatient: accPaidTotal > 0 ? accPaidTotal : accBillingNetBilledAmt,
       paidPayer: 0,
       adjusted: 0,
       refund: 0,
       creditNote: 0,
-      balance: 0,
-      status: "Settled",
+      balance: accOutstandingBalance,
+      status: accOutstandingBalance <= 0 ? "Settled" : "Outstanding",
       tdsAmt: 0,
       isCancelled: false,
       itemsJson: JSON.stringify(
@@ -1333,23 +1648,46 @@ export default function BillingPage() {
           amount: r.netAmt,
         }))
       ),
+      payments: accBillingPaymentRows
+        .filter((p) => Number(p.amount) > 0)
+        .map((p) => ({
+          mode: p.mode,
+          amount: Number(p.amount),
+          bankName: p.bankName === "-Select-" ? undefined : p.bankName,
+          beneficiaryName:
+            p.beneficiaryName === "-Select-" ? undefined : p.beneficiaryName,
+          refNo: p.refNo,
+          cardSwipingValue: p.cardSwipingValue,
+          description: p.description,
+        })),
       remarks: accBillingNarration,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    createInvoice(newInvoice);
+    try {
+      await createInvoice(newInvoice);
+    } catch (err: any) {
+      toast.error(
+        "Invoice Generation Failed",
+        err.message || "Failed to generate accessories invoice."
+      );
+      return;
+    }
 
     toast.success(
       "Accessories Invoice Created",
       `Invoice #${accBillingInvoiceNo} saved & stock inventory updated successfully.`
     );
 
+    loadAllBillingData();
+    setMalUhid("");
+
     if (shouldPrint) {
       const printData: BillingInvoicePrintData = {
         invoiceNo: accBillingInvoiceNo,
         date: new Date().toISOString(),
-        type: "OP",
+        type: "ACC",
         uhid: accBillingPatient ? accBillingPatient.uhid : "WALK-IN",
         patientName: accBillingPatient ? accBillingPatient.patientName : "Walk-in Patient",
         genderAge: accBillingPatient ? accBillingPatient.genderAge : "-",
@@ -1371,7 +1709,10 @@ export default function BillingPage() {
         ),
         narration: accBillingNarration,
       };
-      setPrintInvoiceData(printData as any);
+      // Use direct print — no preview modal for accessories
+      setAccPrintData(printData);
+    } else {
+      setActiveTab("Master Activity List");
     }
 
     resetAccBillingForm();
@@ -1510,8 +1851,12 @@ export default function BillingPage() {
   }, []);
 
   // ─── DATA FETCHING (FULL API-LEVEL FILTERING) ───────────────────────────────
+  const fetchCounterRef = useRef(0);
+
   const loadAllBillingData = useCallback(async () => {
     setIsLoading(true);
+    const currentFetchId = ++fetchCounterRef.current;
+    console.log('Loading billing data for branch:', activeBranch);
     try {
       const [
         statsRes,
@@ -1530,10 +1875,8 @@ export default function BillingPage() {
           uhid: malUhid,
           billNo: malBillNo,
           type: malPatientType,
-          facility: malFacility,
+          facility: activeBranch,
           payerType: malPayerType,
-          payer: malPayer,
-          sponsor: malSponsor,
           patientRefundable: malPatientRefundableOnly,
           searchFor: malSearchFor,
           fromDate: malFromDate,
@@ -1587,6 +1930,8 @@ export default function BillingPage() {
         }),
       ]);
 
+      if (currentFetchId !== fetchCounterRef.current) return;
+
       if (statsRes.status === "fulfilled") setStats(statsRes.value);
       if (invRes.status === "fulfilled")
         setInvoices(invRes.value.invoices || []);
@@ -1626,10 +1971,8 @@ export default function BillingPage() {
     malUhid,
     malBillNo,
     malPatientType,
-    malFacility,
+    activeBranch,
     malPayerType,
-    malPayer,
-    malSponsor,
     malPatientRefundableOnly,
     malSearchFor,
     malFromDate,
@@ -1655,6 +1998,23 @@ export default function BillingPage() {
     patientTypeFilter,
     patientStatusFilter,
   ]);
+
+  // Reset filters and reload data when branch changes
+  useEffect(() => {
+    console.log('Branch changed to:', activeBranch);
+    setMalUhid("");
+    setMalBillNo("");
+    setMalFromDate("");
+    setMalToDate("");
+    setMalPayerType("Select All");
+    setMalPatientType("Both");
+    setColFilterCompany("");
+    setColFilterUhid("");
+    setColFilterPatient("");
+    setColFilterEnc("");
+    setColFilterInvoiceNo("");
+    setInvoiceSearch("");
+  }, [activeBranch]);
 
   useEffect(() => {
     loadAllBillingData();
@@ -1999,7 +2359,7 @@ export default function BillingPage() {
     if (ipBillingPatientInfo) {
       setIpPatientNameInput(ipBillingPatientInfo.name || "");
       if (ipBillingPatientInfo.payer) setIpBillingPayer(ipBillingPatientInfo.payer);
-      if (ipBillingPatientInfo.doctor) setIpConsultantDrInput(ipBillingPatientInfo.doctor);
+      // Doctor is selected manually via dropdown, don't auto-fill
     }
   }, [ipBillingPatientInfo]);
 
@@ -2180,6 +2540,34 @@ export default function BillingPage() {
         remarks: opBillingNarration || "OPD Services Billed",
       });
 
+      // Deduct stock for any accessories billed in OP Billing
+      opBillingItems.forEach((item) => {
+        if (
+          item.dept === "Accessories" ||
+          (item as any).accessoryId ||
+          item.code?.startsWith("ACC") ||
+          item.code?.startsWith("KB") ||
+          item.code?.startsWith("KC") ||
+          item.code?.startsWith("KI")
+        ) {
+          const accProducts = accessoriesApi.getProducts();
+          const matched = accProducts.find(
+            (p) =>
+              (item as any).accessoryId === p.id ||
+              p.code === item.code ||
+              p.name === item.name
+          );
+          if (matched) {
+            const targetSize =
+              item.selectedSize ||
+              (matched.sizes && matched.sizes.length > 0
+                ? matched.sizes[0].size
+                : "Universal");
+            accessoriesApi.adjustStock(matched.id, targetSize, -(item.qty || 1));
+          }
+        }
+      });
+
       toast.success(
         "OP Invoice Generated",
         `Invoice ${invoice.invoiceNo} created successfully! Net: ₹${invoice.netAmt}`,
@@ -2260,9 +2648,24 @@ export default function BillingPage() {
         balance: 0,
         itemsJson: JSON.stringify(ipSurgeryItems),
         narration: ipRemarks,
-        admissionDate: ipAdmissionDateInput,
-        dischargeDate: ipDischargeDateInput,
-        dischargeTime: ipDischargeTimeInput,
+        admissionDate: ipAdmissionDateInput ? new Date(ipAdmissionDateInput).toLocaleString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        }).replace(',', '') : "",
+        dischargeDate: ipDischargeDateInput ? new Date(ipDischargeDateInput).toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }) : "",
+        dischargeTime: ipDischargeDateInput ? new Date(ipDischargeDateInput).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true
+        }) : "",
         roomNo: ipRoomNoInput,
         crNo: ipCrNoInput || uhid,
       };
@@ -2713,10 +3116,7 @@ export default function BillingPage() {
     setMalDateRangePreset("Date Range");
     setMalFromDate("");
     setMalToDate("");
-    setMalFacility("CMK HEALTHCARE PVT. LTD.");
     setMalPayerType("Select All");
-    setMalPayer("Select All");
-    setMalSponsor("Select All");
     setMalPatientType("Both");
     setMalPrintAs("Summary");
     setMalPatientRefundableOnly(false);
@@ -2765,8 +3165,10 @@ export default function BillingPage() {
         !inv.invoiceNo.toLowerCase().includes(malBillNo.trim().toLowerCase())
       )
         return false;
-      if (malPatientType !== "Both" && inv.type !== malPatientType)
-        return false;
+      if (malPatientType === "OP" && inv.type !== "OP") return false;
+      if (malPatientType === "IP" && inv.type !== "IP") return false;
+      if (malPatientType === "ACC" && inv.type !== "ACC") return false;
+      if (malPatientType === "OP+IP" && inv.type !== "OP" && inv.type !== "IP") return false;
 
       if (malPayerType !== "Select All") {
         const isIns =
@@ -2784,16 +3186,8 @@ export default function BillingPage() {
           return false;
       }
 
-      if (
-        malPayer !== "Select All" &&
-        !inv.company.toLowerCase().includes(malPayer.toLowerCase())
-      )
-        return false;
-      if (
-        malSponsor !== "Select All" &&
-        !inv.company.toLowerCase().includes(malSponsor.toLowerCase())
-      )
-        return false;
+      // Payer Type filter is applied above
+
 
       if (
         malPatientRefundableOnly &&
@@ -2869,8 +3263,6 @@ export default function BillingPage() {
     malBillNo,
     malPatientType,
     malPayerType,
-    malPayer,
-    malSponsor,
     malPatientRefundableOnly,
     malSearchFor,
     malFromDate,
@@ -3102,11 +3494,10 @@ export default function BillingPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`h-8 border-b-2 px-3 pb-1 text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                isSelected
+              className={`h-8 border-b-2 px-3 pb-1 text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${isSelected
                   ? "border-[#051A7C] text-[#051A7C] bg-blue-50/80 rounded-t-md"
                   : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
+                }`}
             >
               <Icon
                 className={`w-3.5 h-3.5 ${isSelected ? "text-[#051A7C]" : "text-slate-400"}`}
@@ -3140,7 +3531,7 @@ export default function BillingPage() {
                   <Button
                     size="xs"
                     className="h-6 px-3 bg-blue-600 hover:bg-blue-700 text-white font-bold"
-                    onClick={() => {}}
+                    onClick={() => { }}
                   >
                     Filter
                   </Button>
@@ -3235,11 +3626,10 @@ export default function BillingPage() {
                   <button
                     key={t}
                     onClick={() => setPatientTypeFilter(t)}
-                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${
-                      patientTypeFilter === t
+                    className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors ${patientTypeFilter === t
                         ? "bg-white text-blue-700 shadow-2xs"
                         : "text-slate-500 hover:text-slate-800"
-                    }`}
+                      }`}
                   >
                     {t === "Discharge But Not Bill"
                       ? "Discharged - Bill Pending"
@@ -3309,15 +3699,14 @@ export default function BillingPage() {
                       </td>
                       <td className="px-3 py-2.5">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                            p.encounterStatus === "Open"
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${p.encounterStatus === "Open"
                               ? "bg-blue-50 text-blue-700"
                               : p.encounterStatus === "Bill Prepared"
                                 ? "bg-purple-50 text-purple-700"
                                 : p.encounterStatus === "Marked For Discharged"
                                   ? "bg-amber-50 text-amber-700"
                                   : "bg-emerald-50 text-emerald-700"
-                          }`}
+                            }`}
                         >
                           {p.encounterStatus}
                         </span>
@@ -3464,11 +3853,10 @@ export default function BillingPage() {
                         <button
                           key={item}
                           onClick={() => setPatientCurrentPage(item as number)}
-                          className={`h-7 w-7 flex items-center justify-center rounded-md border text-xs font-bold transition-colors ${
-                            patientCurrentPage === item
+                          className={`h-7 w-7 flex items-center justify-center rounded-md border text-xs font-bold transition-colors ${patientCurrentPage === item
                               ? "bg-teal-600 text-white border-teal-600 shadow-sm"
                               : "border-slate-200 bg-white text-slate-600 hover:bg-teal-600 hover:text-white hover:border-teal-600"
-                          }`}
+                            }`}
                         >
                           {item}
                         </button>
@@ -3637,28 +4025,8 @@ export default function BillingPage() {
                 </div>
               </div>
 
-              {/* Row 2: Facility, Payer Type, Payer, Sponsor */}
+              {/* Row 2: Payer Type */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center">
-                {/* Facility */}
-                <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">
-                    Facility
-                  </span>
-                  <Select value={malFacility} onValueChange={setMalFacility}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300 font-bold text-slate-800">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="CMK HEALTHCARE PVT. LTD.">
-                        CMK HEALTHCARE PVT. LTD.
-                      </SelectItem>
-                      <SelectItem value="Main Branch Hospital">
-                        Main Branch Hospital
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 {/* Payer Type */}
                 <div className="md:col-span-3 flex items-center gap-1.5">
                   <span className="w-16 text-slate-500 font-bold text-[11px] flex-shrink-0">
@@ -3679,48 +4047,7 @@ export default function BillingPage() {
                   </Select>
                 </div>
 
-                {/* Payer */}
-                <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-12 text-slate-500 font-bold text-[11px] flex-shrink-0">
-                    Payer
-                  </span>
-                  <Select value={malPayer} onValueChange={setMalPayer}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Select All">Select All</SelectItem>
-                      <SelectItem value="CASH">CASH</SelectItem>
-                      <SelectItem value="Star Health">
-                        Star Health & Allied Insurance
-                      </SelectItem>
-                      <SelectItem value="HDFC ERGO">
-                        HDFC ERGO General Insurance
-                      </SelectItem>
-                      <SelectItem value="ICICI Lombard">
-                        ICICI Lombard
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                {/* Sponsor */}
-                <div className="md:col-span-3 flex items-center gap-1.5">
-                  <span className="w-14 text-slate-500 font-bold text-[11px] flex-shrink-0">
-                    Sponsor
-                  </span>
-                  <Select value={malSponsor} onValueChange={setMalSponsor}>
-                    <SelectTrigger className="h-7 text-xs flex-1 bg-white border-slate-300">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Select All">Select All</SelectItem>
-                      <SelectItem value="CASH">CASH</SelectItem>
-                      <SelectItem value="Star Health">Star Health</SelectItem>
-                      <SelectItem value="Corporate">Corporate</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               {/* Row 3: Patient Type, Print As, Patient Refundable, Search For, Search Button */}
@@ -3738,9 +4065,11 @@ export default function BillingPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Both">Both (OP + IP)</SelectItem>
+                      <SelectItem value="Both">All (OP + IP + ACC)</SelectItem>
+                      <SelectItem value="OP+IP">OP + IP Only</SelectItem>
                       <SelectItem value="OP">Outpatient (OP)</SelectItem>
                       <SelectItem value="IP">Inpatient (IP)</SelectItem>
+                      <SelectItem value="ACC">Accessories Billing</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -3835,11 +4164,10 @@ export default function BillingPage() {
                   <button
                     key={st}
                     onClick={() => setActiveSubTab(st)}
-                    className={`h-7 px-3 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${
-                      activeSubTab === st
+                    className={`h-7 px-3 text-xs font-bold rounded-md transition-all flex items-center gap-1 cursor-pointer ${activeSubTab === st
                         ? "bg-blue-600 text-white font-bold shadow-2xs"
                         : "text-slate-600 hover:bg-slate-100"
-                    }`}
+                      }`}
                   >
                     <span>{st}</span>
                     {st === "Selected Invoice" &&
@@ -3888,7 +4216,7 @@ export default function BillingPage() {
                             type="checkbox"
                             checked={
                               selectedInvoiceIds.length ===
-                                filteredInvoices.length &&
+                              filteredInvoices.length &&
                               filteredInvoices.length > 0
                             }
                             onChange={toggleSelectAllInvoices}
@@ -4025,10 +4353,12 @@ export default function BillingPage() {
                                 className={
                                   inv.type === "IP"
                                     ? "bg-purple-50 text-purple-700 border-purple-200 text-[10px]"
-                                    : "bg-blue-50 text-blue-700 border-blue-200 text-[10px]"
+                                    : inv.type === "ACC"
+                                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]"
+                                      : "bg-blue-50 text-blue-700 border-blue-200 text-[10px]"
                                 }
                               >
-                                {inv.type}
+                                {inv.type === "ACC" ? "ACC" : inv.type}
                               </Badge>
                             </td>
                             <td className="px-2.5 py-2 font-mono font-bold text-slate-800">
@@ -4070,15 +4400,14 @@ export default function BillingPage() {
                             </td>
                             <td className="px-2.5 py-2 text-center">
                               <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black ${
-                                  inv.status === "Settled"
+                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-black ${inv.status === "Settled"
                                     ? "bg-emerald-100 text-emerald-800"
                                     : inv.status === "Refundable"
                                       ? "bg-amber-100 text-amber-800"
                                       : inv.status === "Cancelled"
                                         ? "bg-slate-100 text-slate-600"
                                         : "bg-red-100 text-red-800"
-                                }`}
+                                  }`}
                               >
                                 {inv.status}
                               </span>
@@ -4648,22 +4977,7 @@ export default function BillingPage() {
                       className="h-7 text-xs flex-1 bg-white border-slate-200"
                     />
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 text-slate-500">Sponsor:</span>
-                    <Input
-                      value={opSponsor}
-                      onChange={(e) => setOpSponsor(e.target.value)}
-                      className="h-7 text-xs flex-1 bg-white border-slate-200"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="w-20 text-slate-500">Network:</span>
-                    <Input
-                      value={opNetwork}
-                      onChange={(e) => setOpNetwork(e.target.value)}
-                      className="h-7 text-xs flex-1 bg-white border-slate-200"
-                    />
-                  </div>
+
                 </div>
               </div>
 
@@ -4717,6 +5031,14 @@ export default function BillingPage() {
                       <SelectContent>
                         <SelectItem value="General OPD">General OPD</SelectItem>
                         <SelectItem value="Orthopedics">Orthopedics</SelectItem>
+                        <SelectItem value="Accessories">Accessories</SelectItem>
+                        <SelectItem value="Admission">Admission</SelectItem>
+                        <SelectItem value="Cardiology">Cardiology</SelectItem>
+                        <SelectItem value="Consumables">Consumables</SelectItem>
+                        <SelectItem value="O T CHARGES">O T CHARGES</SelectItem>
+                        <SelectItem value="PROCEDURE CHARGE">PROCEDURE CHARGE</SelectItem>
+                        <SelectItem value="Laboratory">Laboratory</SelectItem>
+                        <SelectItem value="RADIODIAGNOSIS AND IMAGING">RADIODIAGNOSIS AND IMAGING</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -4995,18 +5317,48 @@ export default function BillingPage() {
                   >
                     <option value="Cash">Cash</option>
                     <option value="Credit">Credit</option>
+                    <option value="Insurance">Insurance</option>
+                    <option value="Direct">Direct</option>
+                    <option value="Card">Card</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Online">Online</option>
                   </select>
                 </div>
                 <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 text-blue-600 font-bold">
-                    Invoice#
-                  </span>
-                  <Input
-                    value={opBillingInvoiceNo}
-                    onChange={(e) => setOpBillingInvoiceNo(e.target.value)}
-                    placeholder=""
-                    className="flex-1 h-5 text-[10px] px-1"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInvoiceModalSearchTerm(opBillingUhid || opBillingPatientInfo?.name || "");
+                      setIsInvoiceSearchModalOpen(true);
+                    }}
+                    className="text-slate-500 w-16 shrink-0 text-blue-600 font-bold hover:underline cursor-pointer flex items-center gap-0.5 text-[10px] text-left border-0 bg-transparent p-0"
+                    title="Click to view & select patient invoice"
+                  >
+                    <span>Invoice#</span>
+                  </button>
+                  <div className="flex-1 flex items-center relative">
+                    <Input
+                      value={opBillingInvoiceNo}
+                      onChange={(e) => setOpBillingInvoiceNo(e.target.value)}
+                      onClick={() => {
+                        setInvoiceModalSearchTerm(opBillingUhid || opBillingPatientInfo?.name || "");
+                        setIsInvoiceSearchModalOpen(true);
+                      }}
+                      placeholder="Click to select invoice..."
+                      className="w-full h-5 text-[10px] px-1 pr-6 cursor-pointer bg-blue-50/20 hover:bg-blue-50/40 border-blue-200 transition-colors font-mono font-bold text-blue-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInvoiceModalSearchTerm(opBillingUhid || opBillingPatientInfo?.name || "");
+                        setIsInvoiceSearchModalOpen(true);
+                      }}
+                      className="absolute right-1 text-blue-600 hover:text-blue-800 p-0.5 cursor-pointer"
+                      title="Open Invoice Search Directory"
+                    >
+                      <Search className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1">
                   <span className="text-slate-500 w-16 shrink-0 font-bold">
@@ -5059,34 +5411,7 @@ export default function BillingPage() {
                     <option>Niva Bupa</option>
                   </select>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">
-                    Sponsor *
-                  </span>
-                  <select
-                    value={opBillingSponsor}
-                    onChange={(e) => setOpBillingSponsor(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
-                  >
-                    <option>CASH</option>
-                    <option>Star Health</option>
-                    <option>HDFC ERGO</option>
-                  </select>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-500 w-16 shrink-0 font-bold">
-                    Network
-                  </span>
-                  <select
-                    value={opBillingNetwork}
-                    onChange={(e) => setOpBillingNetwork(e.target.value)}
-                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
-                  >
-                    <option value="">Select Network</option>
-                    <option value="TPA Network">TPA Network</option>
-                    <option value="Corporate Direct">Corporate Direct</option>
-                  </select>
-                </div>
+
               </div>
 
               {/* Col 4: Other Details */}
@@ -5231,11 +5556,10 @@ export default function BillingPage() {
                   <button
                     key={st}
                     onClick={() => setOpBillingSubTab(st)}
-                    className={`h-7 px-3.5 text-[11px] font-bold border border-b-0 rounded-t transition-colors ${
-                      opBillingSubTab === st
+                    className={`h-7 px-3.5 text-[11px] font-bold border border-b-0 rounded-t transition-colors ${opBillingSubTab === st
                         ? "bg-white text-blue-700 border-slate-300 font-extrabold"
                         : "bg-[#cee6f8]/60 text-slate-600 border-transparent hover:text-slate-800 hover:bg-[#cee6f8]"
-                    }`}
+                      }`}
                   >
                     {st}
                   </button>
@@ -5329,166 +5653,308 @@ export default function BillingPage() {
                         </tr>
                       ) : (
                         opBillingItems.map((it, idx) => {
+                          const accServices = accessoriesApi.getProducts().map((p) => ({
+                            code: p.code,
+                            name: p.name,
+                            dept: "Accessories",
+                            rate: p.price,
+                            accessoryId: p.id,
+                          }));
+                          const isRadiologyDept = it.dept === "Radiology" || it.dept === "RADIODIAGNOSIS AND IMAGING" || it.dept === "Interventional Radiology";
+                          const isLabDept = (it.dept || "").toLowerCase() === "laboratory" || (it.dept || "").toLowerCase() === "lab medicine" || (it.dept || "").toLowerCase() === "pathology";
                           const baseServices = it.dept
-                            ? SERVICE_CATALOG.filter((s) => s.dept === it.dept)
-                            : SERVICE_CATALOG;
+                            ? (it.dept === "Accessories"
+                              ? accServices
+                              : isRadiologyDept
+                                ? (it.subDept ? SERVICE_CATALOG.filter((s) => (s as any).subDept === it.subDept || s.dept === it.subDept) : SERVICE_CATALOG.filter((s) => s.dept === "Radiology" || s.dept === "RADIODIAGNOSIS AND IMAGING" || (s as any).subDept !== undefined))
+                                : isLabDept
+                                  ? (it.subDept ? SERVICE_CATALOG.filter((s) => (s as any).subDept === it.subDept || s.dept === it.subDept) : SERVICE_CATALOG.filter((s) => s.dept.toLowerCase() === "laboratory" || s.dept.toLowerCase() === "lab medicine" || s.dept.toLowerCase() === "pathology"))
+                                  : SERVICE_CATALOG.filter((s) => s.dept.toLowerCase() === (it.dept || "").toLowerCase()))
+                            : [...SERVICE_CATALOG, ...accServices];
+
                           const hasOthersOption = baseServices.some(
                             (s) => s.name === "Others" || s.name === "Other"
                           );
                           const filteredServices = hasOthersOption
                             ? baseServices
                             : [
-                                ...baseServices,
-                                {
-                                  code: `OTH-${it.dept ? it.dept.replace(/\s+/g, "").toUpperCase().slice(0, 4) : "999"}`,
-                                  name: "Others",
-                                  dept: it.dept || "General OPD",
-                                  rate: 0,
-                                },
-                              ];
+                              ...baseServices,
+                              {
+                                code: `OTH-${it.dept ? it.dept.replace(/\s+/g, "").toUpperCase().slice(0, 4) : "999"}`,
+                                name: "Others",
+                                dept: it.dept || "General OPD",
+                                rate: 0,
+                              },
+                            ];
                           const isOtherSelected =
                             it.name === "Others" ||
                             it.name === "Other" ||
                             (it.code && it.code.startsWith("OTH-"));
 
                           return (
-                          <tr key={idx} className="hover:bg-teal-50/20">
-                            <td className="px-2 py-1.5">
-                              <SearchableDropdown
-                                value={it.dept || ""}
-                                options={ALL_DEPARTMENTS}
-                                placeholder="Dept..."
-                                width="w-36"
-                                onSelect={(newDept) => {
-                                  const updated = [...opBillingItems];
-                                  const matchingServices = SERVICE_CATALOG.filter(
-                                    (s) => s.dept === newDept
-                                  );
-                                  const firstService = matchingServices[0] || {
-                                    code: `OTH-${newDept.replace(/\s+/g, "").toUpperCase().slice(0, 4)}`,
-                                    name: "Others",
-                                    dept: newDept,
-                                    rate: 0,
-                                  };
-                                  const qty = updated[idx].qty || 1;
-                                  const discPct =
-                                    updated[idx].discountPercent || 0;
-                                  const gross = firstService.rate * qty;
-                                  const discAmt = (gross * discPct) / 100;
-                                  updated[idx] = {
-                                    ...updated[idx],
-                                    code: firstService.code,
-                                    name: firstService.name,
-                                    dept: newDept,
-                                    rate: firstService.rate,
-                                    discountAmt: discAmt,
-                                    netAmt: Math.max(0, gross - discAmt),
-                                    remark: (firstService.name === "Others" || firstService.name === "Other") ? (updated[idx].remark || "") : undefined,
-                                  };
-                                  setOpBillingItems(updated);
-                                }}
-                              />
-                            </td>
-                            <td className="px-2 py-1.5">
-                              <div className="space-y-1">
-                                <SearchableServiceSelect
-                                  value={it.name}
-                                  options={filteredServices}
-                                  onSelect={(found) => {
-                                    const updated = [...opBillingItems];
-                                    const qty = updated[idx].qty || 1;
-                                    const discPct =
-                                      updated[idx].discountPercent || 0;
-                                    const rate = found.rate || 0;
-                                    const gross = rate * qty;
-                                    const discAmt = (gross * discPct) / 100;
-                                    updated[idx] = {
-                                      ...updated[idx],
-                                      code: found.code,
-                                      name: found.name,
-                                      dept: found.dept || updated[idx].dept,
-                                      rate: rate,
-                                      discountAmt: discAmt,
-                                      netAmt: Math.max(0, gross - discAmt),
-                                      remark: (found.name === "Others" || found.name === "Other") ? (updated[idx].remark || "") : undefined,
-                                    };
-                                    // Auto-append a blank row if this was the last row
-                                    if (idx === updated.length - 1) {
-                                      updated.push({
-                                        code: "",
-                                        name: "",
-                                        dept: "",
-                                        rate: 0,
-                                        qty: 1,
-                                        discountPercent: 0,
-                                        discountAmt: 0,
-                                        netAmt: 0,
-                                      });
-                                    }
-                                    setOpBillingItems(updated);
-                                  }}
-                                />
-                                {isOtherSelected && (
-                                  <Input
-                                    type="text"
-                                    placeholder="Type Custom / Other Service Details..."
-                                    value={it.remark || ""}
-                                    onChange={(e) => {
+                            <tr key={idx} className="hover:bg-teal-50/20">
+                              <td className="px-2 py-1.5">
+                                <div className="flex flex-col gap-1.5">
+                                  <SearchableDropdown
+                                    value={it.dept || ""}
+                                    options={ALL_DEPARTMENTS}
+                                    placeholder="Dept..."
+                                    width="w-36"
+                                    onSelect={(newDept) => {
                                       const updated = [...opBillingItems];
-                                      updated[idx].remark = e.target.value;
+                                      if (newDept === "Radiology" || newDept === "RADIODIAGNOSIS AND IMAGING" || newDept === "Interventional Radiology") {
+                                        const radSub = newDept === "Interventional Radiology" ? "Interventional Radiology" : "";
+                                        const matching = radSub
+                                          ? SERVICE_CATALOG.filter((s) => (s as any).subDept === radSub)
+                                          : SERVICE_CATALOG.filter((s) => s.dept === "Radiology" || s.dept === "RADIODIAGNOSIS AND IMAGING" || (s as any).subDept !== undefined);
+                                        const firstRad = matching[0] || { code: "103001", name: "X-Ray Chest PA View", dept: "Radiology", subDept: "X-Ray", rate: 450 };
+                                        const qty = updated[idx].qty || 1;
+                                        const discPct = updated[idx].discountPercent || 0;
+                                        const gross = firstRad.rate * qty;
+                                        const discAmt = (gross * discPct) / 100;
+                                        updated[idx] = {
+                                          ...updated[idx],
+                                          dept: newDept,
+                                          subDept: radSub,
+                                          code: firstRad.code,
+                                          name: firstRad.name,
+                                          rate: firstRad.rate,
+                                          discountAmt: discAmt,
+                                          netAmt: Math.max(0, gross - discAmt),
+                                        };
+                                        setOpBillingItems(updated);
+                                        return;
+                                      }
+                                      if (newDept === "Laboratory" || newDept === "LABORATORY" || newDept === "Lab Medicine" || newDept === "Pathology") {
+                                        const matching = SERVICE_CATALOG.filter((s) => s.dept.toLowerCase() === "laboratory" || s.dept.toLowerCase() === "lab medicine" || s.dept.toLowerCase() === "pathology");
+                                        const firstLab = matching[0] || { code: "102175", name: "24 Hrs. Urinary Calcium", dept: "Laboratory", rate: 0 };
+                                        const qty = updated[idx].qty || 1;
+                                        const discPct = updated[idx].discountPercent || 0;
+                                        const gross = firstLab.rate * qty;
+                                        const discAmt = (gross * discPct) / 100;
+                                        updated[idx] = {
+                                          ...updated[idx],
+                                          dept: newDept,
+                                          subDept: "",
+                                          code: firstLab.code,
+                                          name: firstLab.name,
+                                          rate: firstLab.rate,
+                                          discountAmt: discAmt,
+                                          netAmt: Math.max(0, gross - discAmt),
+                                        };
+                                        setOpBillingItems(updated);
+                                        return;
+                                      }
+                                      const matchingServices = newDept === "Accessories"
+                                        ? accServices
+                                        : SERVICE_CATALOG.filter(
+                                          (s) => s.dept.toLowerCase() === newDept.toLowerCase()
+                                        );
+                                      const firstService = matchingServices[0] || {
+                                        code: `OTH-${newDept.replace(/\s+/g, "").toUpperCase().slice(0, 4)}`,
+                                        name: "Others",
+                                        dept: newDept,
+                                        rate: 0,
+                                      };
+                                      const qty = updated[idx].qty || 1;
+                                      const discPct = updated[idx].discountPercent || 0;
+                                      const gross = firstService.rate * qty;
+                                      const discAmt = (gross * discPct) / 100;
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        code: firstService.code,
+                                        name: firstService.name,
+                                        dept: newDept,
+                                        subDept: undefined,
+                                        rate: firstService.rate,
+                                        discountAmt: discAmt,
+                                        netAmt: Math.max(0, gross - discAmt),
+                                        accessoryId: (firstService as any).accessoryId,
+                                        remark: (firstService.name === "Others" || firstService.name === "Other") ? (updated[idx].remark || "") : undefined,
+                                      };
                                       setOpBillingItems(updated);
                                     }}
-                                    className="h-6.5 text-[11px] bg-amber-50/90 border-amber-400 font-semibold text-amber-950 placeholder:text-amber-700/60 focus:bg-white focus:border-amber-600 shadow-2xs transition-colors"
                                   />
-                                )}
-                              </div>
-                            </td>
-                            <td className="px-2 py-1.5 text-right">
-                              <Input
-                                type="number"
-                                value={it.rate}
-                                onChange={(e) =>
-                                  handleUpdateOpItem(
-                                    idx,
-                                    "rate",
-                                    Number(e.target.value),
-                                  )
-                                }
-                                className={`h-6 w-full text-xs text-right font-mono font-bold transition-colors ${
-                                  isOtherSelected
-                                    ? "bg-amber-50/90 border-amber-400 text-amber-950 focus:bg-white focus:border-amber-600 ring-1 ring-amber-200"
-                                    : "bg-white text-slate-900 border-slate-200"
-                                }`}
-                              />
-                            </td>
-                            <td className="px-2 py-1.5 text-center">
-                              <Input
-                                type="number"
-                                value={it.qty}
-                                onChange={(e) =>
-                                  handleUpdateOpItem(
-                                    idx,
-                                    "qty",
-                                    Number(e.target.value),
-                                  )
-                                }
-                                className="h-6 w-full text-xs text-center bg-white font-mono"
-                              />
-                            </td>
-                            <td className="px-2 py-1.5 text-right font-mono font-bold text-slate-900">
-                              ₹{it.netAmt?.toFixed(2)}
-                            </td>
-                            <td className="px-2 py-1.5 text-center">
-                              <button
-                                onClick={() => handleRemoveOpItem(idx)}
-                                className="text-red-500 hover:text-red-700"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
+                                  {(isRadiologyDept || isLabDept || it.subDept) && (
+                                    <SearchableDropdown
+                                      value={it.subDept || ""}
+                                      options={isLabDept ? LABORATORY_SUB_DEPARTMENTS : RADIOLOGY_SUB_DEPARTMENTS}
+                                      placeholder="Sub Dept..."
+                                      width="w-36"
+                                      onSelect={(newSubDept) => {
+                                        const updated = [...opBillingItems];
+                                        const matchingServices = SERVICE_CATALOG.filter((s) => (s as any).subDept === newSubDept || s.dept === newSubDept);
+                                        const firstService = matchingServices[0] || {
+                                          code: `OTH-${newSubDept.replace(/\s+/g, "").toUpperCase().slice(0, 4)}`,
+                                          name: "Others",
+                                          dept: isLabDept ? "Laboratory" : "Radiology",
+                                          subDept: newSubDept,
+                                          rate: 0,
+                                        };
+                                        const qty = updated[idx].qty || 1;
+                                        const discPct = updated[idx].discountPercent || 0;
+                                        const gross = firstService.rate * qty;
+                                        const discAmt = (gross * discPct) / 100;
+                                        updated[idx] = {
+                                          ...updated[idx],
+                                          subDept: newSubDept,
+                                          code: firstService.code,
+                                          name: firstService.name,
+                                          rate: firstService.rate,
+                                          discountAmt: discAmt,
+                                          netAmt: Math.max(0, gross - discAmt),
+                                          remark: (firstService.name === "Others" || firstService.name === "Other") ? (updated[idx].remark || "") : undefined,
+                                        };
+                                        setOpBillingItems(updated);
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <div className="space-y-1">
+                                  <SearchableServiceSelect
+                                    value={it.name}
+                                    options={filteredServices}
+                                    onSelect={(found) => {
+                                      const updated = [...opBillingItems];
+                                      const qty = updated[idx].qty || 1;
+                                      const discPct =
+                                        updated[idx].discountPercent || 0;
+                                      const rate = found.rate || 0;
+                                      const gross = rate * qty;
+                                      const discAmt = (gross * discPct) / 100;
+
+                                      const prod = accessoriesApi.getProducts().find(
+                                        (p) => p.id === (found as any).accessoryId || p.code === found.code || p.name === found.name
+                                      );
+                                      const defaultSize = prod?.sizes?.find((s) => s.stockQuantity > 0)?.size || prod?.sizes?.[0]?.size || "Universal";
+
+                                      updated[idx] = {
+                                        ...updated[idx],
+                                        code: found.code,
+                                        name: found.name,
+                                        dept: found.dept || updated[idx].dept,
+                                        subDept: (found as any).subDept !== undefined ? (found as any).subDept : updated[idx].subDept,
+                                        rate: rate,
+                                        discountAmt: discAmt,
+                                        netAmt: Math.max(0, gross - discAmt),
+                                        accessoryId: (found as any).accessoryId,
+                                        selectedSize: updated[idx].selectedSize || defaultSize,
+                                        remark: (found.name === "Others" || found.name === "Other") ? (updated[idx].remark || "") : undefined,
+                                      };
+                                      // Auto-append a blank row if this was the last row
+                                      if (idx === updated.length - 1) {
+                                        updated.push({
+                                          code: "",
+                                          name: "",
+                                          dept: "",
+                                          rate: 0,
+                                          qty: 1,
+                                          discountPercent: 0,
+                                          discountAmt: 0,
+                                          netAmt: 0,
+                                        });
+                                      }
+                                      setOpBillingItems(updated);
+                                    }}
+                                  />
+                                  {isOtherSelected && (
+                                    <Input
+                                      type="text"
+                                      placeholder="Type Custom / Other Service Details..."
+                                      value={it.remark || ""}
+                                      onChange={(e) => {
+                                        const updated = [...opBillingItems];
+                                        updated[idx].remark = e.target.value;
+                                        setOpBillingItems(updated);
+                                      }}
+                                      className="h-6.5 text-[11px] bg-amber-50/90 border-amber-400 font-semibold text-amber-950 placeholder:text-amber-700/60 focus:bg-white focus:border-amber-600 shadow-2xs transition-colors"
+                                    />
+                                  )}
+                                  {(it.dept === "Accessories" || (it as any).accessoryId) && (
+                                    <div className="flex items-center gap-1.5 mt-1 bg-teal-50/90 px-2 py-0.5 rounded border border-teal-200 shadow-2xs">
+                                      <span className="text-[10px] font-bold text-teal-800 shrink-0 uppercase tracking-wide">
+                                        Size:
+                                      </span>
+                                      <select
+                                        value={it.selectedSize || "Universal"}
+                                        onChange={(e) => {
+                                          const updated = [...opBillingItems];
+                                          updated[idx].selectedSize = e.target.value;
+                                          setOpBillingItems(updated);
+                                        }}
+                                        className="h-5 text-[11px] bg-white border border-teal-300 rounded font-bold text-teal-950 px-1 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
+                                      >
+                                        {(() => {
+                                          const prod = accessoriesApi.getProducts().find(
+                                            (p) => p.id === (it as any).accessoryId || p.name === it.name || p.code === it.code
+                                          );
+                                          const sizes = prod?.sizes && prod.sizes.length > 0
+                                            ? prod.sizes
+                                            : [
+                                              { size: "Universal", stockQuantity: 10 },
+                                              { size: "S", stockQuantity: 5 },
+                                              { size: "M", stockQuantity: 10 },
+                                              { size: "L", stockQuantity: 15 },
+                                              { size: "XL", stockQuantity: 8 },
+                                            ];
+                                          return sizes.map((s) => (
+                                            <option key={s.size} value={s.size}>
+                                              Size {s.size}
+                                            </option>
+                                          ));
+                                        })()}
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-2 py-1.5 text-right">
+                                <Input
+                                  type="number"
+                                  value={it.rate}
+                                  onChange={(e) =>
+                                    handleUpdateOpItem(
+                                      idx,
+                                      "rate",
+                                      Number(e.target.value),
+                                    )
+                                  }
+                                  className={`h-6 w-full text-xs text-right font-mono font-bold transition-colors ${isOtherSelected
+                                      ? "bg-amber-50/90 border-amber-400 text-amber-950 focus:bg-white focus:border-amber-600 ring-1 ring-amber-200"
+                                      : "bg-white text-slate-900 border-slate-200"
+                                    }`}
+                                />
+                              </td>
+                              <td className="px-2 py-1.5 text-center">
+                                <Input
+                                  type="number"
+                                  value={it.qty}
+                                  onChange={(e) =>
+                                    handleUpdateOpItem(
+                                      idx,
+                                      "qty",
+                                      Number(e.target.value),
+                                    )
+                                  }
+                                  className="h-6 w-full text-xs text-center bg-white font-mono"
+                                />
+                              </td>
+                              <td className="px-2 py-1.5 text-right font-mono font-bold text-slate-900">
+                                ₹{it.netAmt?.toFixed(2)}
+                              </td>
+                              <td className="px-2 py-1.5 text-center">
+                                <button
+                                  onClick={() => handleRemoveOpItem(idx)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
                       )}
                     </tbody>
                   </table>
@@ -5513,35 +5979,32 @@ export default function BillingPage() {
                 <div className="p-3 space-y-3">
                   {/* Payment Table */}
                   <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                    <table className="w-full text-[11px] text-left">
+                    <table className="w-full text-[11px] text-left table-fixed">
                       <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold uppercase text-[10px]">
                         <tr>
-                          <th className="px-2 py-2 tracking-wider">Mode</th>
-                          <th className="px-2 py-2 text-right tracking-wider">
+                          <th className="px-2 py-2 tracking-wider w-32">Mode</th>
+                          <th className="px-2 py-2 text-right tracking-wider w-24">
                             Amount
                           </th>
-                          <th className="px-2 py-2 text-right tracking-wider">
+                          <th className="px-2 py-2 text-right tracking-wider w-24">
                             Balance
                           </th>
-                          <th className="px-2 py-2 tracking-wider">
+                          <th className="px-2 py-2 tracking-wider w-32">
                             Date (dd/MM/YYYY)
                           </th>
-                          <th className="px-2 py-2 tracking-wider">
+                          <th className="px-2 py-2 tracking-wider w-32">
                             Bank Name
                           </th>
-                          <th className="px-2 py-2 tracking-wider">
-                            Beneficiary Name
-                          </th>
-                          <th className="px-2 py-2 tracking-wider">
+                          <th className="px-2 py-2 tracking-wider w-28">
                             Reference No
                           </th>
-                          <th className="px-2 py-2 tracking-wider">
+                          <th className="px-2 py-2 tracking-wider w-36">
                             Card Holder / Description
                           </th>
-                          <th className="px-2 py-2 text-right tracking-wider">
+                          <th className="px-2 py-2 text-right tracking-wider w-24">
                             Card Swiping Value
                           </th>
-                          <th className="px-2 py-2 w-8"></th>
+                          <th className="px-2 py-2 w-10"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
@@ -5566,9 +6029,8 @@ export default function BillingPage() {
                                     const u = [...opBillingPaymentRows];
                                     const newMode = e.target.value;
                                     u[idx].mode = newMode;
-                                    if (newMode === "Cash") {
+                                    if (newMode === "Cash" || newMode === "UPI") {
                                       u[idx].bankName = "";
-                                      u[idx].beneficiaryName = "";
                                       u[idx].refNo = "";
                                       u[idx].description = "";
                                       u[idx].cardSwipingValue = 0;
@@ -5580,7 +6042,7 @@ export default function BillingPage() {
                                     }
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className="h-6 w-28 text-[11px] border border-slate-200 rounded bg-white px-1 font-medium text-slate-800"
+                                  className="h-6 w-full text-[11px] border border-slate-200 rounded bg-white px-1 font-medium text-slate-800"
                                 >
                                   <option value="Cash">Cash</option>
                                   <option value="Cheque">Cheque</option>
@@ -5594,12 +6056,13 @@ export default function BillingPage() {
                                 <Input
                                   type="number"
                                   min="0"
+                                  max={Math.max(0, rawBalance)}
                                   value={r.amount}
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     const val = Number(e.target.value);
-                                    const cleanVal =
-                                      isNaN(val) || val < 0 ? 0 : val;
+                                    const maxAllowed = Math.max(0, rawBalance);
+                                    const cleanVal = isNaN(val) || val < 0 ? 0 : Math.min(val, maxAllowed);
                                     u[idx].amount = cleanVal;
                                     if (
                                       u[idx].mode === "Credit Card" ||
@@ -5609,7 +6072,7 @@ export default function BillingPage() {
                                     }
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className="h-6 w-20 text-[11px] text-right font-mono font-bold"
+                                  className="h-6 w-full text-[11px] text-right font-mono font-bold"
                                 />
                               </td>
                               <td className="px-2 py-1.5 text-right">
@@ -5618,7 +6081,7 @@ export default function BillingPage() {
                                   readOnly
                                   tabIndex={-1}
                                   value={rowBalance}
-                                  className="h-6 w-20 text-[11px] text-right font-mono bg-slate-100/80 cursor-not-allowed text-slate-600 font-semibold border-slate-200 select-none focus-visible:ring-0"
+                                  className="h-6 w-full text-[11px] text-right font-mono bg-slate-100/80 cursor-not-allowed text-slate-600 font-semibold border-slate-200 select-none focus-visible:ring-0"
                                 />
                               </td>
                               <td className="px-2 py-1.5">
@@ -5628,32 +6091,31 @@ export default function BillingPage() {
                                     r.date && r.date.includes("/")
                                       ? r.date.split("/").reverse().join("-")
                                       : r.date ||
-                                        new Date().toISOString().split("T")[0]
+                                      new Date().toISOString().split("T")[0]
                                   }
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     u[idx].date = e.target.value;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className="h-6 w-28 text-[10px] font-mono cursor-pointer bg-white"
+                                  className="h-6 w-full text-[10px] font-mono cursor-pointer bg-white"
                                 />
                               </td>
                               <td className="px-2 py-1.5">
                                 <select
-                                  disabled={isCash}
-                                  value={isCash ? "" : r.bankName}
+                                  disabled={isCash || r.mode === "UPI"}
+                                  value={isCash || r.mode === "UPI" ? "" : r.bankName}
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     u[idx].bankName = e.target.value;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className={`h-6 w-28 text-[11px] border border-slate-200 rounded px-1 transition-colors ${
-                                    isCash
+                                  className={`h-6 w-full text-[11px] border border-slate-200 rounded px-1 transition-colors ${isCash || r.mode === "UPI"
                                       ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
                                       : "bg-white text-slate-800 font-medium focus:ring-1 focus:ring-teal-500"
-                                  }`}
+                                    }`}
                                 >
-                                  <option value="">{isCash ? "-" : "-Select-"}</option>
+                                  <option value="">{isCash || r.mode === "UPI" ? "-" : "-Select-"}</option>
                                   <option value="SBI">SBI</option>
                                   <option value="HDFC">HDFC</option>
                                   <option value="ICICI">ICICI</option>
@@ -5662,28 +6124,6 @@ export default function BillingPage() {
                                   <option value="PNB">PNB</option>
                                   <option value="BOB">BOB</option>
                                   <option value="Other Bank">Other Bank</option>
-                                </select>
-                              </td>
-                              <td className="px-2 py-1.5">
-                                <select
-                                  disabled={isCash}
-                                  value={isCash ? "" : r.beneficiaryName}
-                                  onChange={(e) => {
-                                    const u = [...opBillingPaymentRows];
-                                    u[idx].beneficiaryName = e.target.value;
-                                    setOpBillingPaymentRows(u);
-                                  }}
-                                  className={`h-6 w-28 text-[11px] border border-slate-200 rounded px-1 transition-colors ${
-                                    isCash
-                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
-                                      : "bg-white text-slate-800 font-medium focus:ring-1 focus:ring-teal-500"
-                                  }`}
-                                >
-                                  <option value="">{isCash ? "-" : "-Select-"}</option>
-                                  <option value="Self">Self</option>
-                                  <option value="Relative">Relative</option>
-                                  <option value="Corporate">Corporate</option>
-                                  <option value="Hospital Account">Hospital Account</option>
                                 </select>
                               </td>
                               <td className="px-2 py-1.5">
@@ -5696,28 +6136,26 @@ export default function BillingPage() {
                                     setOpBillingPaymentRows(u);
                                   }}
                                   placeholder={isCash ? "-" : "Ref# / Txn ID"}
-                                  className={`h-6 w-24 text-[11px] font-mono transition-colors ${
-                                    isCash
+                                  className={`h-6 w-full text-[11px] font-mono transition-colors ${isCash
                                       ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
                                       : "bg-white text-slate-800 font-medium"
-                                  }`}
+                                    }`}
                                 />
                               </td>
                               <td className="px-2 py-1.5">
                                 <Input
-                                  disabled={isCash}
-                                  value={isCash ? "" : r.description}
+                                  disabled={isCash || r.mode === "UPI"}
+                                  value={isCash || r.mode === "UPI" ? "" : r.description}
                                   onChange={(e) => {
                                     const u = [...opBillingPaymentRows];
                                     u[idx].description = e.target.value;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  placeholder={isCash ? "-" : "Holder / Description..."}
-                                  className={`h-6 w-32 text-[11px] transition-colors ${
-                                    isCash
+                                  placeholder={isCash || r.mode === "UPI" ? "-" : "Holder / Description..."}
+                                  className={`h-6 w-full text-[11px] transition-colors ${isCash || r.mode === "UPI"
                                       ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
                                       : "bg-white text-slate-800 font-medium"
-                                  }`}
+                                    }`}
                                 />
                               </td>
                               <td className="px-2 py-1.5 text-right">
@@ -5733,11 +6171,10 @@ export default function BillingPage() {
                                       isNaN(val) || val < 0 ? 0 : val;
                                     setOpBillingPaymentRows(u);
                                   }}
-                                  className={`h-6 w-16 text-[11px] text-right font-mono transition-colors ${
-                                    !isCard
+                                  className={`h-6 w-full text-[11px] text-right font-mono transition-colors ${!isCard
                                       ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
                                       : "bg-white text-slate-800 font-bold"
-                                  }`}
+                                    }`}
                                 />
                               </td>
                               <td className="px-2 py-1.5">
@@ -5783,17 +6220,6 @@ export default function BillingPage() {
                   >
                     <Plus className="w-3 h-3" /> Add Row
                   </button>
-
-                  {/* Consultant Change Remarks */}
-                  <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-600">
-                    <span className="whitespace-nowrap">
-                      Consultant Change Remarks
-                    </span>
-                    <Input
-                      placeholder="Enter remarks..."
-                      className="flex-1 h-6 text-[11px]"
-                    />
-                  </div>
                 </div>
               )}
 
@@ -6092,11 +6518,10 @@ export default function BillingPage() {
                             !opBillingApprovalRequired,
                           )
                         }
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${
-                          opBillingApprovalRequired
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${opBillingApprovalRequired
                             ? "bg-red-500 text-white border-red-600"
                             : "bg-red-100/80 border border-red-400 text-red-700 hover:bg-red-200"
-                        }`}
+                          }`}
                       >
                         Approval Required
                       </button>
@@ -6105,11 +6530,10 @@ export default function BillingPage() {
                         onClick={() =>
                           setOpBillingExcludedService(!opBillingExcludedService)
                         }
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${
-                          opBillingExcludedService
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${opBillingExcludedService
                             ? "bg-amber-500 text-white border-amber-600"
                             : "bg-amber-50 border border-amber-400 text-blue-800 hover:bg-amber-100"
-                        }`}
+                          }`}
                       >
                         Excluded Service
                       </button>
@@ -6118,11 +6542,10 @@ export default function BillingPage() {
                         onClick={() =>
                           setOpBillingRefundedService(!opBillingRefundedService)
                         }
-                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${
-                          opBillingRefundedService
+                        className={`px-2 py-0.5 text-[10px] font-bold rounded border transition-colors ${opBillingRefundedService
                             ? "bg-teal-500 text-white border-teal-600"
                             : "bg-emerald-50 border border-emerald-400 text-blue-800 hover:bg-emerald-100"
-                        }`}
+                          }`}
                       >
                         Refunded Service
                       </button>
@@ -6356,9 +6779,8 @@ export default function BillingPage() {
                     setIpAgeSexInput("61/FEMALE");
                     setIpAddressInput("");
                     setIpCrNoInput("");
-                    setIpAdmissionDateInput("13/04/2026");
-                    setIpDischargeDateInput("18/04/2026");
-                    setIpDischargeTimeInput("03:00 PM");
+                    setIpAdmissionDateInput("2026-04-13T11:00");
+                    setIpDischargeDateInput("2026-04-18T15:00");
                     setIpRoomNoInput("311");
                     setIpConsultantDrInput("Dr. D K DAS");
                     setIpBillingPayer("CASH");
@@ -6409,7 +6831,7 @@ export default function BillingPage() {
             {/* Main Sheet Container */}
             <div className="flex-1 overflow-y-auto bg-slate-100 p-4 sm:p-5">
               <div className="bg-white rounded-xl shadow-sm border border-slate-300 w-full p-5 space-y-5 text-xs">
-                
+
                 {/* Sheet Title */}
                 <div className="text-center border-b pb-2">
                   <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide">
@@ -6474,31 +6896,19 @@ export default function BillingPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-700 w-32 shrink-0">Admission Date:</span>
                       <input
-                        type="text"
+                        type="datetime-local"
                         value={ipAdmissionDateInput}
                         onChange={(e) => setIpAdmissionDateInput(e.target.value)}
                         className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-mono text-slate-800 text-xs shadow-2xs"
-                        placeholder="e.g. 13/04/2026 11:00 AM"
                       />
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-slate-700 w-32 shrink-0">Discharge Date:</span>
                       <input
-                        type="text"
+                        type="datetime-local"
                         value={ipDischargeDateInput}
                         onChange={(e) => setIpDischargeDateInput(e.target.value)}
                         className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-mono text-slate-800 text-xs shadow-2xs"
-                        placeholder="e.g. 18/04/2026"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-700 w-32 shrink-0">Discharge Time:</span>
-                      <input
-                        type="text"
-                        value={ipDischargeTimeInput}
-                        onChange={(e) => setIpDischargeTimeInput(e.target.value)}
-                        className="flex-1 h-7 bg-white border border-slate-300 rounded px-2.5 font-mono text-slate-800 text-xs shadow-2xs"
-                        placeholder="03:00 PM"
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -6610,12 +7020,12 @@ export default function BillingPage() {
                                 item.sNo === 2
                                   ? "e.g. 8000 X5 (SINGLE ROOM)"
                                   : item.sNo === 5
-                                  ? "e.g. Blood test"
-                                  : item.sNo === 6
-                                  ? "e.g. Xray"
-                                  : item.sNo === 11
-                                  ? "e.g. Dr. D K Das"
-                                  : "Write description / details if needed..."
+                                    ? "e.g. Blood test"
+                                    : item.sNo === 6
+                                      ? "e.g. Xray"
+                                      : item.sNo === 11
+                                        ? "e.g. Dr. D K Das"
+                                        : "Write description / details if needed..."
                               }
                             />
                           </td>
@@ -6679,7 +7089,7 @@ export default function BillingPage() {
                         {Math.max(
                           0,
                           ipSurgeryItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0) -
-                            Number(ipDiscountAmtInput || 0)
+                          Number(ipDiscountAmtInput || 0)
                         ).toFixed(0)}
                       </span>
                     </div>
@@ -6763,106 +7173,230 @@ export default function BillingPage() {
               </div>
             </div>
 
-            {/* Top Form Grid: Patient & Invoice Details */}
-            <div className="p-3 bg-slate-50/70 border-b border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs flex-shrink-0">
-              {/* Box 1: Patient Details */}
-              <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-1.5">
-                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] flex items-center gap-1 border-b pb-1">
-                  <User className="h-3 w-3 text-blue-600" />
+            {/* 4-Column Details — matching OP Billing reference layout */}
+            <div className="grid grid-cols-4 border-b border-slate-200 bg-white flex-shrink-0 text-[11px]">
+              {/* Col 1: Patient Details (photo) */}
+              <div className="border-r border-slate-200 p-2 space-y-1">
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1">
                   Patient Details
                 </div>
-                {accBillingPatient ? (
-                  <div className="space-y-1 text-slate-800">
-                    <div className="font-extrabold text-sm text-blue-900">{accBillingPatient.patientName}</div>
-                    <div className="text-[11px] font-mono text-slate-500">UHID: <span className="font-bold text-slate-700">{accBillingPatient.uhid}</span></div>
-                    {accBillingPatient.genderAge && (
-                      <div className="text-[11px] text-slate-500">{accBillingPatient.genderAge}</div>
-                    )}
-                    {accBillingPatient.company && (
-                      <div className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded w-fit">{accBillingPatient.company}</div>
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`w-16 h-16 rounded-lg border-2 flex items-center justify-center flex-shrink-0 overflow-hidden ${accBillingPatient ? "border-blue-400 bg-blue-50" : "border-slate-300 bg-slate-100"}`}
+                  >
+                    {(accBillingPatient as any)?.photoUrl || (accBillingPatient as any)?.image ? (
+                      <img
+                        src={(accBillingPatient as any)?.photoUrl || (accBillingPatient as any)?.image}
+                        alt={accBillingPatient.patientName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                          (
+                            e.target as HTMLImageElement
+                          ).parentElement!.innerHTML =
+                            `<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+                        }}
+                      />
+                    ) : (
+                      // Scrubs hair-cap default placeholder avatar using SVG matching screenshot
+                      <svg
+                        viewBox="0 0 100 100"
+                        className="w-12 h-12 text-slate-400"
+                        fill="currentColor"
+                      >
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r="45"
+                          fill="#f1f5f9"
+                          stroke="#cbd5e1"
+                          strokeWidth="2"
+                        />
+                        {/* Scrubs head cap */}
+                        <path
+                          d="M25,45 C25,25 75,25 75,45 C75,48 25,48 25,45 Z"
+                          fill="#94a3b8"
+                        />
+                        <circle cx="50" cy="38" r="10" fill="#94a3b8" />
+                        {/* Face */}
+                        <circle cx="50" cy="53" r="12" fill="#e2e8f0" />
+                        <path
+                          d="M38,53 C38,53 50,56 62,53"
+                          fill="none"
+                          stroke="#94a3b8"
+                          strokeWidth="1.5"
+                        />
+                        {/* Neck & Shoulders */}
+                        <path
+                          d="M45,65 L55,65 L58,80 L42,80 Z"
+                          fill="#cbd5e1"
+                        />
+                        <path
+                          d="M30,80 L70,80 L65,95 L35,95 Z"
+                          fill="#64748b"
+                        />
+                      </svg>
                     )}
                   </div>
-                ) : (
-                  <div className="py-2 text-center text-slate-400 italic text-[11px]">
-                    Select patient via UHID
+                  <div className="min-w-0">
+                    {accBillingPatient ? (
+                      <>
+                        <div className="font-extrabold text-slate-800 truncate text-[11px]">
+                          {accBillingPatient.patientName}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          {accBillingPatient.genderAge}
+                        </div>
+                        <div className="text-[10px] text-blue-600 truncate">
+                          {accBillingPatient.address}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-slate-400 italic text-[10px] py-2">
+                        Select patient via UHID
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Box 2: Invoice Details */}
-              <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
-                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] border-b pb-1">
+              {/* Col 2: Invoice Details */}
+              <div className="border-r border-slate-200 p-2 space-y-1">
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1">
                   Invoice Details
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-semibold">Payment Mode</label>
-                    <select
-                      value={accBillingType}
-                      onChange={(e) => setAccBillingType(e.target.value)}
-                      className="w-full h-7 px-1.5 text-xs border border-slate-300 rounded bg-white font-medium"
-                    >
-                      <option value="Cash">Cash</option>
-                      <option value="Cheque">Cheque</option>
-                      <option value="Credit Card">Credit Card</option>
-                      <option value="Debit Card">Debit Card</option>
-                      <option value="UPI">UPI</option>
-                      <option value="Net Banking">Net Banking</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-semibold">Invoice No</label>
-                    <input
-                      type="text"
-                      readOnly
-                      value={accBillingInvoiceNo}
-                      className="w-full h-7 px-1.5 text-xs border border-slate-200 rounded bg-slate-50 font-mono text-slate-600 font-bold"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Box 3: Payer Details */}
-              <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
-                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] border-b pb-1">
-                  Payer Details
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-semibold">Payer Type</label>
-                    <select
-                      value={accBillingPayerType}
-                      onChange={(e) => setAccBillingPayerType(e.target.value)}
-                      className="w-full h-7 px-1.5 text-xs border border-slate-300 rounded bg-white font-medium"
-                    >
-                      <option value="Direct Patient">Direct Patient</option>
-                      <option value="Insurance / TPA">Insurance / TPA</option>
-                      <option value="Corporate">Corporate</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-500 font-semibold">Payer</label>
-                    <input
-                      type="text"
-                      value={accBillingPayer}
-                      onChange={(e) => setAccBillingPayer(e.target.value)}
-                      className="w-full h-7 px-1.5 text-xs border border-slate-300 rounded bg-white font-medium"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Box 4: Prescribing Doctor */}
-              <div className="bg-white p-2.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
-                <div className="font-bold text-slate-700 uppercase tracking-wider text-[10px] border-b pb-1">
-                  Prescribing Doctor
-                </div>
-                <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Year
+                  </span>
                   <select
-                    value={accBillingDoctor}
-                    onChange={(e) => setAccBillingDoctor(e.target.value)}
-                    className="w-full h-7 px-1.5 text-xs border border-slate-300 rounded bg-white font-semibold text-slate-800"
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
                   >
+                    <option value="26-27">26-27</option>
+                    <option value="25-26">25-26</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Type
+                  </span>
+                  <select
+                    value={accBillingType}
+                    onChange={(e) => setAccBillingType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="Credit">Credit</option>
+                    <option value="Insurance">Insurance</option>
+                    <option value="Direct">Direct</option>
+                    <option value="Card">Card</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Online">Online</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Invoice#
+                  </span>
+                  <Input
+                    value={accBillingInvoiceNo}
+                    readOnly
+                    className="w-full h-5 text-[10px] px-1 bg-slate-50 border-slate-200 font-mono font-bold text-slate-600 cursor-not-allowed"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Date
+                  </span>
+                  <Input
+                    type="text"
+                    value={new Date().toLocaleDateString("en-GB")}
+                    readOnly
+                    className="flex-1 h-5 text-[10px] px-1 bg-slate-50 cursor-not-allowed border-slate-200 font-mono text-slate-600 font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Col 3: Payer Details */}
+              <div className="border-r border-slate-200 p-2 space-y-1">
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1 flex justify-between items-center">
+                  <span>Payer Details</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Type *
+                  </span>
+                  <select
+                    value={accBillingPayerType}
+                    onChange={(e) => setAccBillingPayerType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
+                    <option value="Direct Patient">Direct Patient</option>
+                    <option value="Insurance / TPA">Insurance / TPA</option>
+                    <option value="Corporate">Corporate</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-16 shrink-0 font-bold">
+                    Payer *
+                  </span>
+                  <input
+                    type="text"
+                    value={accBillingPayer}
+                    onChange={(e) => setAccBillingPayer(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Col 4: Other Details */}
+              <div className="p-2 space-y-1">
+                <div className="font-bold text-slate-600 text-[10px] uppercase border-b border-slate-100 pb-0.5 mb-1 flex justify-between items-center">
+                  <span>Other Details</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-24 shrink-0 font-bold">
+                    Doctor *
+                  </span>
+                  <div className="flex-1 flex items-center gap-1">
+                    <select
+                      value={accBillingDoctor}
+                      onChange={(e) => setAccBillingDoctor(e.target.value)}
+                      className="w-full h-5 text-[10px] border border-slate-200 rounded bg-white px-1 font-medium cursor-pointer"
+                    >
+                      {availableDoctors.map((doc) => (
+                        <option key={doc} value={doc}>
+                          {doc}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-24 shrink-0 font-bold">
+                    Referred Type
+                  </span>
+                  <select
+                    value={accBillingReferredType}
+                    onChange={(e) => setAccBillingReferredType(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1"
+                  >
+                    <option value="SELF">SELF</option>
+                    <option value="Doctor">Doctor</option>
+                    <option value="Hospital">Hospital</option>
+                    <option value="Corporate">Corporate</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-slate-500 w-24 shrink-0 font-bold">
+                    Referred Name
+                  </span>
+                  <select
+                    value={accBillingReferredName}
+                    onChange={(e) => setAccBillingReferredName(e.target.value)}
+                    className="flex-1 h-5 text-[10px] border border-slate-200 rounded bg-white px-1 font-medium"
+                  >
+                    <option value="">Select</option>
                     {availableDoctors.map((doc) => (
                       <option key={doc} value={doc}>
                         {doc}
@@ -6873,159 +7407,462 @@ export default function BillingPage() {
               </div>
             </div>
 
-            {/* Billed Accessories Itemized Table */}
-            <div className="flex-1 overflow-auto bg-white p-3 min-h-0">
-              <table className="w-full text-left border-collapse border border-slate-200 rounded-lg overflow-hidden">
-                <thead>
-                  <tr className="bg-[#007b85] text-white text-xs uppercase font-extrabold tracking-wider">
-                    <th className="px-3 py-2 border-r border-teal-700">Accessory Item</th>
-                    <th className="px-3 py-2 border-r border-teal-700 w-28">Size</th>
-                    <th className="px-3 py-2 border-r border-teal-700 w-32 text-right">Unit Rate (₹)</th>
-                    <th className="px-3 py-2 border-r border-teal-700 w-24 text-center">Qty</th>
-                    <th className="px-3 py-2 border-r border-teal-700 w-36 text-right">Net Amount (₹)</th>
-                    <th className="px-3 py-2 w-16 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-xs">
-                  {accBillingRows.map((row) => {
-                    const availableProducts = accessoriesApi.getProducts();
-                    const selectedProduct = availableProducts.find((p) => p.id === row.accessoryId);
-
-                    return (
-                      <tr key={row.id} className="hover:bg-slate-50">
-                        {/* Accessory Item Dropdown */}
-                        <td className="p-1.5 border-r border-slate-200">
-                          <select
-                            value={row.accessoryId}
-                            onChange={(e) => handleSelectAccItem(row.id, e.target.value)}
-                            className="w-full h-8 px-2 text-xs border border-slate-300 rounded bg-white font-semibold text-slate-900 focus:border-blue-500"
-                          >
-                            <option value="">-- Select Accessory --</option>
-                            {availableProducts.map((p) => {
-                              const totalSt = accessoriesApi.getTotalStock(p);
-                              return (
-                                <option key={p.id} value={p.id} disabled={totalSt === 0}>
-                                  {p.name} - ₹{p.price} {totalSt === 0 ? "[OUT OF STOCK]" : ""}
-                                </option>
-                              );
-                            })}
-                          </select>
-                        </td>
-
-                        {/* Interactive Size Dropdown */}
-                        <td className="p-1.5 border-r border-slate-200 w-28">
-                          {selectedProduct ? (
-                            <select
-                              value={row.size}
-                              onChange={(e) => handleSelectAccSize(row.id, e.target.value)}
-                              className="w-full h-8 px-1 text-xs border border-slate-300 rounded bg-white font-bold text-slate-800 focus:border-blue-500 cursor-pointer"
-                            >
-                              {(selectedProduct.sizes || []).map((s) => (
-                                <option key={s.size} value={s.size} disabled={s.stockQuantity === 0}>
-                                  {s.size}{s.stockQuantity === 0 ? " — (Out of Stock)" : ""}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className="text-slate-400 italic text-[11px] px-2">-</span>
-                          )}
-                        </td>
-
-                        {/* Unit Rate (₹) */}
-                        <td className="p-1.5 border-r border-slate-200 text-right">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={row.unitPrice || ""}
-                            onChange={(e) => handleAccRowUnitPriceChange(row.id, parseFloat(e.target.value) || 0)}
-                            className="w-24 h-7 text-right px-2 border border-slate-300 rounded font-mono font-bold text-xs text-slate-800 focus:border-blue-500 bg-white"
-                          />
-                        </td>
-
-                        {/* Qty Input */}
-                        <td className="p-1.5 border-r border-slate-200 text-center">
-                          <input
-                            type="number"
-                            min="1"
-                            max={row.stockQuantity || 99}
-                            value={row.qty}
-                            onChange={(e) => handleAccRowQtyChange(row.id, parseInt(e.target.value, 10) || 1)}
-                            className="w-16 h-7 text-center border border-slate-300 rounded font-bold text-xs"
-                          />
-                        </td>
-
-                        {/* Net Amount (₹) */}
-                        <td className="p-1.5 border-r border-slate-200 text-right">
-                          <input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={row.netAmt || ""}
-                            onChange={(e) => handleAccRowNetAmtChange(row.id, parseFloat(e.target.value) || 0)}
-                            className="w-28 h-7 text-right px-2 border border-slate-300 rounded font-mono font-extrabold text-xs text-blue-900 focus:border-blue-500 bg-white"
-                          />
-                        </td>
-
-                        {/* Delete Row Action */}
-                        <td className="p-1.5 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveAccRow(row.id)}
-                            disabled={accBillingRows.length === 1}
-                            className="p-1 text-slate-400 hover:text-red-600 disabled:opacity-30 cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-
-              <div className="mt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAddAccRow}
-                  className="h-7 text-xs text-blue-700 border-blue-300 bg-blue-50/50 hover:bg-blue-100 font-bold px-3 rounded"
-                >
-                  + Add Accessory Item Row
-                </Button>
+            {/* Sub-tab navigation matching OP Billing */}
+            <div className="flex items-center justify-between px-2 bg-[#cee6f8] border-b border-slate-200 flex-shrink-0">
+              <div className="flex items-center gap-0.5 pt-1.5">
+                {["Service", "Payment"].map((st) => (
+                  <button
+                    key={st}
+                    type="button"
+                    onClick={() => {
+                      setAccBillingSubTab(st);
+                      if (st === "Payment" && accBillingPaymentRows[0].amount === 0 && accBillingNetBilledAmt > 0) {
+                        const updated = [...accBillingPaymentRows];
+                        updated[0].amount = accBillingNetBilledAmt;
+                        if (updated[0].mode === "Credit Card" || updated[0].mode === "Debit Card") {
+                          updated[0].cardSwipingValue = accBillingNetBilledAmt;
+                        }
+                        setAccBillingPaymentRows(updated);
+                      }
+                    }}
+                    className={`h-7 px-3.5 text-[11px] font-bold border border-b-0 rounded-t transition-colors ${accBillingSubTab === st
+                        ? "bg-white text-blue-700 border-slate-300 font-extrabold"
+                        : "bg-[#cee6f8]/60 text-slate-600 border-transparent hover:text-slate-800 hover:bg-[#cee6f8]"
+                      }`}
+                  >
+                    {st}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5 py-1">
+                <span className="text-[10px] font-bold text-slate-600">Provider:</span>
+                <span className="text-xs font-bold text-blue-900 bg-white border border-slate-300 px-2 py-0.5 rounded">
+                  {accBillingDoctor}
+                </span>
               </div>
             </div>
 
-            {/* Bottom Summary Bar */}
-            <div className="p-3 bg-slate-100 border-t border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0 text-xs">
-              <div className="w-full md:w-1/2 space-y-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Narration / Notes</label>
-                <textarea
-                  value={accBillingNarration}
-                  onChange={(e) => setAccBillingNarration(e.target.value)}
-                  placeholder="Additional notes for accessories billing..."
-                  className="w-full h-12 p-2 text-xs border border-slate-300 rounded bg-white"
-                />
-              </div>
+            {/* Sub-tab Content Area */}
+            <div className="flex-1 overflow-auto bg-white">
+              {accBillingSubTab === "Service" && (
+                <div className="flex flex-col h-full p-3">
+                  <table className="w-full text-left border-collapse border border-slate-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-[#007b85] text-white text-xs uppercase font-extrabold tracking-wider">
+                        <th className="px-3 py-2 border-r border-teal-700">Accessory Item</th>
+                        <th className="px-3 py-2 border-r border-teal-700 w-28">Size</th>
+                        <th className="px-3 py-2 border-r border-teal-700 w-32 text-right">Unit Rate (₹)</th>
+                        <th className="px-3 py-2 border-r border-teal-700 w-24 text-center">Qty</th>
+                        <th className="px-3 py-2 border-r border-teal-700 w-36 text-right">Net Amount (₹)</th>
+                        <th className="px-3 py-2 w-16 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-xs">
+                      {accBillingRows.map((row) => {
+                        const availableProducts = accessoriesApi.getProducts();
+                        const selectedProduct = availableProducts.find((p) => p.id === row.accessoryId);
 
-              <div className="w-full md:w-1/3 bg-white p-3 rounded-lg border border-slate-300 shadow-2xs space-y-1.5">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-600">Gross Total:</span>
-                  <span className="font-mono font-bold text-slate-900">₹{accBillingGrossTotal.toLocaleString("en-IN")}</span>
+                        return (
+                          <tr key={row.id} className="hover:bg-slate-50">
+                            {/* Accessory Item Dropdown */}
+                            <td className="p-1.5 border-r border-slate-200">
+                              <select
+                                value={row.accessoryId}
+                                onChange={(e) => handleSelectAccItem(row.id, e.target.value)}
+                                className="w-full h-8 px-2 text-xs border border-slate-300 rounded bg-white font-semibold text-slate-900 focus:border-blue-500"
+                              >
+                                <option value="">-- Select Accessory --</option>
+                                {availableProducts.map((p) => {
+                                  const totalSt = accessoriesApi.getTotalStock(p);
+                                  return (
+                                    <option key={p.id} value={p.id} disabled={totalSt === 0}>
+                                      {p.name} - ₹{p.price} {totalSt === 0 ? "[OUT OF STOCK]" : ""}
+                                    </option>
+                                  );
+                                })}
+                              </select>
+                            </td>
+
+                            {/* Interactive Size Dropdown */}
+                            <td className="p-1.5 border-r border-slate-200 w-28">
+                              {selectedProduct ? (
+                                <select
+                                  value={row.size}
+                                  onChange={(e) => handleSelectAccSize(row.id, e.target.value)}
+                                  className="w-full h-8 px-1 text-xs border border-slate-300 rounded bg-white font-bold text-slate-800 focus:border-blue-500 cursor-pointer"
+                                >
+                                  {(selectedProduct.sizes || []).map((s) => (
+                                    <option key={s.size} value={s.size} disabled={s.stockQuantity === 0}>
+                                      {s.size}{s.stockQuantity === 0 ? " — (Out of Stock)" : ""}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-slate-400 italic text-[11px] px-2">-</span>
+                              )}
+                            </td>
+
+                            {/* Unit Rate (₹) */}
+                            <td className="p-1.5 border-r border-slate-200 text-right">
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={row.unitPrice || ""}
+                                onChange={(e) => handleAccRowUnitPriceChange(row.id, parseFloat(e.target.value) || 0)}
+                                className="w-24 h-7 text-right px-2 border border-slate-300 rounded font-mono font-bold text-xs text-slate-800 focus:border-blue-500 bg-white"
+                              />
+                            </td>
+
+                            {/* Qty Input */}
+                            <td className="p-1.5 border-r border-slate-200 text-center">
+                              <input
+                                type="number"
+                                min="1"
+                                max={row.stockQuantity || 99}
+                                value={row.qty}
+                                onChange={(e) => handleAccRowQtyChange(row.id, parseInt(e.target.value, 10) || 1)}
+                                className="w-16 h-7 text-center border border-slate-300 rounded font-bold text-xs"
+                              />
+                            </td>
+
+                            {/* Net Amount (₹) - Read-only calculated field */}
+                            <td className="p-1.5 border-r border-slate-200 text-right font-mono font-extrabold text-xs text-slate-900">
+                              ₹{Number(row.netAmt || 0).toFixed(2)}
+                            </td>
+
+                            {/* Delete Row Action */}
+                            <td className="p-1.5 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAccRow(row.id)}
+                                disabled={accBillingRows.length === 1}
+                                className="p-1 text-slate-400 hover:text-red-600 disabled:opacity-30 cursor-pointer"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+
+                  <div className="mt-3 flex justify-between items-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAddAccRow}
+                      className="h-7 text-xs text-blue-700 border-blue-300 bg-blue-50/50 hover:bg-blue-100 font-bold px-3 rounded"
+                    >
+                      + Add Accessory Item Row
+                    </Button>
+                    <span className="text-[10px] text-slate-500 font-semibold">
+                      {accBillingRows.length} accessory item(s) selected
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-600">Discount (₹):</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={accBillingDiscount}
-                    onChange={(e) => setAccBillingDiscount(parseFloat(e.target.value) || 0)}
-                    className="w-20 h-6 px-1.5 text-right border border-slate-300 rounded font-mono font-semibold"
-                  />
+              )}
+
+              {accBillingSubTab === "Payment" && (
+                <div className="p-3 space-y-3">
+                  {/* Payment Table */}
+                  <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                    <table className="w-full text-[11px] text-left">
+                      <thead className="bg-gradient-to-r from-teal-600 to-teal-700 text-white font-bold uppercase text-[10px]">
+                        <tr>
+                          <th className="px-2 py-2 w-32 tracking-wider">Mode</th>
+                          <th className="px-2 py-2 w-24 text-right tracking-wider">Amount</th>
+                          <th className="px-2 py-2 w-24 text-right tracking-wider">Balance</th>
+                          <th className="px-2 py-2 w-32 tracking-wider">Date (dd/MM/YYYY)</th>
+                          <th className="px-2 py-2 w-32 tracking-wider">Bank Name</th>
+                          <th className="px-2 py-2 w-32 tracking-wider">Reference No</th>
+                          <th className="px-2 py-2 w-36 tracking-wider">Card Holder / Description</th>
+                          <th className="px-2 py-2 w-24 text-right tracking-wider">Card Swiping Value</th>
+                          <th className="px-2 py-2 w-10"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {accBillingPaymentRows.map((r, idx) => {
+                          const cumulativePaid = accBillingPaymentRows
+                            .slice(0, idx + 1)
+                            .reduce((sum, row) => sum + Number(row.amount || 0), 0);
+                          const rawBalance = accBillingNetBilledAmt - cumulativePaid;
+                          const rowBalance = Math.max(0, rawBalance).toFixed(2);
+                          const isCashOrUPI = r.mode === "Cash" || r.mode === "UPI";
+                          const isCard = r.mode === "Credit Card" || r.mode === "Debit Card";
+
+                          return (
+                            <tr key={idx} className="hover:bg-teal-50/20">
+                              <td className="px-2 py-1.5">
+                                <select
+                                  value={r.mode}
+                                  onChange={(e) => {
+                                    const u = [...accBillingPaymentRows];
+                                    const newMode = e.target.value;
+                                    u[idx].mode = newMode;
+                                    if (newMode === "Cash" || newMode === "UPI") {
+                                      u[idx].bankName = "";
+                                      u[idx].beneficiaryName = "";
+                                      u[idx].refNo = "";
+                                      u[idx].description = "";
+                                      u[idx].cardSwipingValue = 0;
+                                    } else if (newMode === "Credit Card" || newMode === "Debit Card") {
+                                      u[idx].cardSwipingValue = u[idx].amount;
+                                    }
+                                    setAccBillingPaymentRows(u);
+                                  }}
+                                  className="h-6 w-full text-[11px] border border-slate-200 rounded bg-white px-1 font-medium text-slate-800"
+                                >
+                                  <option value="Cash">Cash</option>
+                                  <option value="Cheque">Cheque</option>
+                                  <option value="Credit Card">Credit Card</option>
+                                  <option value="Debit Card">Debit Card</option>
+                                  <option value="UPI">UPI</option>
+                                  <option value="Net Banking">Net Banking</option>
+                                </select>
+                              </td>
+                              <td className="px-2 py-1.5 text-right">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max={Math.max(0, rawBalance)}
+                                  value={r.amount}
+                                  onChange={(e) => {
+                                    const u = [...accBillingPaymentRows];
+                                    const val = Number(e.target.value);
+                                    const maxAllowed = Math.max(0, rawBalance);
+                                    const cleanVal = isNaN(val) || val < 0 ? 0 : Math.min(val, maxAllowed);
+                                    u[idx].amount = cleanVal;
+                                    if (u[idx].mode === "Credit Card" || u[idx].mode === "Debit Card") {
+                                      u[idx].cardSwipingValue = cleanVal;
+                                    }
+                                    setAccBillingPaymentRows(u);
+                                  }}
+                                  className="h-6 w-full text-[11px] text-right font-mono font-bold"
+                                />
+                              </td>
+                              <td className="px-2 py-1.5 text-right">
+                                <Input
+                                  type="text"
+                                  readOnly
+                                  tabIndex={-1}
+                                  value={rowBalance}
+                                  className="h-6 w-full text-[11px] text-right font-mono bg-slate-100/80 cursor-not-allowed text-slate-600 font-semibold border-slate-200 select-none focus-visible:ring-0"
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <Input
+                                  type="date"
+                                  value={
+                                    r.date && r.date.includes("/")
+                                      ? r.date.split("/").reverse().join("-")
+                                      : r.date || new Date().toISOString().split("T")[0]
+                                  }
+                                  onChange={(e) => {
+                                    const u = [...accBillingPaymentRows];
+                                    u[idx].date = e.target.value;
+                                    setAccBillingPaymentRows(u);
+                                  }}
+                                  className="h-6 w-full text-[10px] font-mono cursor-pointer bg-white"
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <select
+                                  disabled={isCashOrUPI}
+                                  value={isCashOrUPI ? "" : r.bankName}
+                                  onChange={(e) => {
+                                    const u = [...accBillingPaymentRows];
+                                    u[idx].bankName = e.target.value;
+                                    setAccBillingPaymentRows(u);
+                                  }}
+                                  className={`h-6 w-full text-[11px] border border-slate-200 rounded px-1 transition-colors ${isCashOrUPI
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-medium focus:ring-1 focus:ring-teal-500"
+                                    }`}
+                                >
+                                  <option value="">{isCashOrUPI ? "-" : "-Select-"}</option>
+                                  <option value="SBI">SBI</option>
+                                  <option value="HDFC">HDFC</option>
+                                  <option value="ICICI">ICICI</option>
+                                  <option value="Axis">Axis</option>
+                                  <option value="Kotak">Kotak</option>
+                                  <option value="PNB">PNB</option>
+                                  <option value="BOB">BOB</option>
+                                  <option value="Other Bank">Other Bank</option>
+                                </select>
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <Input
+                                  disabled={isCashOrUPI}
+                                  value={isCashOrUPI ? "" : r.refNo}
+                                  onChange={(e) => {
+                                    const u = [...accBillingPaymentRows];
+                                    u[idx].refNo = e.target.value;
+                                    setAccBillingPaymentRows(u);
+                                  }}
+                                  placeholder={isCashOrUPI ? "-" : "Ref# / Txn ID"}
+                                  className={`h-6 w-full text-[11px] font-mono transition-colors ${isCashOrUPI
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-medium"
+                                    }`}
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <Input
+                                  disabled={isCashOrUPI}
+                                  value={isCashOrUPI ? "" : r.description}
+                                  onChange={(e) => {
+                                    const u = [...accBillingPaymentRows];
+                                    u[idx].description = e.target.value;
+                                    setAccBillingPaymentRows(u);
+                                  }}
+                                  placeholder={isCashOrUPI ? "-" : "Holder / Description..."}
+                                  className={`h-6 w-full text-[11px] transition-colors ${isCashOrUPI
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-medium"
+                                    }`}
+                                />
+                              </td>
+                              <td className="px-2 py-1.5 text-right">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  disabled={!isCard}
+                                  value={!isCard ? 0 : r.cardSwipingValue}
+                                  onChange={(e) => {
+                                    const u = [...accBillingPaymentRows];
+                                    const val = Number(e.target.value);
+                                    u[idx].cardSwipingValue = isNaN(val) || val < 0 ? 0 : val;
+                                    setAccBillingPaymentRows(u);
+                                  }}
+                                  className={`h-6 w-full text-[11px] text-right font-mono transition-colors ${!isCard
+                                      ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
+                                      : "bg-white text-slate-800 font-bold"
+                                    }`}
+                                />
+                              </td>
+                              <td className="px-2 py-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setAccBillingPaymentRows(
+                                      accBillingPaymentRows.filter((_, i) => i !== idx)
+                                    )
+                                  }
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Add Row */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setAccBillingPaymentRows([
+                        ...accBillingPaymentRows,
+                        {
+                          mode: "Cash",
+                          amount: 0,
+                          balance: 0,
+                          date: new Date().toLocaleDateString("en-GB"),
+                          bankName: "",
+                          beneficiaryName: "",
+                          refNo: "",
+                          description: "",
+                          cardSwipingValue: 0,
+                        },
+                      ])
+                    }
+                    className="text-[11px] text-blue-600 font-bold hover:underline flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Add Row
+                  </button>
+
                 </div>
-                <div className="flex justify-between items-center text-sm border-t pt-1.5">
-                  <span className="font-extrabold text-slate-800">Net Billed Amount:</span>
-                  <span className="font-mono font-black text-blue-900 text-base">₹{accBillingNetBilledAmt.toLocaleString("en-IN")}</span>
+              )}
+            </div>
+
+            {/* Bottom Summary Bar matching OP Billing */}
+            <div className="bg-[#e4eff8] border-t border-slate-300 p-2.5 flex-shrink-0">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                {/* Left Side: Narration & Badges */}
+                <div className="md:col-span-8 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span className="text-[11px] font-bold text-slate-600 pt-1 shrink-0">
+                      Narration
+                    </span>
+                    <textarea
+                      value={accBillingNarration}
+                      onChange={(e) => setAccBillingNarration(e.target.value)}
+                      placeholder="Enter Narration / Notes..."
+                      rows={2}
+                      className="flex-1 text-xs border border-slate-300 rounded p-1.5 bg-white font-medium focus:ring-1 focus:ring-teal-500"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap text-[10px]">
+                    <span className="px-2 py-0.5 rounded font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      Approval Required
+                    </span>
+                    <span className="px-2 py-0.5 rounded font-bold bg-slate-200 text-slate-700 border border-slate-300">
+                      Excluded Service
+                    </span>
+                    <span className="px-2 py-0.5 rounded font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                      Refunded Service
+                    </span>
+                    <span className="text-slate-500 font-medium ml-auto">
+                      Reporting DateTime:{" "}
+                      <span className="font-mono font-bold text-slate-700">
+                        {new Date().toISOString().slice(0, 16).replace("T", " ")}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right Side: Totals Summary matching OP Billing */}
+                <div className="md:col-span-4 bg-white border border-slate-300 rounded p-2 text-xs font-semibold shadow-2xs space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">Currency</span>
+                    <select className="h-5 text-[10px] border border-slate-300 rounded bg-white px-1 font-bold">
+                      <option>INR</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">Net Amt</span>
+                    <span className="font-mono font-bold text-slate-900">
+                      {accBillingNetBilledAmt.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">Deductible Amt</span>
+                    <span className="font-mono font-bold text-slate-500">0.00</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">Received</span>
+                    <span className="font-mono font-bold text-emerald-700">
+                      {(accPaidTotal > 0 ? accPaidTotal : accBillingNetBilledAmt).toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-600">Advance</span>
+                    <span className="font-mono font-bold text-slate-500">0.00</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-slate-200">
+                    <span className="font-bold text-slate-800">Balance</span>
+                    <span
+                      className={`font-mono font-black ${accOutstandingBalance > 0 ? "text-rose-600 text-sm" : "text-emerald-600"
+                        }`}
+                    >
+                      {accOutstandingBalance.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -7324,13 +8161,12 @@ export default function BillingPage() {
                     value={advUhid}
                     onChange={(e) => setAdvUhid(e.target.value)}
                     placeholder="UHID..."
-                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
-                      advPatientMatch.status === "found"
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${advPatientMatch.status === "found"
                         ? "text-emerald-700"
                         : advPatientMatch.status === "not_found"
                           ? "text-rose-700"
                           : "text-slate-800"
-                    }`}
+                      }`}
                   />
                   <Button
                     type="button"
@@ -7527,17 +8363,16 @@ export default function BillingPage() {
                       handleSelectCreditNoteInvoice(e.target.value)
                     }
                     placeholder="e.g. IPCA26/102"
-                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
-                      cnInvoiceMatch.status === "found" &&
-                      cnInvoiceMatch.uhidMatch
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${cnInvoiceMatch.status === "found" &&
+                        cnInvoiceMatch.uhidMatch
                         ? "text-emerald-700"
                         : cnInvoiceMatch.status === "found" &&
-                            !cnInvoiceMatch.uhidMatch
+                          !cnInvoiceMatch.uhidMatch
                           ? "text-amber-700"
                           : cnInvoiceMatch.status === "not_found"
                             ? "text-rose-700"
                             : "text-slate-800"
-                    }`}
+                      }`}
                   />
                   <Button
                     type="button"
@@ -7590,13 +8425,12 @@ export default function BillingPage() {
                     value={cnUhid}
                     onChange={(e) => setCnUhid(e.target.value)}
                     placeholder="UHID..."
-                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
-                      cnPatientMatch.status === "found"
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${cnPatientMatch.status === "found"
                         ? "text-emerald-700"
                         : cnPatientMatch.status === "not_found"
                           ? "text-rose-700"
                           : "text-slate-800"
-                    }`}
+                      }`}
                   />
                   <Button
                     type="button"
@@ -7748,13 +8582,12 @@ export default function BillingPage() {
                     value={intUhid}
                     onChange={(e) => setIntUhid(e.target.value)}
                     placeholder="UHID..."
-                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${
-                      intPatientMatch.status === "found"
+                    className={`h-6 text-xs border-0 p-0 shadow-none font-mono font-bold ${intPatientMatch.status === "found"
                         ? "text-emerald-700"
                         : intPatientMatch.status === "not_found"
                           ? "text-rose-700"
                           : "text-slate-800"
-                    }`}
+                      }`}
                   />
                   <Button
                     type="button"
@@ -8159,15 +8992,14 @@ export default function BillingPage() {
                       >
                         <div className="flex items-center justify-between">
                           <Badge
-                            className={`text-[10px] px-2 py-0.5 font-bold ${
-                              note.category === "Billing Flag"
+                            className={`text-[10px] px-2 py-0.5 font-bold ${note.category === "Billing Flag"
                                 ? "bg-amber-100 text-amber-800 border-amber-300"
                                 : note.category === "Clinical Alert"
                                   ? "bg-red-100 text-red-800 border-red-300"
                                   : note.category === "Special Instruction"
                                     ? "bg-purple-100 text-purple-800 border-purple-300"
                                     : "bg-blue-100 text-blue-800 border-blue-300"
-                            }`}
+                              }`}
                           >
                             {note.category}
                           </Badge>
@@ -8355,10 +9187,14 @@ export default function BillingPage() {
                               <td className="p-2 text-right">
                                 <Input
                                   type="number"
+                                  min="0"
+                                  max={Math.max(0, selectedInvoice.balance)}
                                   value={row.amount}
                                   onChange={(e) => {
                                     const updated = [...paymentRows];
-                                    updated[idx].amount = Number(e.target.value);
+                                    const val = Number(e.target.value);
+                                    const maxAllowed = Math.max(0, selectedInvoice.balance);
+                                    updated[idx].amount = isNaN(val) || val < 0 ? 0 : Math.min(val, maxAllowed);
                                     setPaymentRows(updated);
                                   }}
                                   className="h-7 text-xs text-right bg-white font-mono font-bold"
@@ -8374,11 +9210,10 @@ export default function BillingPage() {
                                     updated[idx].bankName = e.target.value;
                                     setPaymentRows(updated);
                                   }}
-                                  className={`h-7 text-xs ${
-                                    isCashRow
+                                  className={`h-7 text-xs ${isCashRow
                                       ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
                                       : "bg-white"
-                                  }`}
+                                    }`}
                                 />
                               </td>
                               <td className="p-2">
@@ -8391,11 +9226,10 @@ export default function BillingPage() {
                                     updated[idx].refNo = e.target.value;
                                     setPaymentRows(updated);
                                   }}
-                                  className={`h-7 text-xs font-mono ${
-                                    isCashRow
+                                  className={`h-7 text-xs font-mono ${isCashRow
                                       ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
                                       : "bg-white"
-                                  }`}
+                                    }`}
                                 />
                               </td>
                               <td className="p-2">
@@ -8408,11 +9242,10 @@ export default function BillingPage() {
                                     updated[idx].description = e.target.value;
                                     setPaymentRows(updated);
                                   }}
-                                  className={`h-7 text-xs ${
-                                    isCashRow
+                                  className={`h-7 text-xs ${isCashRow
                                       ? "bg-slate-100/80 text-slate-400 cursor-not-allowed border-slate-200 select-none"
                                       : "bg-white"
-                                  }`}
+                                    }`}
                                 />
                               </td>
                             </tr>
@@ -8473,7 +9306,7 @@ export default function BillingPage() {
       {/* ─── MODAL 2: PRINTABLE HOSPITAL INVOICE / RECEIPT ─────────────────── */}
       {printInvoiceData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-2xl bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
+          <div className="w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-5 py-2.5 border-b bg-slate-50 flex-shrink-0">
               <span className="font-bold text-slate-800 text-sm">
                 Official Invoice & Settlement Receipt
@@ -8519,6 +9352,14 @@ export default function BillingPage() {
           </div>
         </div>
       )}
+
+      {/* Hidden Accessories Print Element — always mounted so ref is valid */}
+      <div className="hidden">
+        <BillingInvoicePrint
+          ref={accPrintRef}
+          invoice={accPrintData ?? { invoiceNo: "", date: "", type: "ACC", uhid: "", patientName: "", netAmt: 0, balance: 0 }}
+        />
+      </div>
 
       {/* ─── MODAL 2.4: AUDIT BILL MODAL ───────────── */}
       {isAuditBillModalOpen && (
@@ -9577,6 +10418,9 @@ export default function BillingPage() {
                           setIntUhid(p.uhid);
                           if (p.company && !p.company.includes("CASH"))
                             setIntTpa(p.company);
+                        } else if (activeTab === "Accessories Billing") {
+                          setAccBillingUhid(p.uhid);
+                          setAccBillingPatient(p);
                         } else {
                           setMalUhid(p.uhid);
                           setInvoiceSearch(p.uhid);
@@ -9616,8 +10460,8 @@ export default function BillingPage() {
                           <td className="px-3 py-2 border-r border-slate-100 font-mono">
                             {p.admissionDate
                               ? new Date(p.admissionDate).toLocaleString(
-                                  "en-GB",
-                                )
+                                "en-GB",
+                              )
                               : ""}
                           </td>
                           <td className="px-3 py-2 border-r border-slate-100">
@@ -9629,8 +10473,8 @@ export default function BillingPage() {
                           <td className="px-3 py-2 border-r border-slate-100 font-mono">
                             {p.dateOfBirth
                               ? new Date(p.dateOfBirth).toLocaleDateString(
-                                  "en-GB",
-                                )
+                                "en-GB",
+                              )
                               : ""}
                           </td>
                           <td
@@ -9844,15 +10688,45 @@ export default function BillingPage() {
                             } else if (activeTab === "Credit Note") {
                               handleSelectCreditNoteInvoice(inv.invoiceNo);
                             } else if (activeTab === "OP Billing") {
+                              // Load the full invoice into OP Billing form
                               setOpBillingInvoiceNo(inv.invoiceNo);
                               setOpBillingUhid(inv.uhid);
+                              // Populate payer details from the invoice (safe optional access)
+                              const invAny = inv as any;
+                              if (invAny.payerType) setOpBillingPayerType(invAny.payerType);
+                              if (inv.company && inv.company !== "—" && inv.company !== "") {
+                                setOpBillingPayer(inv.company);
+                                setOpBillingSponsor(inv.company);
+                              }
+                              if (inv.type) setOpBillingType(inv.type === "IP" ? "Credit" : "Cash");
+                              // Load invoice items if present (parsed from itemsJson or items array)
+                              const rawItems: InvoiceItem[] = invAny.items
+                                ? invAny.items
+                                : inv.itemsJson
+                                  ? (() => { try { return JSON.parse(inv.itemsJson); } catch { return []; } })()
+                                  : [];
+                              if (rawItems.length > 0) {
+                                const loadedItems = rawItems.map((it: InvoiceItem) => ({
+                                  code: it.code,
+                                  name: it.name,
+                                  dept: it.dept,
+                                  rate: it.rate,
+                                  qty: it.qty,
+                                  discountPercent: it.discountPercent || 0,
+                                  discountAmt: it.discountAmt || 0,
+                                  taxPercent: it.taxPercent || 0,
+                                  netAmt: it.netAmt,
+                                }));
+                                setOpBillingItems(loadedItems);
+                              }
                             } else {
                               setMalBillNo(inv.invoiceNo);
                             }
                             setIsInvoiceSearchModalOpen(false);
+                            setInvoiceModalSearchTerm("");
                             toast.success(
-                              "Invoice Selected",
-                              `Invoice ${inv.invoiceNo} (${inv.patientName}) loaded.`,
+                              "Invoice Loaded",
+                              `Invoice ${inv.invoiceNo} for ${inv.patientName} has been loaded into the form.`,
                             );
                           };
 

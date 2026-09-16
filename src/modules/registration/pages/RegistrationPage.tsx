@@ -431,34 +431,7 @@ const NATIONALITIES = [
   "Other"
 ];
 const GUARDIAN_RELATIONS = ["Father", "Mother", "Son", "Daughter", "Husband", "Wife", "Brother", "Sister", "Guardian", "Self", "Other"];
-const EMERGENCY_RELATIONSHIPS = [
-  "Aunty",
-  "Brother",
-  "Brother In Law",
-  "Cousin",
-  "Daughter",
-  "Daughter In Law",
-  "Father",
-  "Father In Law",
-  "Friend",
-  "GrandDaughter",
-  "GrandFather",
-  "GrandMother",
-  "GrandSon",
-  "Guardian",
-  "Husband",
-  "Interprator",
-  "Mother",
-  "Mother In Law",
-  "Nephew",
-  "Niece",
-  "Other",
-  "Self",
-  "Sister",
-  "Sister In Law",
-  "Son",
-  "Wife",
-];
+const EMERGENCY_RELATIONSHIPS = GUARDIAN_RELATIONS;
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 export default function RegistrationPage() {

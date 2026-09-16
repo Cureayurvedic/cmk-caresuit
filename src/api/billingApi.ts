@@ -21,6 +21,7 @@ export interface InvoiceItem {
   code: string;
   name: string;
   dept?: string;
+  subDept?: string;
   doctor?: string;
   rate: number;
   qty: number;
@@ -30,6 +31,8 @@ export interface InvoiceItem {
   net?: number;
   netAmt?: number;
   remark?: string;
+  selectedSize?: string;
+  accessoryId?: string;
 }
 
 export interface InvoiceData {
@@ -38,7 +41,7 @@ export interface InvoiceData {
   uhid: string;
   patientName: string;
   encNo: string;
-  type: "OP" | "IP";
+  type: "OP" | "IP" | "ACC";
   invoiceNo: string;
   date: string;
   doctorName?: string;
@@ -61,6 +64,7 @@ export interface InvoiceData {
   createdAt: string;
   updatedAt: string;
   receipts?: ReceiptData[];
+  payments?: any[];
 }
 
 export interface BillingStats {
@@ -347,7 +351,7 @@ export async function createInvoice(data: {
   uhid: string;
   patientName: string;
   encNo?: string;
-  type?: "OP" | "IP";
+  type?: "OP" | "IP" | "ACC";
   company?: string;
   doctorName?: string;
   department?: string;

@@ -170,7 +170,7 @@ export default function Sidebar() {
             /* Main Menu Header */
             <>
               {!isCollapsed && (
-                <div className="flex-1 flex items-center min-w-0 py-1.5 px-1">
+                <div className="flex-1 flex items-center justify-center min-w-0 py-1.5 px-1">
                   <div className="bg-white px-3 py-1 rounded-xl flex items-center justify-center shadow-md h-10 w-auto max-w-full overflow-hidden">
                     <img
                       src="/cmk-logo.png"
@@ -190,7 +190,7 @@ export default function Sidebar() {
                 variant="ghost"
                 size="icon"
                 onClick={toggleSidebar}
-                className="h-8 w-8 text-white hover:bg-white/10 flex-shrink-0"
+                className="h-8 w-8 text-white hover:bg-white/10 flex-shrink-0 absolute right-3"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -339,9 +339,9 @@ export default function Sidebar() {
         ) : (
           /* ─── STANDARD MAIN MENU MODE ─────────────────────────────────────────── */
           <ScrollArea className="flex-1 py-3">
-            <nav className="px-3 space-y-1">
+            <nav className="px-3 space-y-1.5">
               {!isCollapsed && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 py-2 mt-1 truncate transition-all duration-300">
+                <p className="text-xs font-black uppercase tracking-wider text-slate-300 px-3 py-2 mt-1 truncate transition-all duration-300">
                   Main Menu
                 </p>
               )}
@@ -372,24 +372,24 @@ export default function Sidebar() {
                         >
                           <div
                             className={cn(
-                              "flex h-7 w-7 items-center justify-center rounded-lg transition-colors flex-shrink-0",
+                              "flex h-8 w-8 items-center justify-center rounded-lg transition-colors flex-shrink-0",
                               isActive
-                                ? "bg-white/25 text-white"
+                                ? "bg-white/25 text-white shadow-xs"
                                 : "bg-white/10 group-hover:bg-white/20 text-slate-200 group-hover:text-white"
                             )}
                           >
                             <Icon
                               className={cn(
-                                "h-4 w-4",
+                                "h-4.5 w-4.5",
                                 isActive ? "text-white" : "text-slate-200 group-hover:text-white"
                               )}
                             />
                           </div>
                           {!isCollapsed && (
                             <>
-                              <span className="flex-1 text-[13px] truncate">{item.label}</span>
+                              <span className="flex-1 text-[13px] sm:text-sm font-extrabold tracking-wide truncate">{item.label}</span>
                               {isActive && (
-                                <ChevronRight className="h-3.5 w-3.5 text-white/80 flex-shrink-0" />
+                                <ChevronRight className="h-4 w-4 text-white/90 flex-shrink-0" />
                               )}
                             </>
                           )}
@@ -405,9 +405,9 @@ export default function Sidebar() {
                       )}
                     </Tooltip>
 
-                    {/* Sub items for Registration */}
+                    {/* Sub items for Navigation */}
                     {isActive && item.sub && !isCollapsed && (
-                      <div className="mt-1 ml-8 space-y-0.5 transition-all duration-300 overflow-hidden">
+                      <div className="mt-1.5 ml-4 pl-3 border-l-2 border-blue-500/50 space-y-1 transition-all duration-300">
                         {item.sub.map((subItem) => (
                           <NavLink
                             key={subItem.path}
@@ -415,14 +415,15 @@ export default function Sidebar() {
                             onClick={closeMobileSidebar}
                             className={({ isActive }) =>
                               cn(
-                                "block px-3 py-1.5 text-xs rounded-md transition-colors truncate font-semibold",
+                                "flex items-center gap-2 px-3 py-2 text-[12px] sm:text-[13px] font-bold rounded-lg transition-all truncate",
                                 isActive
-                                  ? "text-white bg-blue-600 font-bold shadow-xs"
-                                  : "text-slate-300 hover:text-white hover:bg-white/10"
+                                  ? "text-white bg-blue-600 font-extrabold shadow-sm shadow-blue-900/40"
+                                  : "text-slate-200 hover:text-white hover:bg-white/15"
                               )
                             }
                           >
-                            {subItem.label}
+                            <span className="h-1.5 w-1.5 rounded-full bg-blue-300 shrink-0 opacity-80" />
+                            <span className="truncate">{subItem.label}</span>
                           </NavLink>
                         ))}
                       </div>
@@ -461,17 +462,17 @@ export default function Sidebar() {
           <div
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className={cn(
-              "flex items-center rounded-lg hover:bg-white/10 cursor-pointer transition-all duration-300 relative z-50",
-              isCollapsed ? "justify-center p-1" : "gap-3 px-2 py-1.5"
+              "flex items-center rounded-xl hover:bg-white/10 cursor-pointer transition-all duration-300 relative z-50",
+              isCollapsed ? "justify-center p-1" : "gap-3 px-3 py-2"
             )}
           >
-            <div className="h-8 w-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black flex-shrink-0 shadow-xs">
+            <div className="h-9 w-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black flex-shrink-0 shadow-md border border-blue-400/30">
               DR
             </div>
             {!isCollapsed && (
               <div className="min-w-0 flex-1 overflow-hidden transition-all duration-300">
-                <p className="text-white text-xs font-bold truncate">Dr. Admin</p>
-                <p className="text-blue-300 text-[10px] font-semibold truncate">Administrator</p>
+                <p className="text-white text-sm font-extrabold truncate">Dr. Admin</p>
+                <p className="text-blue-200 text-xs font-semibold truncate">Administrator</p>
               </div>
             )}
           </div>

@@ -335,7 +335,7 @@ export default function AccessoriesPage() {
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto bg-white">
           <table className="w-full text-left border-collapse min-w-[850px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200/60 text-slate-500">
@@ -344,9 +344,7 @@ export default function AccessoriesPage() {
                 <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider">Price (₹)</th>
                 <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider">Total Stock</th>
                 <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider">Stock Status</th>
-                <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-right">
-                  Actions
-                </th>
+                <th className="px-5 py-4 text-xs font-bold uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
