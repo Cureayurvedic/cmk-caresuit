@@ -33,12 +33,6 @@ export const REPORT_TREE: ReportCategoryGroup[] = [
       { id: "OP Visit", name: "OP Visit", category: "Billing", description: "Outpatient consultations, doctor fees and department traffic" },
       { id: "Bill Register", name: "Bill Register", category: "Billing", description: "Master invoice log for all bills with settlement status" },
       { id: "Outstanding", name: "Outstanding", category: "Billing", description: "Aging ledger of unpaid balances from patients and payers" },
-      { id: "Discount Report", name: "Discount Report", category: "Billing", description: "Authorized billing waivers, concessions and courtesy discounts" },
-      { id: "Revenue", name: "Revenue", category: "Billing", description: "Consolidated hospital gross and net revenue" },
-      { id: "Bill Cancelled", name: "Bill Cancelled", category: "Billing", description: "Cancelled invoice audit trail with authorization reasons" },
-      { id: "Refund", name: "Refund", category: "Billing", description: "Patient deposit and excess payment refund disbursement log" },
-      { id: "Credit Note Report", name: "Credit Note Report", category: "Billing", description: "Credit notes issued with authorized reasons and adjustments" },
-      { id: "Advance Collection Reports", name: "Advance Collection Reports", category: "Billing", description: "Patient advance receipts, adjusted balances and deposits" },
     ],
   },
 ];

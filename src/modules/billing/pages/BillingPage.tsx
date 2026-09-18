@@ -994,6 +994,7 @@ export default function BillingPage() {
   const [refunds, setRefunds] = useState<RefundData[]>([]);
   const [intimations, setIntimations] = useState<InsuranceIntimationData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [accessoriesProducts, setAccessoriesProducts] = useState<any[]>([]);
 
   // Filters State
   const [patientSearch, setPatientSearch] = useState("");
@@ -1415,7 +1416,7 @@ export default function BillingPage() {
   ]);
 
   const handleSelectAccItem = (rowId: string, accessoryId: string) => {
-    const products = accessoriesApi.getProducts();
+    const products = accessoriesProducts;
     const found = products.find((p) => p.id === accessoryId);
     setAccBillingRows((prev) =>
       prev.map((row) => {
@@ -1452,7 +1453,7 @@ export default function BillingPage() {
   };
 
   const handleSelectAccSize = (rowId: string, size: string) => {
-    const products = accessoriesApi.getProducts();
+    const products = accessoriesProducts;
     setAccBillingRows((prev) =>
       prev.map((row) => {
         if (row.id === rowId && row.accessoryId) {
@@ -1847,6 +1848,28 @@ export default function BillingPage() {
     return () => {
       isMounted = false;
       window.removeEventListener("cmk_settings_updated", handleSettingsUpdate);
+    };
+  }, []);
+
+  // ─── LOAD ACCESSORIES PRODUCTS ──────────────────────────────────────────────
+  useEffect(() => {
+    let isMounted = true;
+    const loadAccessories = async () => {
+      try {
+        const products = await accessoriesApi.getProducts();
+        if (isMounted) {
+          setAccessoriesProducts(products);
+        }
+      } catch (error) {
+        console.error('Failed to load accessories:', error);
+        if (isMounted) {
+          setAccessoriesProducts([]);
+        }
+      }
+    };
+    loadAccessories();
+    return () => {
+      isMounted = false;
     };
   }, []);
 
@@ -2550,7 +2573,7 @@ export default function BillingPage() {
           item.code?.startsWith("KC") ||
           item.code?.startsWith("KI")
         ) {
-          const accProducts = accessoriesApi.getProducts();
+          const accProducts = accessoriesProducts;
           const matched = accProducts.find(
             (p) =>
               (item as any).accessoryId === p.id ||
@@ -5653,7 +5676,7 @@ export default function BillingPage() {
                         </tr>
                       ) : (
                         opBillingItems.map((it, idx) => {
-                          const accServices = accessoriesApi.getProducts().map((p) => ({
+                          const accServices = accessoriesProducts.map((p) => ({
                             code: p.code,
                             name: p.name,
                             dept: "Accessories",
@@ -5825,7 +5848,7 @@ export default function BillingPage() {
                                       const gross = rate * qty;
                                       const discAmt = (gross * discPct) / 100;
 
-                                      const prod = accessoriesApi.getProducts().find(
+                                      const prod = accessoriesProducts.find(
                                         (p) => p.id === (found as any).accessoryId || p.code === found.code || p.name === found.name
                                       );
                                       const defaultSize = prod?.sizes?.find((s) => s.stockQuantity > 0)?.size || prod?.sizes?.[0]?.size || "Universal";
@@ -5887,7 +5910,7 @@ export default function BillingPage() {
                                         className="h-5 text-[11px] bg-white border border-teal-300 rounded font-bold text-teal-950 px-1 focus:outline-none focus:ring-1 focus:ring-teal-500 cursor-pointer"
                                       >
                                         {(() => {
-                                          const prod = accessoriesApi.getProducts().find(
+                                          const prod = accessoriesProducts.find(
                                             (p) => p.id === (it as any).accessoryId || p.name === it.name || p.code === it.code
                                           );
                                           const sizes = prod?.sizes && prod.sizes.length > 0
@@ -7459,7 +7482,7 @@ export default function BillingPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-200 text-xs">
                       {accBillingRows.map((row) => {
-                        const availableProducts = accessoriesApi.getProducts();
+                        const availableProducts = accessoriesProducts;
                         const selectedProduct = availableProducts.find((p) => p.id === row.accessoryId);
 
                         return (

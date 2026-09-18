@@ -793,7 +793,7 @@ export default function RegistrationPage() {
         altPhone: "",
         email: "",
         emergencyName: "",
-        emergencyRelationship: "",
+        emergencyRelationship: "Father",
         emergencyContact: "",
         nationality: "Indian",
         aadhaarCard: "",

@@ -49,6 +49,7 @@ export default function AccessoriesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<AccessoryProduct | null>(null);
@@ -81,9 +82,17 @@ export default function AccessoriesPage() {
     loadProducts();
   }, []);
 
-  const loadProducts = () => {
-    const data = accessoriesApi.getProducts();
-    setProducts(data);
+  const loadProducts = async () => {
+    try {
+      setIsLoading(true);
+      const data = await accessoriesApi.getProducts();
+      setProducts(data);
+    } catch (error: any) {
+      toast.error("Error", error.message || "Failed to load accessories");
+      setProducts([]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const openAddModal = () => {
@@ -131,7 +140,7 @@ export default function AccessoriesPage() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.price) {
       toast.error("Validation Error", "Accessories name and price are required.");
@@ -144,7 +153,8 @@ export default function AccessoriesPage() {
     })).filter((s) => s.stockQuantity > 0 || s.size === "Universal");
 
     try {
-      const saved = accessoriesApi.saveProduct({
+      setIsLoading(true);
+      const saved = await accessoriesApi.saveProduct({
         id: editingProduct ? editingProduct.id : undefined,
         code: formData.code,
         name: formData.name,
@@ -159,38 +169,52 @@ export default function AccessoriesPage() {
         `${saved.name} saved with size stock levels.`
       );
       setIsModalOpen(false);
-      loadProducts();
+      await loadProducts();
     } catch (error: any) {
       toast.error("Error", error.message || "Failed to save accessory.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleStockAdjustment = (product: AccessoryProduct, size: string, delta: number) => {
+  const handleStockAdjustment = async (product: AccessoryProduct, size: string, delta: number) => {
     const currentQty = accessoriesApi.getStockForSize(product, size);
     if (currentQty + delta < 0) {
       toast.error("Stock Warning", `Stock quantity for size ${size} cannot be negative.`);
       return;
     }
-    const updated = accessoriesApi.adjustStock(product.id, size, delta);
-    if (updated) {
-      toast.success(
-        "Stock Adjusted",
-        `${product.name} (${size}) stock updated.`
-      );
-      loadProducts();
+    try {
+      setIsLoading(true);
+      const updated = await accessoriesApi.adjustStock(product.id, size, delta);
+      if (updated) {
+        toast.success(
+          "Stock Adjusted",
+          `${product.name} (${size}) stock updated.`
+        );
+        await loadProducts();
+      }
+    } catch (error: any) {
+      toast.error("Error", error.message || "Failed to adjust stock.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDelete = (product: AccessoryProduct) => {
+  const handleDelete = async (product: AccessoryProduct) => {
     if (!isAdmin) return;
     if (!window.confirm(`Are you sure you want to delete ${product.name}?`)) return;
 
-    const success = accessoriesApi.deleteProduct(product.id);
-    if (success) {
-      toast.success("Accessory Deleted", `${product.name} removed from list.`);
-      loadProducts();
-    } else {
-      toast.error("Error", "Could not delete accessory.");
+    try {
+      setIsLoading(true);
+      const success = await accessoriesApi.deleteProduct(product.id);
+      if (success) {
+        toast.success("Accessory Deleted", `${product.name} removed from list.`);
+        await loadProducts();
+      }
+    } catch (error: any) {
+      toast.error("Error", error.message || "Could not delete accessory.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -348,7 +372,16 @@ export default function AccessoriesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredProducts.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-3"></div>
+                      <p className="font-medium text-slate-600">Loading accessories...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center">

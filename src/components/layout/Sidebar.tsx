@@ -170,12 +170,12 @@ export default function Sidebar() {
             /* Main Menu Header */
             <>
               {!isCollapsed && (
-                <div className="flex-1 flex items-center justify-center min-w-0 py-1.5 px-1">
-                  <div className="bg-white px-3 py-1 rounded-xl flex items-center justify-center shadow-md h-10 w-auto max-w-full overflow-hidden">
+                <div className="flex-1 flex items-center justify-center min-w-0 py-2 px-1">
+                  <div className="bg-white px-4 py-2 rounded-xl flex items-center justify-center shadow-md h-14 w-auto max-w-full overflow-hidden">
                     <img
                       src="/cmk-logo.png"
                       alt="CMK HealthCare"
-                      className="h-full w-auto object-contain max-h-8"
+                      className="h-full w-auto object-contain max-h-12"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         if (!target.src.includes("cmk_caresuit_logo")) {
