@@ -85,7 +85,7 @@ export default function LoginPage() {
         <div className="relative z-10">
           <div className="bg-white px-5 py-3 rounded-xl inline-flex items-center gap-4 shadow-xl h-20">
             <img 
-              src="/cmk_caresuit_logo.png" 
+              src="/cmk-logo.png" 
               alt="CMK CareSuite Logo" 
               className="h-full w-auto object-contain" 
             />
@@ -125,7 +125,7 @@ export default function LoginPage() {
           <div className="lg:hidden flex justify-center mb-6">
             <div className="bg-white px-5 py-3 rounded-xl inline-flex items-center gap-4 shadow-xl h-20">
               <img 
-                src="/cmk_caresuit_logo.png" 
+                src="/cmk-logo.png" 
                 alt="CMK CareSuite Logo" 
                 className="h-full w-auto object-contain" 
               />
